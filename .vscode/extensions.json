@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "vitest.explorer",
+        "eamodio.gitlens",
+        "mhutchie.vscode-git-graph",
+        "usernamehw.errorlens"
+    ]
+}

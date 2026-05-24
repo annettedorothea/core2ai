@@ -1,0 +1,24 @@
+{
+    "name": "core2ai-workspace",
+    "description": "Shared libraries for api2ai and db2ai (MCP host, codegen bootstrap)",
+    "version": "0.0.1",
+    "license": "MIT",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "clean": "npm run clean --workspaces --if-present",
+        "watch": "tsc -b tsconfig.build.json --watch",
+        "build": "tsc -b tsconfig.build.json",
+        "build:clean": "npm run clean && npm run build",
+        "test": "npm run test --workspaces --if-present"
+    },
+    "devDependencies": {
+        "@types/node": "~20.17.48",
+        "shx": "~0.4.0",
+        "typescript": "~5.8.3"
+    },
+    "workspaces": [
+        "packages/codegen",
+        "packages/mcp-host"
+    ]
+}

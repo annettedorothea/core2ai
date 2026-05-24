@@ -1,0 +1,14 @@
+---
+description: Build core2ai after TypeScript changes
+globs:
+  - packages/**/*
+alwaysApply: false
+---
+
+# core2ai Build
+
+After code changes in this repository, run:
+
+`npm run build`
+
+Consumers (api2ai, db2ai) depend on compiled `out/` from this repo via `file:` dependencies.
