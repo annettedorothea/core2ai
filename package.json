@@ -1,14 +1,35 @@
 {
-    "name": "core2ai-workspace",
+    "name": "@core2ai/core",
     "description": "Shared libraries for api2ai and db2ai (MCP host, codegen bootstrap)",
     "version": "0.0.1",
     "license": "MIT",
     "type": "module",
-    "private": true,
+    "files": [
+        "packages/codegen/out",
+        "packages/codegen/src",
+        "packages/mcp-host/out",
+        "packages/mcp-host/src",
+        "README.md",
+        "LICENSE"
+    ],
+    "exports": {
+        "./codegen": {
+            "types": "./packages/codegen/out/index.d.ts",
+            "default": "./packages/codegen/out/index.js"
+        },
+        "./mcp-host": {
+            "types": "./packages/mcp-host/out/index.d.ts",
+            "default": "./packages/mcp-host/out/index.js"
+        },
+        "./mcp-host/standalone-entry": {
+            "types": "./packages/mcp-host/out/mcp-standalone-entry.d.ts",
+            "default": "./packages/mcp-host/out/mcp-standalone-entry.js"
+        }
+    },
     "scripts": {
         "clean": "npm run clean --workspaces --if-present",
-        "postinstall": "node scripts/install-git-hooks.mjs",
         "install:hooks": "node scripts/install-git-hooks.mjs",
+        "prepare": "npm run build",
         "watch": "tsc -b tsconfig.build.json --watch",
         "build": "tsc -b tsconfig.build.json",
         "build:clean": "npm run clean && npm run build",
@@ -21,12 +42,18 @@
         "lint:fix": "eslint . --fix",
         "check": "npm run format:check && npm run typecheck && npm run lint"
     },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.29.0",
+        "chalk": "~5.3.0",
+        "langium": "~4.2.0",
+        "prettier": "^3.8.3",
+        "zod": "^4.4.3"
+    },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@types/node": "~20.17.48",
         "@vitest/coverage-v8": "^3.1.4",
         "eslint": "^10.4.0",
-        "prettier": "^3.8.3",
         "shx": "~0.4.0",
         "typescript": "~5.8.3",
         "typescript-eslint": "^8.59.4"
