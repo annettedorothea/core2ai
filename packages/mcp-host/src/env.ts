@@ -9,7 +9,7 @@ function stripOptionalQuotes(value: string): string {
     }
     const first = value.at(0);
     const last = value.at(-1);
-    if ((first === '"' && last === '"') || (first === '\'' && last === '\'')) {
+    if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
         return value.slice(1, -1);
     }
     return value;

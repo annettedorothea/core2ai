@@ -31,7 +31,10 @@ function resolveCliPackageRoot(config: ProjectBootstrapConfig): string {
     if (embed) {
         return embed;
     }
-    return config.resolvePackageRoot?.(config.generatorImplementationDir) ?? path.resolve(config.generatorImplementationDir, '..');
+    return (
+        config.resolvePackageRoot?.(config.generatorImplementationDir) ??
+        path.resolve(config.generatorImplementationDir, '..')
+    );
 }
 
 function resolveBundledMcpServeSourcePath(config: ProjectBootstrapConfig): string {
@@ -58,7 +61,10 @@ export function copyBundledMcpServeInto(cliDir: string, config: ProjectBootstrap
     return dest;
 }
 
-function readCliPackageJson(config: ProjectBootstrapConfig): { version: string; dependencies?: Record<string, string> } {
+function readCliPackageJson(config: ProjectBootstrapConfig): {
+    version: string;
+    dependencies?: Record<string, string>;
+} {
     const p = resolveCliPackageJsonPathForVersions(config);
     const raw = fs.readFileSync(p, 'utf-8');
     const pkg = JSON.parse(raw) as { version?: string; dependencies?: Record<string, string> };
@@ -107,7 +113,7 @@ function warnIfPackageJsonMissingMcpDeps(packageJsonDir: string, config: Project
         ...(rec.optionalDependencies ?? {}),
         ...(rec.dependencies ?? {})
     };
-    const missing = config.requiredRuntimeDeps.filter(key => merged[key] === undefined);
+    const missing = config.requiredRuntimeDeps.filter((key) => merged[key] === undefined);
     if (missing.length > 0) {
         console.warn(
             config.missingDepsMessage?.(pjsonPath, missing) ??

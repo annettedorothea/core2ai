@@ -53,16 +53,20 @@ export async function extractDocument(fileName: string, services: CliLangiumServ
         process.exit(1);
     }
 
-    const document = await services.shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(path.resolve(fileName)));
+    const document = await services.shared.workspace.LangiumDocuments.getOrCreateDocument(
+        URI.file(path.resolve(fileName))
+    );
     await services.shared.workspace.DocumentBuilder.build([document], { validation: true });
 
-    const validationErrors = (document.diagnostics ?? []).filter(e => e.severity === 1);
+    const validationErrors = (document.diagnostics ?? []).filter((e) => e.severity === 1);
     if (validationErrors.length > 0) {
         console.error(chalk.red('There are validation errors:'));
         for (const validationError of validationErrors) {
-            console.error(chalk.red(
-                `line ${validationError.range.start.line + 1}: ${validationError.message} [${document.textDocument.getText(validationError.range)}]`
-            ));
+            console.error(
+                chalk.red(
+                    `line ${validationError.range.start.line + 1}: ${validationError.message} [${document.textDocument.getText(validationError.range)}]`
+                )
+            );
         }
         process.exit(1);
     }

@@ -21,11 +21,7 @@ export type McpToolDescriptor = {
 export type GeneratedMcpModule = {
     adapter: McpHostAdapter;
     generatedTools: McpToolDescriptor[];
-    invokeTool: (
-        toolName: string,
-        args?: Record<string, unknown>,
-        hostContext?: unknown
-    ) => Promise<unknown>;
+    invokeTool: (toolName: string, args?: Record<string, unknown>, hostContext?: unknown) => Promise<unknown>;
     inputZodByTool?: Record<string, unknown>;
     mcpServerName?: string;
     mcpServerVersion?: string;

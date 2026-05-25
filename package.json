@@ -10,10 +10,13 @@
         "watch": "tsc -b tsconfig.build.json --watch",
         "build": "tsc -b tsconfig.build.json",
         "build:clean": "npm run clean && npm run build",
-        "test": "npm run test --workspaces --if-present"
+        "test": "npm run test --workspaces --if-present",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
     },
     "devDependencies": {
         "@types/node": "~20.17.48",
+        "prettier": "^3.8.3",
         "shx": "~0.4.0",
         "typescript": "~5.8.3"
     },

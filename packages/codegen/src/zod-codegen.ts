@@ -13,10 +13,17 @@ export function emitZodExpression(schema: JsonSchemaDict): string {
         return emitUnion(schema.oneOf as JsonSchemaDict[]);
     }
 
-    if (schema.type === 'object' && schema.properties !== undefined && typeof schema.properties === 'object' && !Array.isArray(schema.properties)) {
+    if (
+        schema.type === 'object' &&
+        schema.properties !== undefined &&
+        typeof schema.properties === 'object' &&
+        !Array.isArray(schema.properties)
+    ) {
         const props = schema.properties as Record<string, JsonSchemaDict>;
         const required = new Set(
-            Array.isArray(schema.required) ? (schema.required as unknown[]).filter((x): x is string => typeof x === 'string') : []
+            Array.isArray(schema.required)
+                ? (schema.required as unknown[]).filter((x): x is string => typeof x === 'string')
+                : []
         );
         const entries = Object.entries(props).map(([key, propSchema]) => {
             let inner = emitZodExpression(propSchema);

@@ -1,0 +1,20 @@
+node_modules/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+*.vsix
+package-lock.json
+
+# Langium generated artifacts
+**/src/generated/
+**/syntaxes/
+
+# Bundled MCP host artifacts
+packages/cli/resources/mcp-serve-emitted.mjs
+**/generated/cli/mcp-serve.mjs
+
+# Demo runtime folders
+packages/extension/demos/node_modules/
+packages/extension/demos/tmp/
+packages/extension/demos/.pagila-src/
