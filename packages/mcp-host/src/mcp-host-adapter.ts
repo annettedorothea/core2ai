@@ -10,7 +10,8 @@ export interface McpHostAdapter {
     envDirsForReload(): string[];
 }
 
-export type GeneratedTool = {
+/** Minimal metadata the generic MCP host needs. Generated modules may include DSL-specific fields too. */
+export type McpToolDescriptor = {
     toolName: string;
     title?: string;
     description: string;
@@ -19,7 +20,7 @@ export type GeneratedTool = {
 /** Exports the MCP host expects from a generated *-tools module. */
 export type GeneratedMcpModule = {
     adapter: McpHostAdapter;
-    generatedTools: GeneratedTool[];
+    generatedTools: McpToolDescriptor[];
     invokeTool: (
         toolName: string,
         args?: Record<string, unknown>,
@@ -66,7 +67,7 @@ export function readGeneratedModule(imported: Record<string, unknown>): Generate
     const mcpServerVersion = imported.mcpServerVersion;
     return {
         adapter: readMcpHostAdapter(imported),
-        generatedTools: generatedTools as GeneratedTool[],
+        generatedTools: generatedTools as McpToolDescriptor[],
         invokeTool: invokeTool as GeneratedMcpModule['invokeTool'],
         inputZodByTool:
             inputZodByTool && typeof inputZodByTool === 'object' && !Array.isArray(inputZodByTool)

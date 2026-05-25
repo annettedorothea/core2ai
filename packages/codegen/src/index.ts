@@ -80,3 +80,6 @@ export function extractDestinationAndName(destination: string): { destination: s
         name: path.basename(destination)
     };
 }
+
+export * from './project-bootstrap.js';
+export * from './zod-codegen.js';
