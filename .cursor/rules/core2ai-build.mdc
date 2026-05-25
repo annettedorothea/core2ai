@@ -9,6 +9,6 @@ alwaysApply: false
 
 After code changes in this repository, run:
 
-`npm run build`
+`npm run build && npm run check`
 
 Consumers (api2ai, db2ai) depend on compiled `out/` from this repo via `file:` dependencies.

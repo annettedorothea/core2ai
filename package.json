@@ -7,18 +7,27 @@
     "private": true,
     "scripts": {
         "clean": "npm run clean --workspaces --if-present",
+        "postinstall": "node scripts/install-git-hooks.mjs",
+        "install:hooks": "node scripts/install-git-hooks.mjs",
         "watch": "tsc -b tsconfig.build.json --watch",
         "build": "tsc -b tsconfig.build.json",
         "build:clean": "npm run clean && npm run build",
         "test": "npm run test --workspaces --if-present",
         "format": "prettier --write .",
-        "format:check": "prettier --check ."
+        "format:check": "prettier --check .",
+        "typecheck": "tsc -b tsconfig.build.json --pretty false",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "check": "npm run format:check && npm run typecheck && npm run lint && npm run test"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "@types/node": "~20.17.48",
+        "eslint": "^10.4.0",
         "prettier": "^3.8.3",
         "shx": "~0.4.0",
-        "typescript": "~5.8.3"
+        "typescript": "~5.8.3",
+        "typescript-eslint": "^8.59.4"
     },
     "workspaces": [
         "packages/codegen",

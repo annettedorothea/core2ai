@@ -190,7 +190,9 @@ export async function formatGeneratedFilesWithPrettier(filePaths: readonly strin
             await formatGeneratedFileWithPrettier(filePath);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            throw new Error(`Failed to format generated file with Prettier (${filePath}): ${message}`);
+            const wrappedError = new Error(`Failed to format generated file with Prettier (${filePath}): ${message}`);
+            (wrappedError as Error & { cause?: unknown }).cause = error;
+            throw wrappedError;
         }
     }
 }
