@@ -16,6 +16,11 @@ npm run build
 
 Rebuild core2ai before rebuilding a consumer after host changes.
 
+## Checks
+
+- `npm run check` runs format, typecheck, and lint only.
+- `npm test` runs all package test suites.
+
 ---
 
 _Created with gratitude to Jesus Christ._
