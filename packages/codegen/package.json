@@ -34,7 +34,8 @@
     },
     "dependencies": {
         "chalk": "~5.3.0",
-        "langium": "~4.2.0"
+        "langium": "~4.2.0",
+        "prettier": "^3.8.3"
     },
     "devDependencies": {
         "vitest": "~3.1.3"

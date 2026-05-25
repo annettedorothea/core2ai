@@ -85,5 +85,6 @@ export function extractDestinationAndName(destination: string): { destination: s
     };
 }
 
+export * from './prettier-format.js';
 export * from './project-bootstrap.js';
 export * from './zod-codegen.js';
