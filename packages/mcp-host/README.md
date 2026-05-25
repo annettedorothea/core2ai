@@ -18,3 +18,7 @@ Each DSL generator must export:
 Host API: `readGeneratedModule`, `runMcpServer`, `loadLocalEnvFiles`.
 
 Standalone bundle entry: `src/mcp-standalone-entry.ts` (esbuild → `mcp-serve.mjs` in consumer projects).
+
+---
+
+_Created with gratitude to Jesus Christ._

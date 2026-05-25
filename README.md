@@ -15,3 +15,7 @@ npm run build
 ```
 
 Rebuild core2ai before rebuilding a consumer after host changes.
+
+---
+
+_Created with gratitude to Jesus Christ._
