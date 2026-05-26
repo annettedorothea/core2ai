@@ -50,4 +50,4 @@ npm run install:hooks
 
 ---
 
-_Created with gratitude to Jesus Christ._
+#Col3:23
