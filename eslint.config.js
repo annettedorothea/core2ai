@@ -26,9 +26,7 @@ export default [
             '**/*.tsbuildinfo',
             '**/src/generated/**',
             '**/syntaxes/**',
-            'packages/cli/resources/mcp-serve-emitted.mjs',
-            '**/generated/cli/mcp-serve.mjs',
-            'packages/extension/demos/generated/**',
+            '**/*.mjs',
             'packages/extension/demos/tmp/**',
             'packages/extension/demos/.pagila-src/**'
         ]
@@ -36,7 +34,7 @@ export default [
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
-        files: ['**/*.{js,mjs,cjs,ts,tsx}'],
+        files: ['**/*.{js,cjs,ts,tsx}'],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
@@ -47,6 +45,20 @@ export default [
         files: ['**/*.{ts,tsx}'],
         rules: {
             'no-undef': 'off',
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                {
+                    argsIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_'
+                }
+            ]
+        }
+    },
+    {
+        files: ['packages/extension/demos/generated/**/*.ts'],
+        rules: {
             'no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars': [
                 'error',
