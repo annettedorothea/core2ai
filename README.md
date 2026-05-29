@@ -20,10 +20,14 @@ The repository root is installable as `@core2ai/core`. **Consumers should pin an
 After publishing a new tag in this repo:
 
 1. Edit **`scripts/core2ai-pin.json`** here (tag + `spec`).
-2. In **api2ai** / **db2ai**: `npm run core2ai:apply-pin` (uses scripts from installed `@core2ai/core` + local `core2ai-pin.targets.json`).
-3. `npm run install:github-https` in each consumer repo.
+2. In **api2ai** / **db2ai**: **`npm run core2ai:refresh-pin`** (sync `package.json`, force reinstall, refresh lockfile).
+    - Pin source: sibling **`../core2ai/scripts`** when present (monorepo), else installed `@core2ai/core`, else `CORE2AI_PIN_SOURCE`.
+    - Override installed/sibling: `CORE2AI_PIN_PREFER_INSTALLED=1 npm run core2ai:apply-pin`
+3. api2ai only: `npm run install:demos` if demos still resolve an old commit.
 
-Show pin: `npm run core2ai:pin` (from core2ai or any consumer with `@core2ai/core` installed).
+Legacy: `core2ai:apply-pin` then `install:github-https` — prefer **`core2ai:refresh-pin`**.
+
+Show pin: `npm run core2ai:pin` (from core2ai or any consumer).
 
 Use subpath imports from consumers:
 

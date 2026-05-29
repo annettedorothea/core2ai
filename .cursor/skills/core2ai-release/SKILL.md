@@ -3,7 +3,8 @@ name: core2ai-release
 description: >-
     core2ai release: tag @core2ai/core and apply the GitHub pin in api2ai and db2ai.
     Use when the user says core2ai release, release core2ai, bump/tag core2ai, or sync
-    api2ai/db2ai to a new core2ai version.
+    api2ai/db2ai to a new core2ai version. Always run Gate 0 (clean git in all three
+    repos) first — stop if dirty unless the user explicitly overrides in a follow-up message.
 ---
 
 # core2ai release
@@ -17,38 +18,55 @@ Sibling repos (same parent as this repo):
 - `../api2ai`
 - `../db2ai`
 
-## Prerequisites — clean git in all three repos
+## Gate 0 — clean git (mandatory, hard stop)
 
-**Before** showing the version or changing any file, verify a **clean working tree** in **core2ai**, **api2ai**, and **db2ai**.
+**This gate runs first.** Nothing else in this skill may run before it passes — not Step 0, not version questions, not file edits, not installs, not commits.
 
-In each repo root:
-
-```bash
-git status --porcelain
-```
-
-- **Clean** = empty output (nothing to commit; untracked files that are intentional noise may still block a safe release — treat untracked files as dirty unless the user says to ignore them).
-- **Dirty** = any modified, staged, or untracked paths that belong to the release (source, `package.json`, lockfiles, generated demos, etc.).
-
-If **any** repo is dirty:
-
-1. Report which repo(s) and list changed/untracked paths (`git status -sb`).
-2. **Stop** the skill workflow. Do not bump versions, tag, or run `apply-pin` until the tree is clean.
-3. Tell the user to **commit**, **stash**, or **discard** those changes first, then re-run the skill.
-
-Only continue after all three repos are clean, **or** the user explicitly says to proceed anyway (e.g. “trotzdem weitermachen” / “include current WIP”) — then note that risk in the summary.
-
-Optional quick check (all three):
+Run from **core2ai** root:
 
 ```bash
-for d in . ../api2ai ../db2ai; do echo "=== $d ==="; git -C "$d" status --porcelain || echo "missing"; done
+for d in . ../api2ai ../db2ai; do echo "=== $d ==="; git -C "$d" status -sb; git -C "$d" status --porcelain || echo "missing"; done
 ```
 
-(Run from **core2ai** root.)
+### Clean vs dirty
+
+- **Clean** = `git status --porcelain` is **empty** in all three repos.
+- **Dirty** = any modified, staged, deleted, or **untracked** path in any repo. Untracked files count as dirty (do not assume they are harmless).
+
+### If any repo is dirty — STOP
+
+1. Report **each** dirty repo with `git status -sb` output (paths + branch state).
+2. **End the skill run.** Do not continue to Step 0 or any later step.
+3. Tell the user to **commit**, **stash**, or **discard** the unrelated WIP, then re-run **„core2ai release“**.
+
+**Forbidden when dirty** (even if it seems helpful):
+
+- Do **not** bump versions, edit `core2ai-pin.json`, tag, push, or run `apply-pin`.
+- Do **not** offer to “commit everything as part of the release” as the default next step.
+- Do **not** use **AskQuestion** with options like “proceed and commit WIP” vs “stop” — stopping is not a choice; it is the only allowed outcome until the tree is clean.
+- Do **not** mix unrelated WIP into release commits to “get clean”. Release commits must contain **only** release-related changes made **during** this skill run.
+
+### Only override when the user explicitly opts in
+
+Continue past Gate 0 **only** if the user, **in a new message after the stop**, clearly overrides, e.g.:
+
+- „trotzdem weitermachen“
+- „dirty OK, WIP mit in die Release-Commits“
+- „include current WIP in release“
+
+Then:
+
+1. List exactly which paths will be included from each dirty repo.
+2. Note in the final summary that the release included pre-existing WIP (higher review risk).
+3. Still do **not** silently fold unrelated changes into release commits — either commit WIP separately first (preferred) or ask once which paths belong in which commit.
+
+### Re-check before push/tag (core2ai Step 2)
+
+Immediately before `git commit` / `git tag` / `git push` in core2ai, run `git status --porcelain` again. If **new** unexpected dirty paths appeared (not from Steps 1–2 of this run), stop and ask — do not push a mixed commit.
 
 ## Step 0 — Show current version and ask for the next
 
-**Always start here** (after prerequisites pass). Do not guess the next version.
+**Only after Gate 0 passes.** Do not guess the next version.
 
 1. Read current pin:
 
@@ -105,10 +123,11 @@ In **core2ai** root:
 
 - **Never** run `git config`.
 - Commits use the repo’s existing identity (e.g. `annettedorothea <github@anfelisa.de>`). Verify with `git log -1 --format='%an <%ae>'` if needed.
-- Only commit when the user asked for commits in this run.
+- Release commits are **part of this skill** once Gate 0 passed — but each commit must contain **only** files changed for this release (version bump, pin json, release notes if any). Never `git add -A` blindly if unrelated paths are still dirty from an explicit dirty override.
 - Do not force-push tags.
+- Re-run Gate 0’s `git status --porcelain` check before commit; abort if unexpected paths appear.
 
-When the user wants commits:
+When committing the core2ai release:
 
 ```bash
 cd <core2ai-root>
@@ -132,16 +151,14 @@ In **api2ai** root (`../api2ai`):
 
 1. Ensure `core2ai-pin.targets.json` exists (lists `packages/cli/package.json`, demos, optional `generatorFallback`).
 
-2. Install the new tag, then apply pin:
+2. Refresh pin (tag must exist on remote first). Uses sibling `../core2ai/scripts` when present:
 
     ```bash
-    npm run install:github-https
-    npm run core2ai:apply-pin
-    npm run install:github-https
+    npm run core2ai:refresh-pin
     npm run install:demos
     ```
 
-    Scripts live in `node_modules/@core2ai/core/scripts/` (requires the new tag to include `scripts/` in the published package).
+    `core2ai:refresh-pin` = apply pin from `core2ai-pin.json` + remove cached `@core2ai/core` + `npm install @core2ai/core@<spec>` per workspace/prefix + root `npm install` (with GitHub HTTPS rewrite).
 
 3. Verify no `file:` pin remains:
 
@@ -160,18 +177,16 @@ In **api2ai** root (`../api2ai`):
     npm run test
     ```
 
-5. Commit **only if the user asked** (lockfile + pin changes; message e.g. `Bump @core2ai/core to vX.Y.Z`).
+5. Commit pin + lockfile changes (message e.g. `Bump @core2ai/core to vX.Y.Z`). Stage only release-related paths — not unrelated WIP.
 
 ## Step 4 — db2ai: apply pin
 
 In **db2ai** root (`../db2ai`):
 
-1. Same as api2ai, but **no** `install:demos`.
+1. Same as api2ai, but **no** `install:demos`:
 
     ```bash
-    npm run install:github-https
-    npm run core2ai:apply-pin
-    npm run install:github-https
+    npm run core2ai:refresh-pin
     ```
 
 2. Verify no `file:` core2ai pins in `package*.json`.
@@ -187,30 +202,32 @@ In **db2ai** root (`../db2ai`):
 
     (Full `npm run test` if Docker e2e is acceptable.)
 
-4. Commit **only if the user asked**.
+4. Commit pin + lockfile changes. Stage only release-related paths.
 
 ## Checklist (copy for the user)
 
 ```text
-- [ ] core2ai, api2ai, db2ai: git working tree clean (or user approved dirty state)
+- [ ] Gate 0: all three repos clean (or user sent explicit dirty override after stop)
 - [ ] Current version shown; next version confirmed by user
 - [ ] core2ai: versions + core2ai-pin.json + build/test/check
 - [ ] core2ai: commit + tag vX.Y.Z pushed (if requested)
-- [ ] api2ai: install:github-https → apply-pin → install (+ demos)
+- [ ] api2ai: core2ai:refresh-pin (+ install:demos)
 - [ ] api2ai: build/check/test green
-- [ ] db2ai: install:github-https → apply-pin → install
+- [ ] db2ai: core2ai:refresh-pin
 - [ ] db2ai: build/check/test green
 - [ ] No file:../../../core2ai in committed package.json files
 ```
 
 ## Troubleshooting
 
-| Problem                                     | Action                                                                                  |
-| ------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `npm install` / tag checkout fails          | Tag not pushed yet, or wrong tag name. Push tag from core2ai first.                     |
-| `core2ai:apply-pin` missing scripts         | Consumer’s `@core2ai/core` is too old; `npm run install:github-https` after tag exists. |
-| SSH / known_hosts errors                    | `npm run install:github-https` (HTTPS rewrite for this install only).                   |
-| db2ai `install` fails on workspace packages | Run from **db2ai repo root** (workspaces), not only `packages/cli`.                     |
+| Problem                                     | Action                                                                                                      |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Skill started but repos were dirty          | Expected — Gate 0 stop. User commits/stashes WIP, re-runs skill. Do not “fix” by bundling WIP into release. |
+| `npm install` / tag checkout fails          | Tag not pushed yet, or wrong tag name. Push tag from core2ai first.                                         |
+| Lockfile still resolves old core2ai commit  | Re-run `npm run core2ai:refresh-pin`. Use sibling `../core2ai` or set `CORE2AI_PIN_SOURCE`.                 |
+| `core2ai:apply-pin` missing scripts         | Use `npm run core2ai:refresh-pin` (consumer wrapper falls back to `../core2ai/scripts`).                    |
+| SSH / known_hosts errors                    | `npm run install:github-https` (HTTPS rewrite for this install only).                                       |
+| db2ai `install` fails on workspace packages | Run from **db2ai repo root** (workspaces), not only `packages/cli`.                                         |
 
 ## Reference
 

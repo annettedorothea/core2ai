@@ -30,7 +30,7 @@
     "scripts": {
         "clean": "npm run clean --workspaces --if-present",
         "install:hooks": "node scripts/install-git-hooks.mjs",
-        "core2ai:pin": "node scripts/print-core2ai-pin.mjs",
+        "core2ai:pin": "node scripts/print-core2ai-pin.mjs --verbose",
         "prepare": "npm run build",
         "watch": "tsc -b tsconfig.build.json --watch",
         "build": "tsc -b tsconfig.build.json",

@@ -1,14 +1,24 @@
 #!/usr/bin/env node
-import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { loadPin } from './resolve-core2ai-scripts.mjs';
 
-const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
-const pinPath = path.join(scriptsDir, 'core2ai-pin.json');
-const pin = JSON.parse(fs.readFileSync(pinPath, 'utf-8'));
+const args = process.argv.slice(2);
+const verbose = args.includes('--verbose');
+const json = args.includes('--json');
+const positional = args.filter((arg) => !arg.startsWith('-'));
+const consumerRoot = positional[0] ? path.resolve(positional[0]) : process.cwd();
 
-if (process.argv.includes('--json')) {
-    console.log(JSON.stringify(pin, null, 2));
-} else {
-    console.log(pin.spec);
+try {
+    const { pin, source } = loadPin(consumerRoot);
+    if (json) {
+        console.log(JSON.stringify({ ...pin, source }, null, 2));
+    } else {
+        console.log(pin.spec);
+        if (verbose) {
+            console.error(`[core2ai:pin] source: ${source}`);
+        }
+    }
+} catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
 }
