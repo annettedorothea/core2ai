@@ -1,7 +1,7 @@
 {
     "name": "@core2ai/codegen",
     "description": "Shared codegen bootstrap for generated MCP tool projects",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "type": "module",
     "engines": {
         "node": ">=20.10.0",
@@ -35,6 +35,7 @@
     },
     "dependencies": {
         "chalk": "~5.3.0",
+        "esbuild": "^0.25.12",
         "langium": "~4.2.0",
         "prettier": "^3.8.3"
     },

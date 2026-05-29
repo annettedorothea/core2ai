@@ -7,7 +7,7 @@ import { URI } from 'langium';
  * Shared codegen helpers.
  * Extracted incrementally from api2ai/db2ai CLI code.
  */
-export const CORE2AI_CODEGEN_VERSION = '0.0.1';
+export const CORE2AI_CODEGEN_VERSION = '0.0.2';
 
 type CliLangiumDocument = {
     diagnostics?: Array<{
@@ -85,6 +85,7 @@ export function extractDestinationAndName(destination: string): { destination: s
     };
 }
 
+export * from './access-stubs.js';
 export * from './prettier-format.js';
 export * from './project-bootstrap.js';
 export * from './zod-codegen.js';
