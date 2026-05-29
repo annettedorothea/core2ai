@@ -173,9 +173,13 @@ In **api2ai** root (`../api2ai`):
     ```bash
     npm run langium:generate
     npm run build
+    npm run bundle:mcp-runtime
+    npm run generate:all
     npm run check
     npm run test
     ```
+
+    `bundle:mcp-runtime` rebuilds [`packages/cli/resources/mcp-serve-emitted.mjs`](../../packages/cli/resources/mcp-serve-emitted.mjs). `generate:all` copies it to `packages/extension/demos/generated/cli/mcp-serve.mjs`.
 
 5. Commit pin + lockfile changes (message e.g. `Bump @core2ai/core to vX.Y.Z`). Stage only release-related paths — not unrelated WIP.
 
@@ -196,9 +200,13 @@ In **db2ai** root (`../db2ai`):
     ```bash
     npm run langium:generate
     npm run build
+    npm run bundle:mcp-runtime
+    npm run generate:all
     npm run check
     npm run test:unit
     ```
+
+    `bundle:mcp-runtime` + `generate:all` refresh the MCP stdio host under `packages/extension/demos/generated/cli/mcp-serve.mjs`. Restart MCP servers in Cursor after release.
 
     (Full `npm run test` if Docker e2e is acceptable.)
 
@@ -212,9 +220,9 @@ In **db2ai** root (`../db2ai`):
 - [ ] core2ai: versions + core2ai-pin.json + build/test/check
 - [ ] core2ai: commit + tag vX.Y.Z pushed (if requested)
 - [ ] api2ai: core2ai:refresh-pin (+ install:demos)
-- [ ] api2ai: build/check/test green
+- [ ] api2ai: bundle:mcp-runtime + generate:all + build/check/test green
 - [ ] db2ai: core2ai:refresh-pin
-- [ ] db2ai: build/check/test green
+- [ ] db2ai: bundle:mcp-runtime + generate:all + build/check/test green
 - [ ] No file:../../../core2ai in committed package.json files
 ```
 

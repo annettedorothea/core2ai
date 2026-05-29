@@ -11,4 +11,6 @@ After code changes in this repository, run:
 
 `npm run build && npm run check`
 
-Consumers (api2ai, db2ai) depend on compiled `out/` from this repo via `file:` dependencies.
+Consumers (**api2ai**, **db2ai**) install `@core2ai/core` via **GitHub pin** (`github:annettedorothea/core2ai#vX.Y.Z`), not a sibling `file:` path.
+
+After **mcp-host** or **codegen** changes, follow [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc): tag release, then consumers refresh pin, **bundle MCP runtime**, and regenerate demos.

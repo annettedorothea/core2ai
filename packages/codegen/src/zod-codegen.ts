@@ -63,7 +63,7 @@ export function emitZodExpression(schema: JsonSchemaDict): string {
     }
 
     if (schema.type === 'object' && schema.additionalProperties === true) {
-        return withDescribe('z.record(z.string(), __core2aiPrimitiveUnion)', schema);
+        return withDescribe('z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))', schema);
     }
 
     if (
@@ -125,8 +125,6 @@ function isFiniteNumber(value: unknown): value is number {
 /** Shared helpers referenced by per-tool Zod schemas in generated modules. */
 export function emitGeneratedZodPreamble(): string {
     return `import * as z from 'zod/v4';
-
-const __core2aiPrimitiveUnion = z.union([z.string(), z.number(), z.boolean()]);
 `;
 }
 

@@ -1,0 +1,25 @@
+---
+description: After core2ai changes, refresh consumers, MCP bundles, and demo mcp-serve copies
+alwaysApply: true
+---
+
+# core2ai Consumer Impact (publisher)
+
+When **`packages/mcp-host/**`** or **`packages/codegen/**`** changes in this repo:
+
+1. `npm run build && npm run check` in **core2ai**
+2. Bump version + update [`scripts/core2ai-pin.json`](../../scripts/core2ai-pin.json), then **tag and push** (skill **core2ai release**)
+3. Tell the user that **api2ai** and **db2ai** must run:
+   - `npm run core2ai:refresh-pin`
+   - `npm run bundle:mcp-runtime`
+   - `npm run generate:all`
+   - MCP servers **restart** in Cursor
+
+Editing the sibling folder alone does **not** update consumer `node_modules` or bundled `mcp-serve-emitted.mjs`.
+
+## Do not
+
+- Rely on `file:…/core2ai` in committed consumer `package.json`
+- Suggest manual `cp` into `node_modules` as the permanent fix (local sync is for ad-hoc debug only)
+
+See also [core2ai-build.mdc](./core2ai-build.mdc), [github-installable-package.mdc](./github-installable-package.mdc), and [generated-output-do-not-edit.mdc](./generated-output-do-not-edit.mdc).

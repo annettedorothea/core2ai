@@ -50,8 +50,9 @@ function ancestorDirectories(startDir: string): string[] {
     return directories;
 }
 
-export function loadLocalEnvFiles(startDirs: string[]): string[] {
-    const protectedKeys = new Set(Object.keys(process.env));
+export function loadLocalEnvFiles(startDirs: string[], options?: { refresh?: boolean }): string[] {
+    const refresh = options?.refresh === true;
+    const protectedKeys = refresh ? new Set<string>() : new Set(Object.keys(process.env));
     const loadedKeys = new Set<string>();
     const loadedFiles: string[] = [];
     const visitedFiles = new Set<string>();

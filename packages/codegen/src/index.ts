@@ -7,7 +7,7 @@ import { URI } from 'langium';
  * Shared codegen helpers.
  * Extracted incrementally from api2ai/db2ai CLI code.
  */
-export const CORE2AI_CODEGEN_VERSION = '0.0.3';
+export const CORE2AI_CODEGEN_VERSION = '0.0.4';
 
 type CliLangiumDocument = {
     diagnostics?: Array<{

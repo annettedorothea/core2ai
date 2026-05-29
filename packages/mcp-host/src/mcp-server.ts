@@ -30,7 +30,7 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
 function reloadEnvFilesForDev(generated: GeneratedMcpModule): void {
     const dirs = generated.adapter.envDirsForReload();
     if (dirs.length > 0) {
-        loadLocalEnvFiles(dirs);
+        loadLocalEnvFiles(dirs, { refresh: true });
     }
 }
 
