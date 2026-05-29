@@ -17,7 +17,13 @@ The repository root is installable as `@core2ai/core`. **Consumers should pin an
 }
 ```
 
-After publishing a new tag in this repo, bump `scripts/core2ai-pin.json` in **api2ai** / **db2ai** and run their `npm run core2ai:apply-pin` and `npm run install:github-https`.
+After publishing a new tag in this repo:
+
+1. Edit **`scripts/core2ai-pin.json`** here (tag + `spec`).
+2. In **api2ai** / **db2ai**: `npm run core2ai:apply-pin` (uses scripts from installed `@core2ai/core` + local `core2ai-pin.targets.json`).
+3. `npm run install:github-https` in each consumer repo.
+
+Show pin: `npm run core2ai:pin` (from core2ai or any consumer with `@core2ai/core` installed).
 
 Use subpath imports from consumers:
 
