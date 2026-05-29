@@ -7,15 +7,17 @@ Shared package for api2ai and db2ai.
 | `@core2ai/codegen`  | Generated-output bootstrap (placeholder)                    |
 | `@core2ai/mcp-host` | Generic MCP stdio host + `mcp-standalone-entry` for esbuild |
 
-The repository root is installable as `@core2ai/core`, so consumers can reference the GitHub repository directly after a tag or branch is pushed:
+The repository root is installable as `@core2ai/core`. **Consumers should pin an explicit Git tag** (not `main`) for reproducible installs:
 
 ```json
 {
     "dependencies": {
-        "@core2ai/core": "github:annettedorothea/core2ai#main"
+        "@core2ai/core": "github:annettedorothea/core2ai#v0.0.2"
     }
 }
 ```
+
+After publishing a new tag in this repo, bump `scripts/core2ai-pin.json` in **api2ai** / **db2ai** and run their `npm run core2ai:apply-pin` and `npm run install:github-https`.
 
 Use subpath imports from consumers:
 
