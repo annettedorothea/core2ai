@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 /**
- * VSIX release pipeline for api2ai / db2ai consumer repos.
+ * Publish a pre-built VSIX to GitHub (prerelease).
+ *
+ * Expects the artifact from CP6/8 preview:
+ *   packages/extension/<extension-name>-<version>.vsix
+ *
+ * Does not run test, check, or extension:vsix — only uploads the tested file.
  *
  * Usage: node consumer-release-vsix.mjs <consumer-root> [extension-workspace]
  */
@@ -8,8 +13,9 @@ import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-const consumerRoot = path.resolve(process.argv[2] ?? process.cwd());
-const extensionWorkspace = process.argv[3] ?? 'packages/extension';
+const positional = process.argv.slice(2).filter((arg) => !arg.startsWith('-'));
+const consumerRoot = path.resolve(positional[0] ?? process.cwd());
+const extensionWorkspace = positional[1] ?? 'packages/extension';
 const extensionDir = path.join(consumerRoot, extensionWorkspace);
 const extensionPkgPath = path.join(extensionDir, 'package.json');
 
@@ -34,16 +40,15 @@ function run(label, command, args, options = {}) {
     }
 }
 
-run('verify (test)', 'npm', ['run', 'test']);
-run('verify (check)', 'npm', ['run', 'check']);
-run('package VSIX', 'npm', ['run', 'extension:vsix', '-w', extensionWorkspace]);
-
 const vsixName = `${extensionPkg.name}-${extensionPkg.version}.vsix`;
 const vsixPath = path.join(extensionDir, vsixName);
 const tag = `${extensionPkg.name}-${extensionPkg.version}`;
 
+console.log(`[release:vsix] publishing tested artifact: ${vsixPath}`);
+
 if (!fs.existsSync(vsixPath)) {
-    console.error(`[release:vsix] expected VSIX at ${vsixPath}`);
+    console.error(`[release:vsix] missing VSIX at ${vsixPath}`);
+    console.error('[release:vsix] build and test first: npm run extension:vsix -w packages/extension');
     process.exit(1);
 }
 

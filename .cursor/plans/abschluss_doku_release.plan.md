@@ -26,6 +26,12 @@ todos:
     - id: release-real
       content: 'Phase 6: echter @core2ai/core-Tag + Consumer-Pin; optional VSIX prerelease'
       status: pending
+    - id: followup-extension-toolchain-version
+      content: 'Follow-up: Extension Status/Command mit VSIX + @core2ai/core Version (api2ai + db2ai)'
+      status: pending
+    - id: followup-generated-typecheck-ide
+      content: 'Follow-up: invoke-render.ts `parts: string[]` (api2ai+db2ai regen), IDE tsconfig.generated, optional type-aware ESLint'
+      status: pending
 isProject: false
 ---
 
@@ -90,7 +96,7 @@ flowchart TB
 - Nach Änderung an **mcp-host** oder **codegen** in core2ai: Library-Release (Tag) → Consumer `use-pin` → `bundle:mcp-runtime` → `generate:all`.
 - **Zwei Release-Arten** (in Doku trennen, nicht vermischen):
     1. **@core2ai/core Library-Release** — Git-Tag auf **core2ai**, Pin in api2ai/db2ai (Workflow `01-core2ai-library-release.md`).
-    2. **VSIX-Release** — Extension-Version in `packages/extension/package.json`, `release:vsix` / GitHub prerelease (Workflow `03-vsix-github-release.md`).
+    2. **VSIX-Release** — Extension-Version in `packages/extension/package.json`, lokal bauen/testen, `release:vsix` → GitHub prerelease (Workflow `03-vsix-github-release.md`).
 
 **Output Ebene 1 für Endnutzer:** installierbare **VSIX** (oder Extension Development Host im Monorepo).
 
@@ -206,11 +212,11 @@ Sprache: READMEs EN; Architektur/Workflows **DE oder EN** — einmal festlegen (
 
 **Dry-Run** (bis vor Tag/Push): zwei Checklisten ableiten:
 
-| Workflow                                  | Inhalt                                                                       |
-| ----------------------------------------- | ---------------------------------------------------------------------------- |
-| `workflows/01-core2ai-library-release.md` | Tag `@core2ai/core`, `use-pin`, bundle, generate — **Ebene-1-Infrastruktur** |
-| `workflows/02-vsix-build-local-test.md`   | VSIX lokal, Extension Host, Demos                                            |
-| `workflows/03-vsix-github-release.md`     | `release:vsix` — **Ebene-1-Endprodukt** für Nutzer                           |
+| Workflow                                  | Inhalt                                                                                    |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `workflows/01-core2ai-library-release.md` | Tag `@core2ai/core`, `use-pin`, bundle, generate — **Ebene-1-Infrastruktur**              |
+| `workflows/02-vsix-build-local-test.md`   | VSIX lokal, Extension Host, Demos                                                         |
+| `workflows/03-vsix-github-release.md`     | VSIX lokal bauen/testen, dann `release:vsix` (GitHub prerelease) — **Ebene-1-Endprodukt** |
 
 Skill [`guided-release/SKILL.md`](../.cursor/skills/guided-release/SKILL.md) — Checkpoint-Flow (Library optional, Preview, VSIX); Workflow 01 später menschliche Kopie.
 
@@ -219,6 +225,109 @@ Skill [`guided-release/SKILL.md`](../.cursor/skills/guided-release/SKILL.md) —
 ### Phase 4–6
 
 Wie zuvor: weitere Workflows (04 version-bump, 10 daily, …), docs-wire, **echter Release** zuletzt.
+
+---
+
+## Follow-up (nach Release / Verify): Toolchain-Version in der Extension sichtbar
+
+**Ziel:** Direkt in Cursor sehen, welche **VSIX/Extension-Version** (api2ai bzw. db2ai) und welche **@core2ai/core**-Version aktiv sind — ohne MCP `serverInfo` zu verbiegen.
+
+**Warum nicht MCP `serverInfo.version`:** `mcpServerVersion` im Generator ist heute die **CLI-/Generator-Version**, nicht die spätere MCP-Tool-API. Generator/DSL-Toolchain gehört zu **Ebene 1 (VSIX)**, nicht zur MCP-Protokoll-Identität.
+
+### Was anzeigen
+
+| Teil         | Quelle                                                                     | Beispiel |
+| ------------ | -------------------------------------------------------------------------- | -------- |
+| **Consumer** | `packages/extension/package.json` (`vscode-api2ai` / `vscode-db2ai`)       | `0.0.2`  |
+| **Core**     | Aufgelöstes `@core2ai/core` (Embed/`node_modules`, gleicher Stand wie Pin) | `0.0.5`  |
+
+Anzeigeformat (Vorschlag): `api2ai 0.0.2 · core 0.0.5` (db2ai analog).
+
+### UI (einfach, sofort sichtbar)
+
+1. **Statusleiste** — permanentes Item beim Extension-Aktivieren (nur wenn api2ai/db2ai-Extension aktiv).
+2. **Command Palette** — z. B. `api2ai: Show toolchain versions` / `db2ai: Show toolchain versions` → kurze Meldung oder Output-Kanal mit beiden Versionen (+ optional CLI/Language-Paket später).
+3. Optional später: gleicher Text im **Welcome/About** oder Output-Kanal „api2ai“ bei Aktivierung.
+
+**Ort:** `packages/extension/src/` in **api2ai** und **db2ai** (parallele Implementierung, gleiches Muster).
+
+### Technik (Überblick)
+
+- Extension-Version: `context.extension.packageJSON.version`.
+- Core-Version: `@core2ai/core/package.json` aus dem Pfad, den die Extension ohnehin für CLI/Generate nutzt (Embed-Home oder Workspace-`node_modules`); Fallback `"unknown"` + Hinweis wenn Pin fehlt.
+- Keine Änderung an `mcp-host`, Generator oder `mcpServerVersion` nötig.
+- Kleiner Test (Unit oder Integration) für Version-Auflösung, wo sinnvoll.
+
+### Akzeptanz
+
+- Nach VSIX-Install / Extension Development Host: Statusleiste zeigt **beide** Versionen.
+- Nach `core2ai:use-pin` + Extension-Reload: **Core**-Teil aktualisiert sich (Consumer-Teil nur bei neuem VSIX).
+- Kein Einfluss auf MCP-Server-Namen, Tools oder `serverInfo`.
+
+### Doku
+
+- Kurz in **Ebene-1-Doku** (`docs/02-layer1-dsl-extension-core2ai.md`): „Toolchain-Version in der Statusleiste prüfen“.
+- Optional Verify-Checkliste Phase 1: ein Blick auf Statusleiste nach Pin/VSIX.
+
+### Abhängigkeit
+
+**Nach** guided-release CP5/CP6 (Consumer-Pin committed) oder als nächstes VSIX-Feature — kein core2ai-Tag zwingend, außer Core-Version-Auflösung braucht Hilfs-Export in `@core2ai/core` (nur falls `require('@core2ai/core/package.json')` im Extension-Bundle scheitert; erst prüfen, dann entscheiden).
+
+### Nicht in diesem Follow-up
+
+- MCP `serverInfo` mit Generator-Version füllen.
+- Provenance-JSON in `generated/` (optional später).
+- DSL-eigene `mcp { version … }` (später, separates Thema).
+
+---
+
+## Follow-up: Generator-Fix + Typecheck/IDE (`github-tools` `never[]`)
+
+**Auslöser:** `api2ai/packages/extension/demos/generated/tools/github-tools.ts` (~Z. 309) — IDE: `parts.push(String(element))` → `string` not assignable to `never` wegen `const parts = []` in `appendSerializedQueryParams` (OpenAPI query-array-Serialisierung).
+
+### 1 — Generator-Fix (Pflicht, zuerst)
+
+**Ursache:** Template in **`api2ai/packages/cli/src/generator/invoke-render.ts`** (query-array-Zweig) erzeugt untypisiertes `const parts = []` → unter strict inference `never[]`.
+
+**Änderung:**
+
+```ts
+const parts: string[] = [];
+```
+
+**Danach (Reihenfolge):**
+
+1. **api2ai:** `npm run build` → `npm run generate:all` → `npm run check:generated`
+2. **db2ai:** gleiches Template prüfen (`packages/cli/src/generator/invoke-render.ts` — ggf. identisch anpassen) → `generate:all` → `check:generated`
+3. Regenerierte `generated/tools/*` committen (kein Hand-Patch in generated)
+
+**Verify:** `github-tools.ts` ohne IDE-Diagnostic; `mcpServerVersion`/Generate unverändert außer Regenerate.
+
+Regel: [codegen-generated-quality.mdc](../.cursor/rules/codegen-generated-quality.mdc) in api2ai/db2ai.
+
+### 2 — Warum Gates nicht blockiert haben
+
+| Gate                          | `check:generated`?                                        |
+| ----------------------------- | --------------------------------------------------------- |
+| pre-commit (`npm run check`)  | Ja                                                        |
+| pre-push                      | Ja                                                        |
+| `release:vsix` (publish only) | Nein — baut nicht; VSIX muss aus CP6/8 Preview existieren |
+
+`npm run typecheck:generated` war **exit 0** — CLI blockiert nicht; Problem vor allem **IDE** (orphan file, siehe unten).
+
+### 3 — IDE / DX (optional, nach Generator-Fix)
+
+- `packages/extension/demos/tsconfig.json`: `references` → `tsconfig.generated.json`, damit Cursor generated tools dem gleichen Projekt zuordnet wie CI.
+- Optional: type-aware ESLint für `generated/tools/**/*.ts` (langsamer in Hooks).
+
+### Akzeptanz
+
+- [ ] Generator-Fix in **invoke-render.ts**, beide Consumer regeneriert
+- [ ] `check:generated` grün in api2ai + db2ai
+- [ ] `github-tools.ts` in Cursor ohne `never[]`-Fehler
+- [ ] Kein manuelles Editieren von `generated/**`
+
+**Abhängigkeit:** Nach db2ai VSIX-Release (CP8/9) oder kleiner PR nur Generator — kein core2ai-Tag nötig.
 
 ---
 
