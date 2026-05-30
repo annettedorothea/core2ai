@@ -1,0 +1,20 @@
+---
+description: Standard footer for repository README.md files
+globs: "**/README.md"
+alwaysApply: false
+---
+
+# README Footer
+
+Every **`README.md`** in this repository (root, `packages/**`, `docs/**`, etc.) must end with this footer:
+
+```markdown
+---
+
+#Col3:23
+```
+
+- Put the footer after the last section; one blank line before `---` is fine.
+- Do not add text after `#Col3:23`.
+- When creating a new README or editing one, keep or add this footer.
+- Run `npm run format:check` (Prettier) on touched README files.

@@ -9,7 +9,9 @@ description: >-
 
 # core2ai release
 
-Invoke: **„core2ai release“** (or **release-core2ai-consumers** — same skill).
+**Canonical skill** — also linked from api2ai/db2ai as a short stub.
+
+Invoke: **„core2ai release“**.
 
 Orchestrates a **three-repo** release: tag **core2ai**, then refresh **api2ai** and **db2ai** so `@core2ai/core` uses `github:annettedorothea/core2ai#<tag>` (never `file:` in committed files).
 
@@ -76,14 +78,14 @@ Immediately before `git commit` / `git tag` / `git push` in core2ai, run `git st
     cat scripts/core2ai-pin.json
     ```
 
-2. Read `version` from root `package.json` and `packages/codegen/package.json`, `packages/mcp-host/package.json` (should match pin, e.g. `0.0.2` ↔ tag `v0.0.2`).
+2. Read `version` from root `package.json` and `packages/codegen/package.json`, `packages/mcp-host/package.json` (should match pin, e.g. `0.0.4` ↔ tag `v0.0.4`).
 
 3. Tell the user clearly, for example:
 
-    > **Aktuell:** Pin `github:annettedorothea/core2ai#v0.0.2`, package version `0.0.2`.
+    > **Aktuell:** Pin `github:annettedorothea/core2ai#v0.0.4`, package version `0.0.4`.
 
-4. **Ask the user** for the next version (tag + semver), e.g. `v0.0.3` / `0.0.3`. Use **AskQuestion** or a direct question. Wait for an answer before changing files.
-    - Tag format: `v` + semver (`v0.0.3`, not `0.0.3` alone).
+4. **Ask the user** for the next version (tag + semver), e.g. `v0.0.5` / `0.0.5`. Use **AskQuestion** or a direct question. Wait for an answer before changing files.
+    - Tag format: `v` + semver (`v0.0.5`, not `0.0.5` alone).
     - Never reuse or force-move an existing tag on the remote.
 
 ## Step 1 — core2ai: bump and verify
@@ -154,11 +156,11 @@ In **api2ai** root (`../api2ai`):
 2. Refresh pin (tag must exist on remote first). Uses sibling `../core2ai/scripts` when present:
 
     ```bash
-    npm run core2ai:refresh-pin
+    npm run core2ai:use-pin
     npm run install:demos
     ```
 
-    `core2ai:refresh-pin` = apply pin from `core2ai-pin.json` + remove cached `@core2ai/core` + `npm install @core2ai/core@<spec>` per workspace/prefix + root `npm install` (with GitHub HTTPS rewrite).
+    `core2ai:use-pin` = apply pin from `core2ai-pin.json` + remove cached `@core2ai/core` + forced reinstall per target + root `npm install` (GitHub HTTPS rewrite when needed).
 
 3. Verify no `file:` pin remains:
 
@@ -190,7 +192,7 @@ In **db2ai** root (`../db2ai`):
 1. Same as api2ai, but **no** `install:demos`:
 
     ```bash
-    npm run core2ai:refresh-pin
+    npm run core2ai:use-pin
     ```
 
 2. Verify no `file:` core2ai pins in `package*.json`.
@@ -219,9 +221,9 @@ In **db2ai** root (`../db2ai`):
 - [ ] Current version shown; next version confirmed by user
 - [ ] core2ai: versions + core2ai-pin.json + build/test/check
 - [ ] core2ai: commit + tag vX.Y.Z pushed (if requested)
-- [ ] api2ai: core2ai:refresh-pin (+ install:demos)
+- [ ] api2ai: core2ai:use-pin (+ install:demos)
 - [ ] api2ai: bundle:mcp-runtime + generate:all + build/check/test green
-- [ ] db2ai: core2ai:refresh-pin
+- [ ] db2ai: core2ai:use-pin
 - [ ] db2ai: bundle:mcp-runtime + generate:all + build/check/test green
 - [ ] No file:../../../core2ai in committed package.json files
 ```
@@ -232,8 +234,8 @@ In **db2ai** root (`../db2ai`):
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Skill started but repos were dirty          | Expected — Gate 0 stop. User commits/stashes WIP, re-runs skill. Do not “fix” by bundling WIP into release. |
 | `npm install` / tag checkout fails          | Tag not pushed yet, or wrong tag name. Push tag from core2ai first.                                         |
-| Lockfile still resolves old core2ai commit  | Re-run `npm run core2ai:refresh-pin`. Use sibling `../core2ai` or set `CORE2AI_PIN_SOURCE`.                 |
-| Pin scripts missing from node_modules       | Use `npm run core2ai:refresh-pin` (consumer wrapper falls back to `../core2ai/scripts`).                    |
+| Lockfile still resolves old core2ai commit  | Re-run `npm run core2ai:use-pin`. Use sibling `../core2ai` or set `CORE2AI_PIN_SOURCE`.                     |
+| Pin scripts missing from node_modules       | `run-core2ai-script.mjs` falls back to `../core2ai/scripts`.                                                |
 | SSH / known_hosts errors                    | `npm run install:github-https` (HTTPS rewrite for this install only).                                       |
 | db2ai `install` fails on workspace packages | Run from **db2ai repo root** (workspaces), not only `packages/cli`.                                         |
 
@@ -241,4 +243,5 @@ In **db2ai** root (`../db2ai`):
 
 - Pin source of truth: `scripts/core2ai-pin.json` (this repo)
 - Consumer targets: `core2ai-pin.targets.json` in api2ai / db2ai
+- Docs hub: [`docs/README.md`](../../docs/README.md)
 - Cursor rule: `.cursor/rules/github-core-dependency.mdc` in each consumer

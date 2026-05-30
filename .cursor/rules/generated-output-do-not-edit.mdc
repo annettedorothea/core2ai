@@ -13,7 +13,7 @@ alwaysApply: true
 |------|--------|
 | `packages/*/out/**` | `npm run build` in **core2ai** |
 | `node_modules/**` (any repo) | Install / pin refresh — not manual patches |
-| api2ai/db2ai `packages/extension/demos/generated/**` | Generator or DSL in that consumer, or mcp-host/codegen here + release + consumer `refresh-pin` / `bundle:mcp-runtime` / `generate:all` |
+| api2ai/db2ai `packages/extension/demos/generated/**` | Generator or DSL in that consumer, or mcp-host/codegen here + release + consumer `core2ai:use-pin` / `bundle:mcp-runtime` / `generate:all` |
 | api2ai/db2ai `packages/cli/resources/mcp-serve-emitted.mjs` | Consumer `npm run bundle:mcp-runtime` after pin refresh |
 
 Do **not** use manual `cp` into `node_modules` or consumer `generated/**` as a permanent fix.

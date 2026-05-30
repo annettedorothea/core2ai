@@ -1,60 +1,60 @@
 # core2ai
 
-Shared package for api2ai and db2ai.
+Shared package for **api2ai** and **db2ai**.
 
-| Package             | Purpose                                                     |
-| ------------------- | ----------------------------------------------------------- |
-| `@core2ai/codegen`  | Generated-output bootstrap (placeholder)                    |
-| `@core2ai/mcp-host` | Generic MCP stdio host + `mcp-standalone-entry` for esbuild |
+| Package             | Purpose                                                         |
+| ------------------- | --------------------------------------------------------------- |
+| `@core2ai/codegen`  | Generate validation, auth-stub bootstrap, MCP project bootstrap |
+| `@core2ai/mcp-host` | Generic MCP stdio host + `mcp-standalone-entry` for esbuild     |
 
-The repository root is installable as `@core2ai/core`. **Consumers should pin an explicit Git tag** (not `main`) for reproducible installs:
+The repository root is installable as `@core2ai/core`. **Consumers pin an explicit Git tag** (not `main`):
 
 ```json
 {
     "dependencies": {
-        "@core2ai/core": "github:annettedorothea/core2ai#v0.0.2"
+        "@core2ai/core": "github:annettedorothea/core2ai#v0.0.4"
     }
 }
 ```
 
-After publishing a new tag in this repo:
+After publishing a new tag here:
 
-1. Edit **`scripts/core2ai-pin.json`** here (tag + `spec`).
-2. In **api2ai** / **db2ai**: **`npm run core2ai:refresh-pin`** (sync `package.json`, force reinstall, refresh lockfile).
-    - Pin source: sibling **`../core2ai/scripts`** when present (monorepo), else installed `@core2ai/core`, else `CORE2AI_PIN_SOURCE`.
-    - Override installed/sibling: `CORE2AI_PIN_PREFER_INSTALLED=1 npm run core2ai:refresh-pin`
+1. Edit **`scripts/core2ai-pin.json`** (tag + `spec`).
+2. In **api2ai** / **db2ai**: **`npm run core2ai:use-pin`** (sync manifests, force reinstall, refresh lockfile).
+    - Pin source: sibling **`../core2ai/scripts`** when present, else installed `@core2ai/core`, else `CORE2AI_PIN_SOURCE`.
 3. api2ai only: `npm run install:demos` if demos still resolve an old commit.
+4. Both consumers: `npm run bundle:mcp-runtime`, `npm run generate:all`, `npm run build`, `npm run check`.
 
-Use **`core2ai:use-pin`** as alias for **`core2ai:refresh-pin`**. If GitHub SSH fails: **`install:github-https`**.
+Local development against sibling core2ai: **`npm run core2ai:use-local`** in the consumer (commits OK; **push** requires **`core2ai:use-pin`**).
 
-Show pin: `npm run core2ai:pin` (from core2ai or any consumer).
+Show pin: `npm run core2ai:pin`. If GitHub SSH fails: **`install:github-https`**.
 
-Use subpath imports from consumers:
+Subpath imports:
 
 ```ts
-import { extractAstNode } from '@core2ai/core/codegen';
+import { assertDocumentValidForGenerate } from '@core2ai/core/codegen';
 import { readGeneratedModule } from '@core2ai/core/mcp-host';
 ```
+
+## Docs
+
+- Hub: [`docs/README.md`](./docs/README.md)
+- Active plan: [`.cursor/plans/docs_und_aufraeumen_deckel.plan.md`](./.cursor/plans/docs_und_aufraeumen_deckel.plan.md)
+- Release skill: [`.cursor/skills/core2ai-release/SKILL.md`](./.cursor/skills/core2ai-release/SKILL.md)
 
 ## Build
 
 ```bash
 npm install
 npm run build
+npm run check
 ```
 
-Rebuild core2ai before rebuilding a consumer after host changes.
+Rebuild core2ai before rebuilding a consumer after host or codegen changes.
 
-## Checks
+## Git hooks
 
-- `npm run check` runs format, typecheck, and lint only.
-- `npm test` runs all package test suites.
-
-## Git Hooks
-
-`postinstall` does not install hooks automatically. This keeps `@core2ai/core` safe to install as a GitHub dependency in consumer projects without mutating their `.git/hooks`.
-
-For local development in this repository, install the pre-commit hook explicitly:
+`postinstall` does not install hooks (safe for GitHub dependency installs). For local work in this repo:
 
 ```bash
 npm run install:hooks

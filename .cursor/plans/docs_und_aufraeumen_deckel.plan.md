@@ -39,8 +39,8 @@ todos:
       content: 'Root package.json ausdünnen (generate-Forwarder, smoke/mcp, release-Kette); refresh-pin vs use-pin; bundle-mcp-runtime resolver; README-Script-Tabellen kürzen'
       status: completed
     - id: readme-review
-      content: 'Alle READMEs prüfen (core2ai, api2ai, db2ai, packages/*, demos); .cursor/plans aufräumen/konsolidieren/löschen; Links zu docs/workflows'
-      status: pending
+      content: 'Alle READMEs prüfen (core2ai, api2ai, db2ai, packages/*, demos); .cursor/plans aufräumen/konsolidieren/löschen; Links zu docs/workflows; Rules/Skills use-pin konsolidiert'
+      status: completed
     - id: verify-all
       content: 'build + check + test in allen Repos; generate:all + check:generated (formal vor Release)'
       status: pending

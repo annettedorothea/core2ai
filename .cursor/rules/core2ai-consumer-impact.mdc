@@ -10,7 +10,7 @@ When **`packages/mcp-host/**`** or **`packages/codegen/**`** changes in this rep
 1. `npm run build && npm run check` in **core2ai**
 2. Bump version + update [`scripts/core2ai-pin.json`](../../scripts/core2ai-pin.json), then **tag and push** (skill **core2ai release**)
 3. Tell the user that **api2ai** and **db2ai** must run:
-   - `npm run core2ai:refresh-pin`
+   - `npm run core2ai:use-pin`
    - `npm run bundle:mcp-runtime`
    - `npm run generate:all`
    - MCP servers **restart** in Cursor
