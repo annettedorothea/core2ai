@@ -31,10 +31,10 @@ todos:
       status: completed
     - id: cleanup-c2-auth
       content: 'C2: auth-stub-render Teile nach @core2ai/core/codegen; generate:all'
-      status: pending
+      status: completed
     - id: cleanup-c2-parse
       content: 'C2: api2ai CLI parse/validate + Tests'
-      status: pending
+      status: completed
     - id: scripts-thin
       content: 'Root package.json ausdünnen (generate-Forwarder, smoke/mcp, release-Kette); refresh-pin vs use-pin; githubHttpsEnv optional konsolidieren; README-Script-Tabellen kürzen'
       status: pending

@@ -24,6 +24,7 @@ export function extractDestinationAndName(destination: string): { destination: s
 }
 
 export * from './access-stubs.js';
+export * from './auth-stub-bootstrap.js';
 export * from './document-validation.js';
 export * from './langium-cli-types.js';
 export * from './prettier-format.js';
