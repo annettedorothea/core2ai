@@ -21,13 +21,13 @@ todos:
       content: 'assertDocumentValidForGenerate + collectLangiumDocumentErrors in @core2ai/core/codegen; db2ai SQL extraErrors; Consumer-Duplikate entfernt'
       status: completed
     - id: hybrid-pin-local
-      content: 'Hybrid Pin/Local (use-local, use-pin, link-mode, check-staged-pin); Pre-commit gegen file:; Rules core2ai-dev-link-mode + github-core-dependency'
+      content: 'Hybrid Pin/Local (use-local, use-pin, link-mode, check-push/resolved); Pre-push gegen file:; Rules core2ai-dev-link-mode + github-core-dependency'
       status: completed
     - id: cleanup-a
-      content: 'Phase A: Typo, stale files, pin targets, pagila-src, extension dep, Petstore-Umbenennung'
-      status: pending
+      content: 'Phase A: obsolete Pin-Scripts ✓; Typo, stale auth, pagila-src, pin targets, Petstore-Umbenennung'
+      status: in_progress
     - id: cleanup-c1
-      content: 'C1: gemeinsames demos/scripts/generate.mjs; optional api2ai-history-rewrite entfernen'
+      content: 'C1: gemeinsames demos/scripts/generate.mjs; install-git-hooks deduplizieren (api2ai≈db2ai); optional api2ai-history-rewrite entfernen'
       status: pending
     - id: cleanup-c2-auth
       content: 'C2: auth-stub-render Teile nach @core2ai/core/codegen; generate:all'
@@ -36,7 +36,7 @@ todos:
       content: 'C2: api2ai CLI parse/validate + Tests'
       status: pending
     - id: scripts-thin
-      content: 'Root package.json Scripts ausdünnen; Demos/Extension bereinigen; README-Script-Tabellen kürzen'
+      content: 'Root package.json ausdünnen (generate-Forwarder, smoke/mcp, release-Kette); refresh-pin vs use-pin; githubHttpsEnv optional konsolidieren; README-Script-Tabellen kürzen'
       status: pending
     - id: readme-review
       content: 'Alle READMEs prüfen (core2ai, api2ai, db2ai, packages/*, demos) auf Aktualität + Links zu docs/workflows'
@@ -73,17 +73,17 @@ isProject: false
 
 **Erledigt (7 Todos):**
 
-| Todo                          | Kurz                                                                 |
-| ----------------------------- | -------------------------------------------------------------------- |
-| dsl-identifiers               | toolName/optionalParams als ID; api2ai + db2ai Grammar, Demos, Tests |
-| dsl-db2ai-optionalparams-xref | Cross-Ref, Scope, Go-to-Def, Langium-Completion                      |
-| dsl-completion                | ID-Snippets; api2ai OpenAPI-Completion; db2ai ohne Hand-Completion   |
-| dsl-completion-tests          | completions + linking.test.ts (db2ai); api2ai ID-Tests               |
-| generate-validation-gate      | CLI + Extension: kein Generate bei DSL-Fehlern                       |
-| core2ai-codegen-validation    | `document-validation.ts`; Consumer nutzen core2ai                    |
-| hybrid-pin-local              | use-local / use-pin / link-mode; Pre-commit; Cursor-Rules            |
+| Todo                          | Kurz                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| dsl-identifiers               | toolName/optionalParams als ID; api2ai + db2ai Grammar, Demos, Tests        |
+| dsl-db2ai-optionalparams-xref | Cross-Ref, Scope, Go-to-Def, Langium-Completion                             |
+| dsl-completion                | ID-Snippets; api2ai OpenAPI-Completion; db2ai ohne Hand-Completion          |
+| dsl-completion-tests          | completions + linking.test.ts (db2ai); api2ai ID-Tests                      |
+| generate-validation-gate      | CLI + Extension: kein Generate bei DSL-Fehlern                              |
+| core2ai-codegen-validation    | `document-validation.ts`; Consumer nutzen core2ai                           |
+| hybrid-pin-local              | use-local/use-pin; check-push + check-resolved; Pre-push (nicht Pre-commit) |
 
-**Offen:** cleanup A/C1/C2, Script-Dünnung, README-Review, formal verify-all, **Release**, docs/workflows.
+**Offen:** cleanup A (Rest), C1/C2, Script-Dünnung, README-Review, formal verify-all, **Release**, docs/workflows.
 
 **Vor Consumer-Commits:** `npm run core2ai:use-pin` in api2ai/db2ai (kein `file:` im Lockfile committen). Release bewusst später.
 
@@ -206,22 +206,22 @@ In der Checkliste **explizit trennen** (Quelle der Verwirrung):
 
 ## Script-Ausdünnung (`package.json`)
 
-**Problem heute:** Root api2ai/db2ai ~40 Scripts — Release-Kette, viele Smoke/MCP-Einzeltests, db2ai-Forwarder `generate:pagila`, Legacy `core2ai:apply-pin`.
+**Problem heute:** Root api2ai/db2ai ~40 Scripts — Release-Kette, viele Smoke/MCP-Einzeltests, db2ai-Forwarder `generate:pagila`, doppeltes `refresh-pin`/`use-pin`.
 
 ### Zielbild Root (Consumer) — ~15 „Primary“-Scripts
 
-| Kategorie     | Behalten (Primary)                                                                                | Aus Root entfernen / verschieben                                                                                    |
-| ------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **Build**     | `build`, `build:clean`, `clean`, `watch`                                                          | —                                                                                                                   |
-| **Langium**   | `langium:generate`, `langium:watch`                                                               | —                                                                                                                   |
-| **Generate**  | `generate:all`                                                                                    | db2ai: `generate:pagila/sakila/access-demo` (nur in `demos/package.json`)                                           |
-| **Quality**   | `check`, `test`, `format`                                                                         | `lint:fix` optional behalten; `test:coverage` → Workflow 10                                                         |
-| **Install**   | `install:github-https`, `install:demos` (api2ai), `install:hooks`                                 | doppeltes `postinstall`+hooks dokumentieren                                                                         |
-| **Pin**       | `core2ai:pin`, `core2ai:refresh-pin`, `core2ai:use-pin`, `core2ai:use-local`, `core2ai:link-mode` | `core2ai:apply-pin` → Legacy-Alias oder entfernen + nur in Workflow erwähnen                                        |
-| **Release**   | `release:vsix`                                                                                    | `release:verify`, `release:package`, `extension:release:vsix` als **interne** Steps in `scripts/release-vsix.mjs`   |
-| **Extension** | —                                                                                                 | `extension:vsix` nur via `release:vsix` oder `npm run extension:vsix -w packages/extension` in Workflow             |
-| **Version**   | `version:patch/minor/major`                                                                       | in Workflow 04 erklären                                                                                             |
-| **Dev/Debug** | —                                                                                                 | `test:smoke*`, `test:mcp*` → [`scripts/dev-smoke.mjs`](api2ai/scripts/dev-smoke.mjs) oder CLI; in Workflow 02/07/09 |
+| Kategorie     | Behalten (Primary)                                                                                                             | Aus Root entfernen / verschieben                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| **Build**     | `build`, `build:clean`, `clean`, `watch`                                                                                       | —                                                                                                                   |
+| **Langium**   | `langium:generate`, `langium:watch`                                                                                            | —                                                                                                                   |
+| **Generate**  | `generate:all`                                                                                                                 | db2ai: `generate:pagila/sakila/access-demo` (nur in `demos/package.json`)                                           |
+| **Quality**   | `check`, `test`, `format`                                                                                                      | `lint:fix` optional behalten; `test:coverage` → Workflow 10                                                         |
+| **Install**   | `install:github-https`, `install:demos` (api2ai), `install:hooks`                                                              | doppeltes `postinstall`+hooks dokumentieren                                                                         |
+| **Pin**       | `core2ai:pin`, `core2ai:use-pin`, `core2ai:use-local`, `core2ai:link-mode`, `core2ai:check-push-pin`, `core2ai:check-resolved` | `core2ai:refresh-pin` (Alias zu use-pin — einen behalten); ~~`apply-pin`~~, ~~`check-staged-pin`~~ entfernt         |
+| **Release**   | `release:vsix`                                                                                                                 | `release:verify`, `release:package`, `extension:release:vsix` als **interne** Steps in `scripts/release-vsix.mjs`   |
+| **Extension** | —                                                                                                                              | `extension:vsix` nur via `release:vsix` oder `npm run extension:vsix -w packages/extension` in Workflow             |
+| **Version**   | `version:patch/minor/major`                                                                                                    | in Workflow 04 erklären                                                                                             |
+| **Dev/Debug** | —                                                                                                                              | `test:smoke*`, `test:mcp*` → [`scripts/dev-smoke.mjs`](api2ai/scripts/dev-smoke.mjs) oder CLI; in Workflow 02/07/09 |
 
 **core2ai Root** (~12 Scripts): bereits schlank — nur README-Tabelle + Link workflows.
 
@@ -250,13 +250,51 @@ In der Checkliste **explizit trennen** (Quelle der Verwirrung):
 
 ## Phase A — Quick wins
 
-(unverändert: Typo, stale auth, pagila-src, pin targets, Petstore → `langium-test-mini.openapi.yaml`, …)
+### Erledigt (Scripts-Aufräumen)
+
+- ~~`check-staged-core2ai-pin.mjs`~~ gelöscht; `core2ai:check-staged-pin` aus api2ai/db2ai entfernt (ersetzt durch Pre-push + `check-push-pin`).
+- ~~`core2ai:apply-pin`~~ npm-Alias entfernt; `apply-core2ai-pin.mjs` bleibt intern für `refresh-pin`.
+- README + Rules + Release-Skill: nur noch `use-pin` / `refresh-pin`.
+
+### Noch offen
+
+- Typo(s) in Code/Docs
+- Stale Auth-Artefakte / ungenutzte auth-Dateien
+- `pagila-src` / Demo-Pfad-Aufräumen
+- `core2ai-pin.targets.json` prüfen (alle `@core2ai/core`-Consumer erfasst?)
+- Extension-Dependency bereinigen (api2ai `packages/extension/package.json`)
+- Petstore → neutral `langium-test-mini.openapi.yaml` (Test-Namen)
 
 ---
 
 ## Phase C1 / C2
 
-(unverändert: shared generate.mjs; auth-stub → core2ai; api2ai parse/validate; kein HTTP-MCP)
+### C1 — Demos & Consumer-Scripts
+
+| Punkt                                     | Beschreibung                                                                                                                                                                         |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Shared `generate.mjs`**                 | api2ai + db2ai `packages/extension/demos/scripts/generate.mjs` → ein Script (core2ai oder gemeinsames Template); nur Extension-Name (`embed-api2ai` / `embed-db2ai`) parametrisieren |
+| **`install-git-hooks.mjs` deduplizieren** | api2ai ≈ db2ai identisch → nach `core2ai/scripts/install-consumer-git-hooks.mjs` mit Consumer-Root-Arg                                                                               |
+| **api2ai-history-rewrite**                | Optional: separates Repo/Ordner entfernen wenn nicht mehr gebraucht                                                                                                                  |
+
+### C2 — Codegen / CLI
+
+| Punkt                          | Beschreibung                                                  |
+| ------------------------------ | ------------------------------------------------------------- |
+| **auth-stub-render → core2ai** | Gemeinsame Teile nach `@core2ai/core/codegen`; `generate:all` |
+| **api2ai parse/validate**      | CLI + Tests analog db2ai                                      |
+
+### scripts-thin (Root `package.json`, eng mit C1)
+
+| Entfernen / verschieben                                       | Wohin                                                                                         |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| db2ai `generate:pagila/sakila/access-demo`                    | nur `demos/package.json`                                                                      |
+| `test:smoke*`, `test:mcp*`                                    | `scripts/dev-smoke.mjs` oder Workflows 02/07/09                                               |
+| `release:verify`, `release:package`, `extension:release:vsix` | `scripts/release-vsix.mjs` (intern von `release:vsix`)                                        |
+| `core2ai:refresh-pin` vs `use-pin`                            | einen Primary behalten                                                                        |
+| `githubHttpsEnv` Duplikat                                     | optional: aus `core2ai-install-utils` für Consumer `npm-install-github-https` wiederverwenden |
+
+**Bewusst nicht:** HTTP-MCP-Code; Merge openapi/sql `generator/*.ts`.
 
 ---
 
@@ -285,7 +323,8 @@ In der Checkliste **explizit trennen** (Quelle der Verwirrung):
 - db2ai: Cross-Ref optionalParams → params.name; Go-to-Def + Referenz-Completion; linking.test.ts.
 - Completion-Tests für optionalParams in api2ai und db2ai grün.
 - Generate läuft nicht bei Validierungsfehlern (CLI + Extension).
-- Hybrid Pin/Local + Pre-commit blockiert committed `file:…core2ai`.
+- Hybrid Pin/Local + **Pre-push** blockiert `file:…core2ai` am Branch-Tip; `check-resolved` für node_modules.
+- Obsolete Pin-Scripts: ~~check-staged~~, ~~apply-pin npm-Alias~~.
 - `@core2ai/core/codegen`: zentrale Generate-Validierung.
 
 **Noch offen (Rest des Plans):**

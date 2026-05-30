@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /**
- * Sync @core2ai/core GitHub pin into consumer package.json files.
+ * Apply @core2ai/core GitHub pin into consumer package.json files (manifests only).
+ * Prefer refresh-core2ai-pin.mjs (apply + forced reinstall).
  *
- * Consumer repo must contain core2ai-pin.targets.json at its root (see api2ai / db2ai).
- * Run from the consumer repository root: npm run core2ai:apply-pin
- * Prefer: npm run core2ai:refresh-pin (apply + forced reinstall)
+ * Imported by refresh-core2ai-pin.mjs — not exposed as a consumer npm script.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -17,7 +16,7 @@ export function applyCore2aiPin(consumerRootArg = process.cwd()) {
 
     if (!fs.existsSync(targetsFile)) {
         throw new Error(
-            `[core2ai:apply-pin] missing ${path.relative(root, targetsFile)} — run from api2ai or db2ai root`
+            `[core2ai:apply-core2ai-pin] missing ${path.relative(root, targetsFile)} — run from api2ai or db2ai root`
         );
     }
 
@@ -25,7 +24,7 @@ export function applyCore2aiPin(consumerRootArg = process.cwd()) {
     const spec = pin.spec;
     const targets = JSON.parse(fs.readFileSync(targetsFile, 'utf-8'));
 
-    console.log(`[core2ai:apply-pin] pin from ${source} → ${spec}`);
+    console.log(`[core2ai:apply-core2ai-pin] pin from ${source} → ${spec}`);
 
     function setCoreDep(packageJsonPath) {
         const raw = fs.readFileSync(packageJsonPath, 'utf-8');
@@ -59,18 +58,18 @@ export function applyCore2aiPin(consumerRootArg = process.cwd()) {
     for (const relative of targets.packageJson ?? []) {
         const packageJsonPath = path.join(root, relative);
         if (fs.existsSync(packageJsonPath) && setCoreDep(packageJsonPath)) {
-            console.log(`[core2ai:apply-pin] ${relative} → ${spec}`);
+            console.log(`[core2ai:apply-core2ai-pin] ${relative} → ${spec}`);
             changed += 1;
         }
     }
 
     if (targets.generatorFallback && patchGeneratorFallback(targets.generatorFallback)) {
-        console.log(`[core2ai:apply-pin] ${targets.generatorFallback} dependencyVersionFallbacks`);
+        console.log(`[core2ai:apply-core2ai-pin] ${targets.generatorFallback} dependencyVersionFallbacks`);
         changed += 1;
     }
 
     if (changed === 0) {
-        console.log('[core2ai:apply-pin] nothing to update (already pinned?)');
+        console.log('[core2ai:apply-core2ai-pin] nothing to update (already pinned?)');
     }
 
     return { spec, changed, targets };

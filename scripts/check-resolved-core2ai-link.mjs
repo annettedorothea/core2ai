@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Verify installed @core2ai/core matches package.json link mode (pin vs local).
- * Catches stale nested node_modules after apply-pin without reinstall.
+ * Catches stale nested node_modules when manifests were patched without reinstall.
  *
  * Usage: node scripts/run-core2ai-script.mjs check-resolved-core2ai-link.mjs [--require-pin]
  */

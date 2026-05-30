@@ -41,7 +41,7 @@ for d in . ../api2ai ../db2ai; do echo "=== $d ==="; git -C "$d" status -sb; git
 
 **Forbidden when dirty** (even if it seems helpful):
 
-- Do **not** bump versions, edit `core2ai-pin.json`, tag, push, or run `apply-pin`.
+- Do **not** bump versions, edit `core2ai-pin.json`, tag, push, or run pin refresh in consumers before the tag exists.
 - Do **not** offer to “commit everything as part of the release” as the default next step.
 - Do **not** use **AskQuestion** with options like “proceed and commit WIP” vs “stop” — stopping is not a choice; it is the only allowed outcome until the tree is clean.
 - Do **not** mix unrelated WIP into release commits to “get clean”. Release commits must contain **only** release-related changes made **during** this skill run.
@@ -233,7 +233,7 @@ In **db2ai** root (`../db2ai`):
 | Skill started but repos were dirty          | Expected — Gate 0 stop. User commits/stashes WIP, re-runs skill. Do not “fix” by bundling WIP into release. |
 | `npm install` / tag checkout fails          | Tag not pushed yet, or wrong tag name. Push tag from core2ai first.                                         |
 | Lockfile still resolves old core2ai commit  | Re-run `npm run core2ai:refresh-pin`. Use sibling `../core2ai` or set `CORE2AI_PIN_SOURCE`.                 |
-| `core2ai:apply-pin` missing scripts         | Use `npm run core2ai:refresh-pin` (consumer wrapper falls back to `../core2ai/scripts`).                    |
+| Pin scripts missing from node_modules       | Use `npm run core2ai:refresh-pin` (consumer wrapper falls back to `../core2ai/scripts`).                    |
 | SSH / known_hosts errors                    | `npm run install:github-https` (HTTPS rewrite for this install only).                                       |
 | db2ai `install` fails on workspace packages | Run from **db2ai repo root** (workspaces), not only `packages/cli`.                                         |
 
