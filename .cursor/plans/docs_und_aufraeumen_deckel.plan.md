@@ -27,8 +27,8 @@ todos:
       content: 'Phase A: obsolete Pin-Scripts, Typo, stale auth, pagila-src, pin targets, Petstore-Umbenennung, extension dep'
       status: completed
     - id: cleanup-c1
-      content: 'C1: gemeinsames demos/scripts/generate.mjs; install-git-hooks deduplizieren (api2ai≈db2ai); optional api2ai-history-rewrite entfernen'
-      status: pending
+      content: 'C1: shared demos-generate + install-consumer-git-hooks in core2ai; api2ai-history-rewrite entfernt'
+      status: completed
     - id: cleanup-c2-auth
       content: 'C2: auth-stub-render Teile nach @core2ai/core/codegen; generate:all'
       status: pending
@@ -268,11 +268,11 @@ In der Checkliste **explizit trennen** (Quelle der Verwirrung):
 
 ### C1 — Demos & Consumer-Scripts
 
-| Punkt                                     | Beschreibung                                                                                                                                                                         |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Shared `generate.mjs`**                 | api2ai + db2ai `packages/extension/demos/scripts/generate.mjs` → ein Script (core2ai oder gemeinsames Template); nur Extension-Name (`embed-api2ai` / `embed-db2ai`) parametrisieren |
-| **`install-git-hooks.mjs` deduplizieren** | api2ai ≈ db2ai identisch → nach `core2ai/scripts/install-consumer-git-hooks.mjs` mit Consumer-Root-Arg                                                                               |
-| **api2ai-history-rewrite**                | Optional: separates Repo/Ordner entfernen wenn nicht mehr gebraucht                                                                                                                  |
+| Punkt                                     | Beschreibung                                                                                                        |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Shared `generate.mjs`**                 | ✓ `core2ai/scripts/demos-generate.mjs` + `demos-generate.config.json` pro Consumer; dünner Wrapper in demos/scripts |
+| **`install-git-hooks.mjs` deduplizieren** | ✓ `core2ai/scripts/install-consumer-git-hooks.mjs`; Consumer-Wrapper                                                |
+| **api2ai-history-rewrite**                | ✓ Backup-Ordner gelöscht                                                                                            |
 
 ### C2 — Codegen / CLI
 
