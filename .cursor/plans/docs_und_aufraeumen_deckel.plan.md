@@ -24,8 +24,8 @@ todos:
       content: 'Hybrid Pin/Local (use-local, use-pin, link-mode, check-push/resolved); Pre-push gegen file:; Rules core2ai-dev-link-mode + github-core-dependency'
       status: completed
     - id: cleanup-a
-      content: 'Phase A: obsolete Pin-Scripts ✓; Typo, stale auth, pagila-src, pin targets, Petstore-Umbenennung'
-      status: in_progress
+      content: 'Phase A: obsolete Pin-Scripts, Typo, stale auth, pagila-src, pin targets, Petstore-Umbenennung, extension dep'
+      status: completed
     - id: cleanup-c1
       content: 'C1: gemeinsames demos/scripts/generate.mjs; install-git-hooks deduplizieren (api2ai≈db2ai); optional api2ai-history-rewrite entfernen'
       status: pending
@@ -250,20 +250,17 @@ In der Checkliste **explizit trennen** (Quelle der Verwirrung):
 
 ## Phase A — Quick wins
 
-### Erledigt (Scripts-Aufräumen)
+### Erledigt (Scripts-Aufräumen + Quick wins)
 
 - ~~`check-staged-core2ai-pin.mjs`~~ gelöscht; `core2ai:check-staged-pin` aus api2ai/db2ai entfernt (ersetzt durch Pre-push + `check-push-pin`).
 - ~~`core2ai:apply-pin`~~ npm-Alias entfernt; `apply-core2ai-pin.mjs` bleibt intern für `refresh-pin`.
 - README + Rules + Release-Skill: nur noch `use-pin` / `refresh-pin`.
-
-### Noch offen
-
-- Typo(s) in Code/Docs
-- Stale Auth-Artefakte / ungenutzte auth-Dateien
-- `pagila-src` / Demo-Pfad-Aufräumen
-- `core2ai-pin.targets.json` prüfen (alle `@core2ai/core`-Consumer erfasst?)
-- Extension-Dependency bereinigen (api2ai `packages/extension/package.json`)
-- Petstore → neutral `langium-test-mini.openapi.yaml` (Test-Namen)
+- Typo `succesfully` → `successfully` (api2ai `generate-command.ts`).
+- Stale Auth-Artefakte entfernt: api2ai `api2ai-invoke-options.{js,d.ts,mjs,d.mjs}`; db2ai leeres `db2ai-invoke-options.mjs`.
+- ~~`.pagila-src`~~ aus eslint/prettierignore/gitignore/vscodeignore/DEMO_COPY_SKIP (db2ai + api2ai + core2ai).
+- db2ai `core2ai-pin.targets.json`: `packages/extension/demos/package.json` ergänzt.
+- api2ai Extension: unnötige `@core2ai/core`-Dependency entfernt (nur demos/cli brauchen Pin).
+- Petstore-Fixture → `langium-test-mini.openapi.yaml`; Language-Tests aktualisiert.
 
 ---
 
@@ -325,11 +322,11 @@ In der Checkliste **explizit trennen** (Quelle der Verwirrung):
 - Generate läuft nicht bei Validierungsfehlern (CLI + Extension).
 - Hybrid Pin/Local + **Pre-push** blockiert `file:…core2ai` am Branch-Tip; `check-resolved` für node_modules.
 - Obsolete Pin-Scripts: ~~check-staged~~, ~~apply-pin npm-Alias~~.
+- Phase A Quick wins: Petstore-Fixture neutral; pagila-src entfernt; stale auth stubs; extension dep bereinigt.
 - `@core2ai/core/codegen`: zentrale Generate-Validierung.
 
 **Noch offen (Rest des Plans):**
 
-- Kein Petstore in Test-Namen (neutral); keine stale Auth-Artefakte.
 - auth-stub-Shared-Code in core2ai; api2ai hat `parse`/`validate`.
 - Root-`package.json` api2ai/db2ai ausgedünnt; READMEs aktuell.
 - `docs/workflows/` deckt Release, VSIX lokal, VSIX GitHub, Version-Bump + 6 weitere typische Abläufe ab.

@@ -13,8 +13,3 @@ package-lock.json
 # Langium generated artifacts
 **/src/generated/
 **/syntaxes/
-
-# Demo runtime folders
-packages/extension/demos/node_modules/
-packages/extension/demos/tmp/
-packages/extension/demos/.pagila-src/

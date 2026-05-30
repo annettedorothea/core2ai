@@ -27,8 +27,7 @@ export default [
             '**/src/generated/**',
             '**/syntaxes/**',
             '**/*.mjs',
-            'packages/extension/demos/tmp/**',
-            'packages/extension/demos/.pagila-src/**'
+            'packages/extension/demos/tmp/**'
         ]
     },
     js.configs.recommended,
