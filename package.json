@@ -1,7 +1,7 @@
 {
     "name": "@core2ai/core",
     "description": "Shared libraries for api2ai and db2ai (MCP host, codegen bootstrap)",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "license": "BUSL-1.1",
     "type": "module",
     "files": [

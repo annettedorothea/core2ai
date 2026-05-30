@@ -6,7 +6,7 @@ import * as path from 'node:path';
  * Shared codegen helpers.
  * Extracted incrementally from api2ai/db2ai CLI code.
  */
-export const CORE2AI_CODEGEN_VERSION = '0.0.4';
+export const CORE2AI_CODEGEN_VERSION = '0.0.5';
 
 export async function extractDocument(fileName: string, services: CliLangiumServices): Promise<CliLangiumDocument> {
     return assertDocumentValidForGenerate(fileName, services);

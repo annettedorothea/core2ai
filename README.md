@@ -12,7 +12,7 @@ The repository root is installable as `@core2ai/core`. **Consumers pin an explic
 ```json
 {
     "dependencies": {
-        "@core2ai/core": "github:annettedorothea/core2ai#v0.0.4"
+        "@core2ai/core": "github:annettedorothea/core2ai#v0.0.5"
     }
 }
 ```
