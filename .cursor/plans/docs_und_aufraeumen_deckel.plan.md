@@ -36,10 +36,10 @@ todos:
       content: 'C2: api2ai CLI parse/validate + Tests'
       status: completed
     - id: scripts-thin
-      content: 'Root package.json ausdünnen (generate-Forwarder, smoke/mcp, release-Kette); refresh-pin vs use-pin; githubHttpsEnv optional konsolidieren; README-Script-Tabellen kürzen'
-      status: pending
+      content: 'Root package.json ausdünnen (generate-Forwarder, smoke/mcp, release-Kette); refresh-pin vs use-pin; bundle-mcp-runtime resolver; README-Script-Tabellen kürzen'
+      status: completed
     - id: readme-review
-      content: 'Alle READMEs prüfen (core2ai, api2ai, db2ai, packages/*, demos) auf Aktualität + Links zu docs/workflows'
+      content: 'Alle READMEs prüfen (core2ai, api2ai, db2ai, packages/*, demos); .cursor/plans aufräumen/konsolidieren/löschen; Links zu docs/workflows'
       status: pending
     - id: verify-all
       content: 'build + check + test in allen Repos; generate:all + check:generated (formal vor Release)'
