@@ -1,6 +1,6 @@
 # core2ai
 
-Shared package for **api2ai** and **db2ai**.
+**core2ai** provides the shared foundation for **api2ai** and **db2ai**: common MCP runtime components, code generation infrastructure, extension utilities, and reusable abstractions used across both projects. It enables consistent tool generation while avoiding duplication between implementations.
 
 | Package             | Purpose                                                         |
 | ------------------- | --------------------------------------------------------------- |
@@ -38,18 +38,7 @@ import { readGeneratedModule } from '@core2ai/core/mcp-host';
 
 ## Docs
 
-Architecture hub (three layers, core2ai ↔ siblings, build cheatsheet):
-
-| Doc                                                                                | Topic                 |
-| ---------------------------------------------------------------------------------- | --------------------- |
-| [**docs/README.md**](./docs/README.md)                                             | Hub — start here      |
-| [01 — Three layers overview](./docs/01-three-layers-overview.md)                   | Big picture           |
-| [02 — Layer 1: DSL, extension, core2ai](./docs/02-layer1-dsl-extension-core2ai.md) | VSIX, pin, Langium    |
-| [03 — Layer 2: MCP server and tools](./docs/03-layer2-mcp-server-and-tools.md)     | Generated runtime     |
-| [04 — Layer 3: Cursor and the agent](./docs/04-layer3-cursor-and-agent.md)         | `mcp.json`, testing   |
-| [Consumer build cheatsheet](./docs/consumer-build-cheatsheet.md)                   | “I changed X → run Y” |
-
-Release (maintainers): [guided-release skill](./.cursor/skills/guided-release/SKILL.md)
+Architecture, layers, and consumer workflows: [**docs/README.md**](./docs/README.md)
 
 ## Build
 

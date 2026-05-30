@@ -18,7 +18,7 @@ todos:
       content: 'Backlog: Toolchain/core2ai-Version sichtbar machen (Statusleiste oder Header) — nicht ausgegoren'
       status: cancelled
     - id: docs-arch
-      content: 'Phase B: docs/01–04 + Hub + consumer-build-cheatsheet; README-Links'
+      content: 'Phase B: docs/00–03 + Hub + consumer-build-cheatsheet; README-Links'
       status: completed
     - id: release-v2
       content: 'Phase C: guided release v2 (Library nur bei core2ai-Änderungen; sonst VSIX 0.0.4)'
@@ -58,7 +58,7 @@ isProject: false
 | Phase | Inhalt                                                                                 |
 | ----- | -------------------------------------------------------------------------------------- |
 | **A** | TS-Follow-ups (Generator-Fix + optional IDE tsconfig)                                  |
-| **B** | Architektur-Doku `docs/01–04` + Hub + Cheatsheet                                       |
+| **B** | Architektur-Doku `docs/00–03` + Hub + Cheatsheet                                       |
 | **C** | **Guided release v2** — soll glatt durchlaufen (evtl. nur VSIX-Bump, kein Library-Tag) |
 
 ---
@@ -92,15 +92,15 @@ Unverändertes **Ebenenmodell** (Referenz für das Schreiben) — siehe Abschnit
 
 Lieferumfang:
 
-1. `docs/01-three-layers-overview.md`
-2. `docs/02-layer1-dsl-extension-core2ai.md`
-3. `docs/03-layer2-mcp-server-and-tools.md`
-4. `docs/04-layer3-cursor-and-agent.md`
+1. `docs/00-three-layers-overview.md`
+2. `docs/01-layer1-dsl-extension-core2ai.md`
+3. `docs/02-layer2-mcp-server-and-tools.md`
+4. `docs/03-layer3-cursor-and-agent.md`
 5. `docs/consumer-build-cheatsheet.md`
 6. `docs/README.md` (Hub-TOC)
 7. Root-READMEs api2ai/db2ai/core2ai → Links auf Hub
 
-Sprache: EN für `01–04` + Cheatsheet (wie READMEs); Workflows später optional DE.
+Sprache: EN für `00–03` + Cheatsheet (wie READMEs); Workflows später optional DE.
 
 ---
 
@@ -187,7 +187,7 @@ flowchart TB
 
 **Output Ebene 1 für Endnutzer:** installierbare **VSIX** (oder Extension Development Host im Monorepo).
 
-**Doku-Datei:** [`docs/02-layer1-dsl-extension-core2ai.md`](docs/02-layer1-dsl-extension-core2ai.md)
+**Doku-Datei:** [`docs/01-layer1-dsl-extension-core2ai.md`](docs/01-layer1-dsl-extension-core2ai.md)
 
 Inhalt grob:
 
@@ -217,7 +217,7 @@ Inhalt grob:
 | MCP-Host   | `generated/cli/mcp-serve.mjs` | stdio, lädt Tool-Modul, `--base-url-env`, `--auth-env` |
 | Auth-Stubs | `src/auth/*.ts`               | checked access, `check*Parameters`                     |
 
-**Doku-Datei:** [`docs/03-layer2-mcp-server-and-tools.md`](docs/03-layer2-mcp-server-and-tools.md)
+**Doku-Datei:** [`docs/02-layer2-mcp-server-and-tools.md`](docs/02-layer2-mcp-server-and-tools.md)
 
 Inhalt grob:
 
@@ -238,7 +238,7 @@ Inhalt grob:
 - Manuell testen: Demos-README-Prompts, `test:smoke`, `test:e2e`
 - Optional: Extension Command „Create demo workspace“
 
-**Doku-Datei:** [`docs/04-layer3-cursor-and-agent.md`](docs/04-layer3-cursor-and-agent.md)
+**Doku-Datei:** [`docs/03-layer3-cursor-and-agent.md`](docs/03-layer3-cursor-and-agent.md)
 
 Kann am Anfang den **Runtime-Flow** aus Ebene 2 kurz wiederholen (Cursor-Sicht: „was passiert wenn der Agent ein Tool aufruft?“), dann Setup-Schritte.
 
@@ -249,10 +249,10 @@ Kann am Anfang den **Runtime-Flow** aus Ebene 2 kurz wiederholen (Cursor-Sicht: 
 | Datei                                                                    | Inhalt                                                |
 | ------------------------------------------------------------------------ | ----------------------------------------------------- |
 | [`docs/README.md`](docs/README.md)                                       | Hub: Links 01–04, workflows/, Daily commands (kurz)   |
-| [`docs/01-three-layers-overview.md`](docs/01-three-layers-overview.md)   | Dein 3-Ebenen-Modell + Diagramm + „welche Repo wofür“ |
+| [`docs/00-three-layers-overview.md`](docs/00-three-layers-overview.md)   | Dein 3-Ebenen-Modell + Diagramm + „welche Repo wofür“ |
 | [`docs/consumer-build-cheatsheet.md`](docs/consumer-build-cheatsheet.md) | „Ich ändere X → Y“ mit Verweis auf Ebene + Workflow   |
 
-Alte Deckel-Zuordnung (`01-three-layers` = Pin, `02-mcp-stdio` separat) wird **ersetzt** durch obige 01–04.
+Alte Deckel-Zuordnung (`01-three-layers` = Pin, `02-mcp-stdio` separat) wird **ersetzt** durch obige 00–03.
 
 ---
 
@@ -313,5 +313,5 @@ Nicht umsetzen — Pin/local/core2ai-Stand nicht zuverlässig ohne Bump ablesbar
 
 - [x] Release v1: v0.0.5 + VSIX 0.0.3 + Skill
 - [x] Phase A: TS-Follow-ups (A1, ggf. A3)
-- [x] Phase B: `docs/01–04` + Hub
+- [x] Phase B: `docs/00–03` + Hub
 - [ ] Phase C: guided release v2 glatt

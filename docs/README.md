@@ -1,60 +1,94 @@
-# Documentation hub
+# Mental Model: Tool Factory for AI Systems
 
-Welcome. This is the shared architecture guide for **core2ai**, **api2ai**, and **db2ai**.
+![Tool Factory Mental Model](Tool-factory.png)
 
-Think of the stack as three stages in one **tool factory** — see the [overview illustration](./01-three-layers-overview.md#tool-factory-analogy):
+The architecture can be understood through a simple analogy.
 
-| Stage       | Analogy      | You work with…                                           | You get…                                    |
-| ----------- | ------------ | -------------------------------------------------------- | ------------------------------------------- |
-| **Layer 1** | Tool factory | DSL files, the VS Code extension, shared core2ai library | A **VSIX** you install in Cursor            |
-| **Layer 2** | Tool builder | Generated files in your project folder                   | An **MCP server** + **tool modules**        |
-| **Layer 3** | Carpenter    | Cursor settings and chat                                 | The **agent** calling your APIs or database |
+The first group of engineers builds the factory itself. The factory represents the platform infrastructure: Langium grammars, DSL definitions, validation logic, code generators, VSIX extensions, and shared runtime components.
 
----
+Once the factory exists, Tool Authors use it to produce tools. They describe APIs and database queries using the provided DSLs, and the Tool Factory generates executable MCP tools.
 
-## Start here
+Finally, an AI Agent uses those generated tools to solve user problems. In the analogy, the AI Agent is the carpenter. The generated MCP tools are the carpenter's tools, and the resulting furniture represents the value delivered to the end user.
 
-| Doc                                                                               | What it explains                                  |
-| --------------------------------------------------------------------------------- | ------------------------------------------------- |
-| [**01 — Three layers overview**](./01-three-layers-overview.md)                   | Big picture, tool-factory analogy, repos          |
-| [**02 — Layer 1: DSL, extension, core2ai**](./02-layer1-dsl-extension-core2ai.md) | Language, generator, VSIX, and the core2ai pin    |
-| [**03 — Layer 2: MCP server and tools**](./03-layer2-mcp-server-and-tools.md)     | What `generate` produces and how a tool call runs |
-| [**04 — Layer 3: Cursor and the agent**](./04-layer3-cursor-and-agent.md)         | `mcp.json`, enabling servers, testing in chat     |
+This analogy maps directly to the three architectural layers described below.
 
----
+## Architectural Layers
 
-## Quick reference
+The Tool Factory analogy maps directly to the system architecture.
 
-| Doc                                                             | When to open it                |
-| --------------------------------------------------------------- | ------------------------------ |
-| [**Consumer build cheatsheet**](./consumer-build-cheatsheet.md) | “I changed X — what do I run?” |
+### Layer 1: Tool Factory (Build-Time Infrastructure)
 
----
+This layer is responsible for building the factory itself.
 
-## Repositories
+It includes:
 
-| Repo                                                      | Role                                                |
-| --------------------------------------------------------- | --------------------------------------------------- |
-| [**core2ai**](https://github.com/annettedorothea/core2ai) | Shared MCP host + codegen helpers (`@core2ai/core`) |
-| [**api2ai**](https://github.com/annettedorothea/api2ai)   | OpenAPI → `.api2ai` DSL → MCP tools                 |
-| [**db2ai**](https://github.com/annettedorothea/db2ai)     | SQL → `.db2ai` DSL → MCP tools                      |
+- Langium-based DSL definitions
+- grammar and validation rules
+- autocomplete and language services
+- code generators
+- VSIX extensions
+- shared runtime components
 
-Each consumer repo has its own README and demo workspace under `packages/extension/demos/`.
+The output of this layer is the infrastructure that enables tool creation.
 
-Illustrations: compressed PNGs live next to these docs (`Tool-factory*.png`). Full-resolution masters stay local in `large-images/` (gitignored).
-
-**Markdown preview:** open a doc from `docs/` (same folder as the PNG files), then **Markdown: Open Preview** (`⇧⌘V`). If images stay blank, reload the window once after the workspace setting `markdown.preview.securityLevel` → `allowInsecureLocalContent` (set in `mcp-dsl.code-workspace` and `core2ai/.vscode/settings.json`).
+See: [Layer 1 – Tool Factory](01-layer-1-tool-factory.md)
 
 ---
 
-## Release (maintainers)
+### Layer 2: Tool Authoring (Design-Time)
 
-For a step-by-step release with checkpoints, use the **guided release** skill:
+This layer is where Tool Authors create actual tools using the factory.
 
-[`.cursor/skills/guided-release/SKILL.md`](../.cursor/skills/guided-release/SKILL.md)
+Developers define:
 
-Human-readable workflow markdown files may follow later; the skill is the live source of truth today.
+- API-based tools using `.api2ai`
+- Database-based tools using `.db2ai`
+
+The Tool Factory validates these definitions and generates executable MCP tools.
+
+The output of this layer is a set of AI-ready tools.
+
+See: [Layer 2 – Tool Authoring](02-layer-2-tool-authoring.md)
 
 ---
 
-#Col3:23
+### Layer 3: AI Runtime (Execution-Time)
+
+This layer is where AI Agents use the generated tools.
+
+The agent:
+
+1. receives a user request
+2. selects the appropriate tool
+3. executes the tool
+4. returns the result to the user
+
+The agent does not need to understand how the tool was generated. It simply uses the capabilities made available by the previous layers.
+
+See: [Layer 3 – AI Runtime](03-layer-3-ai-runtime.md)
+
+---
+
+## Personas
+
+Different roles interact with different layers of the system:
+
+| Role                               | Primary Layer |
+| ---------------------------------- | ------------- |
+| Platform / Tool Factory Maintainer | Layer 1       |
+| Tool Author / Engineer             | Layer 2       |
+| AI Agent / Tool Consumer           | Layer 3       |
+
+See: [Personas](04-personas.md)
+
+---
+
+## Core Principle
+
+The architecture deliberately separates three concerns:
+
+1. Building the factory
+2. Producing tools
+3. Using tools
+
+This separation allows each layer to evolve independently while keeping the overall system simple and maintainable.
