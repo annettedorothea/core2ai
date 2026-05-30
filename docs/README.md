@@ -10,8 +10,6 @@ Once the factory exists, Tool Authors use it to produce tools. They describe API
 
 Finally, an AI Agent uses those generated tools to solve user problems. In the analogy, the AI Agent is the carpenter. The generated MCP tools are the carpenter's tools, and the resulting furniture represents the value delivered to the end user.
 
-This analogy maps directly to the three architectural layers described below.
-
 ## Architectural Layers
 
 The Tool Factory analogy maps directly to the system architecture.
@@ -92,3 +90,7 @@ The architecture deliberately separates three concerns:
 3. Using tools
 
 This separation allows each layer to evolve independently while keeping the overall system simple and maintainable.
+
+---
+
+#Col3:23
