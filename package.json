@@ -1,6 +1,6 @@
 {
     "name": "@core2ai/core",
-    "description": "Shared libraries for api2ai and db2ai (MCP host, codegen bootstrap)",
+    "description": "Shared codegen library for api2ai and db2ai",
     "version": "0.0.5",
     "license": "BUSL-1.1",
     "type": "module",
@@ -14,14 +14,6 @@
         "./codegen": {
             "types": "./out/codegen/index.d.ts",
             "default": "./out/codegen/index.js"
-        },
-        "./mcp-host": {
-            "types": "./out/mcp-host/index.d.ts",
-            "default": "./out/mcp-host/index.js"
-        },
-        "./mcp-host/standalone-entry": {
-            "types": "./out/mcp-host/mcp-standalone-entry.d.ts",
-            "default": "./out/mcp-host/mcp-standalone-entry.js"
         }
     },
     "scripts": {
@@ -37,7 +29,6 @@
         "check": "npm run format:check && npm run typecheck && npm run lint"
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.29.0",
         "chalk": "~5.3.0",
         "langium": "~4.2.0",
         "zod": "^4.4.3"

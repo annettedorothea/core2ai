@@ -23,7 +23,7 @@ cd packages/extension/demos && npm link @core2ai/core && npm install
 
 Verify: `ls -l node_modules/@core2ai/core` → symlink to sibling `../core2ai`.
 
-## After every change under `src/codegen/**` or `src/mcp-host/**`
+## After every change under `src/codegen/**`
 
 Pick one:
 
@@ -40,8 +40,7 @@ Optional sanity: `npm run check` in **core2ai** before switching to a consumer.
 
 | Change in core2ai | Consumer action |
 |-------------------|-----------------|
-| **codegen** (generator helpers) | Usually nothing beyond rebuild — CLI imports linked `out/codegen` on next run |
-| **mcp-host** (stdio host, env, JWT) | Regenerate demos if MCP bootstrap shape changed: `generate:all`, `build:generated`; **restart MCP** in Cursor |
+| **codegen** (generator helpers, `renderMcpServeSource`) | Regenerate demos if MCP bootstrap shape changed: `generate:all`, `build:generated`; **restart MCP** in Cursor |
 | **Extension / VSIX embed** | `npm run build` in `packages/extension` (re-runs `embed-cli-bundle.mjs`) — link alone does **not** update bundled `cli.cjs` |
 
 See [generated-output-do-not-edit.mdc](./generated-output-do-not-edit.mdc).

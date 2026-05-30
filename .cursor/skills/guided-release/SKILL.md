@@ -36,7 +36,7 @@ description: >-
 | **5** | Manual preview                    | User  |
 | **6** | GitHub release (`release:vsix`)   | User  |
 
-Optional **core2ai library tag** (only if `src/mcp-host/**` or `src/codegen/**` changed since last tag): before **CP1**, bump `core2ai/package.json`, `npm run build && npm run check`, user commit + tag on **core2ai** — no consumer pin step (dev uses **npm link**).
+Optional **core2ai library tag** (only if `src/codegen/**` changed since last tag): before **CP1**, bump `core2ai/package.json`, `npm run build && npm run check`, user commit + tag on **core2ai** — no consumer pin step (dev uses **npm link**).
 
 ---
 
