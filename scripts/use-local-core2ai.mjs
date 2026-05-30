@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
  * Switch @core2ai/core to file:../…/core2ai for sibling monorepo dev.
+ * Removes stale installs and reinstalls per workspace so node_modules matches manifests.
  *
  * Usage (api2ai / db2ai root): npm run core2ai:use-local
  */
-import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { syncCoreInstalls } from './core2ai-install-utils.mjs';
 
 const consumerRoot = path.resolve(process.argv[2] ?? process.cwd());
 const targetsPath = path.join(consumerRoot, 'core2ai-pin.targets.json');
 const siblingCore = path.resolve(consumerRoot, '../core2ai');
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 function fileSpecForPackageJson(relativePath) {
     const packageJsonPath = path.join(consumerRoot, relativePath);
@@ -35,6 +35,7 @@ function main() {
 
     const targets = JSON.parse(fs.readFileSync(targetsPath, 'utf-8'));
     let changed = 0;
+    const specsByTarget = new Map();
 
     for (const relative of targets.packageJson ?? []) {
         const packageJsonPath = path.join(consumerRoot, relative);
@@ -46,6 +47,7 @@ function main() {
             continue;
         }
         const nextSpec = fileSpecForPackageJson(relative);
+        specsByTarget.set(relative, nextSpec);
         if (pkg.dependencies['@core2ai/core'] === nextSpec) {
             console.log(`[core2ai:use-local] ${relative} already ${nextSpec}`);
             continue;
@@ -60,9 +62,10 @@ function main() {
         console.log('[core2ai:use-local] package.json entries already local');
     }
 
-    console.log('[core2ai:use-local] npm install (rebuild core2ai first if you changed sources there)');
-    const install = spawnSync(npmCommand, ['install'], { cwd: consumerRoot, stdio: 'inherit' });
-    process.exit(install.status ?? 1);
+    console.log('[core2ai:use-local] reinstall sibling core2ai (build core2ai first if sources changed)');
+    syncCoreInstalls(consumerRoot, targets, 'core2ai:use-local');
+
+    console.log('[core2ai:use-local] done');
 }
 
 main();
