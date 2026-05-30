@@ -10,4 +10,4 @@ When creating or updating plan files for this repository:
 - Always create plan files under `.cursor/plans` inside the workspace root.
 - Do not store project plans only in global locations (for example under `~/.cursor/plans`) without also copying them into the workspace.
 - Prefer stable, descriptive plan filenames so they are easy to find in the repository.
-- After a plan is fully executed, ask the user whether the plan should be moved to `.cursor/plans/done`.
+- Obsolete plans are removed manually by the maintainer; do not move plans to `done/` or delete them without being asked.

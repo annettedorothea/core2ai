@@ -40,7 +40,7 @@ import { readGeneratedModule } from '@core2ai/core/mcp-host';
 
 - Hub: [`docs/README.md`](./docs/README.md)
 - Active plan: [`.cursor/plans/docs_und_aufraeumen_deckel.plan.md`](./.cursor/plans/docs_und_aufraeumen_deckel.plan.md)
-- Release skill: [`.cursor/skills/core2ai-release/SKILL.md`](./.cursor/skills/core2ai-release/SKILL.md)
+- Guided release skill: [`.cursor/skills/guided-release/SKILL.md`](./.cursor/skills/guided-release/SKILL.md)
 
 ## Build
 

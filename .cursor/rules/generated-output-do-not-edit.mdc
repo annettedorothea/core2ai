@@ -20,6 +20,6 @@ Do **not** use manual `cp` into `node_modules` or consumer `generated/**` as a p
 
 ## Publisher workflow
 
-After **`packages/mcp-host/**`** or **`packages/codegen/**`** changes: `npm run build && npm run check`, then skill **core2ai release** so api2ai/db2ai can refresh pin, bundle, and regenerate.
+After **`packages/mcp-host/**`** or **`packages/codegen/**`** changes: `npm run build && npm run check`, then skill **guided release** so api2ai/db2ai can refresh pin, bundle, and regenerate.
 
 See [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc) and [core2ai-build.mdc](./core2ai-build.mdc).

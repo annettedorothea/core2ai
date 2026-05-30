@@ -33,7 +33,7 @@ Checklists for release, VSIX, DSL changes, and fresh-clone setup will live under
 
 ## Release
 
-Use the **core2ai release** agent skill: [`.cursor/skills/core2ai-release/SKILL.md`](../.cursor/skills/core2ai-release/SKILL.md).
+Use the **guided release** agent skill: [`.cursor/skills/guided-release/SKILL.md`](../.cursor/skills/guided-release/SKILL.md).
 
 ## Architecture
 
