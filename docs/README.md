@@ -1,49 +1,59 @@
-# core2ai documentation
+# Documentation hub
 
-Hub for shared **api2ai** / **db2ai** workflows and architecture notes.
+Welcome. This is the shared architecture guide for **core2ai**, **api2ai**, and **db2ai**.
 
-## Daily commands (consumer repos)
+Think of the stack as three stages in one **tool factory** — see the [overview illustration](./01-three-layers-overview.md#tool-factory-analogy):
 
-From **api2ai** or **db2ai** root after clone:
+| Stage       | Analogy      | You work with…                                           | You get…                                    |
+| ----------- | ------------ | -------------------------------------------------------- | ------------------------------------------- |
+| **Layer 1** | Tool factory | DSL files, the VS Code extension, shared core2ai library | A **VSIX** you install in Cursor            |
+| **Layer 2** | Tool builder | Generated files in your project folder                   | An **MCP server** + **tool modules**        |
+| **Layer 3** | Carpenter    | Cursor settings and chat                                 | The **agent** calling your APIs or database |
 
-```bash
-npm run install:github-https    # api2ai: also install:demos
-npm run langium:generate && npm run build && npm run check
-npm run generate:all            # in packages/extension/demos when DSL changed
-```
+---
 
-Pin / local **core2ai** during development:
+## Start here
 
-```bash
-npm run core2ai:pin             # show current GitHub tag
-npm run core2ai:use-local       # sibling ../core2ai for active core2ai work
-npm run core2ai:use-pin         # GitHub pin before push
-```
+| Doc                                                                               | What it explains                                  |
+| --------------------------------------------------------------------------------- | ------------------------------------------------- |
+| [**01 — Three layers overview**](./01-three-layers-overview.md)                   | Big picture, tool-factory analogy, repos          |
+| [**02 — Layer 1: DSL, extension, core2ai**](./02-layer1-dsl-extension-core2ai.md) | Language, generator, VSIX, and the core2ai pin    |
+| [**03 — Layer 2: MCP server and tools**](./03-layer2-mcp-server-and-tools.md)     | What `generate` produces and how a tool call runs |
+| [**04 — Layer 3: Cursor and the agent**](./04-layer3-cursor-and-agent.md)         | `mcp.json`, enabling servers, testing in chat     |
 
-Smoke tests (see `scripts/dev-smoke.config.json` for scenarios):
+---
 
-```bash
-npm run test:smoke              # all direct tool smokes
-npm run test:e2e                # MCP stdio e2e suite
-```
+## Quick reference
 
-## Workflows (coming)
+| Doc                                                             | When to open it                |
+| --------------------------------------------------------------- | ------------------------------ |
+| [**Consumer build cheatsheet**](./consumer-build-cheatsheet.md) | “I changed X — what do I run?” |
 
-Checklists for release, VSIX, DSL changes, and fresh-clone setup will live under `workflows/` (see active plan in [`.cursor/plans/docs_und_aufraeumen_deckel.plan.md`](../.cursor/plans/docs_und_aufraeumen_deckel.plan.md)).
+---
 
-## Release
+## Repositories
 
-Use the **guided release** agent skill: [`.cursor/skills/guided-release/SKILL.md`](../.cursor/skills/guided-release/SKILL.md).
+| Repo                                                      | Role                                                |
+| --------------------------------------------------------- | --------------------------------------------------- |
+| [**core2ai**](https://github.com/annettedorothea/core2ai) | Shared MCP host + codegen helpers (`@core2ai/core`) |
+| [**api2ai**](https://github.com/annettedorothea/api2ai)   | OpenAPI → `.api2ai` DSL → MCP tools                 |
+| [**db2ai**](https://github.com/annettedorothea/db2ai)     | SQL → `.db2ai` DSL → MCP tools                      |
 
-## Architecture
+Each consumer repo has its own README and demo workspace under `packages/extension/demos/`.
 
-Three layers:
+Illustrations: compressed PNGs live next to these docs (`Tool-factory*.png`). Full-resolution masters stay local in `large-images/` (gitignored).
 
-1. **core2ai** — shared MCP host + codegen bootstrap (`@core2ai/core`)
-2. **api2ai / db2ai** — Langium DSL, CLI, VS Code extension
-3. **Generated demos** — `packages/extension/demos/generated/` (committed pipeline output)
+**Markdown preview:** open a doc from `docs/` (same folder as the PNG files), then **Markdown: Open Preview** (`⇧⌘V`). If images stay blank, reload the window once after the workspace setting `markdown.preview.securityLevel` → `allowInsecureLocalContent` (set in `mcp-dsl.code-workspace` and `core2ai/.vscode/settings.json`).
 
-Consumers pin `@core2ai/core` via Git tag (`github:annettedorothea/core2ai#vX.Y.Z`), not `file:` on pushed branches.
+---
+
+## Release (maintainers)
+
+For a step-by-step release with checkpoints, use the **guided release** skill:
+
+[`.cursor/skills/guided-release/SKILL.md`](../.cursor/skills/guided-release/SKILL.md)
+
+Human-readable workflow markdown files may follow later; the skill is the live source of truth today.
 
 ---
 

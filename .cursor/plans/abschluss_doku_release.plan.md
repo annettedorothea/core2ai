@@ -1,43 +1,130 @@
 ---
 name: Abschluss Doku Release
-overview: 'Verify → Architektur-Doku (3 Ebenen: DSL/VSIX → generierte MCP-Artefakte → Cursor/Agent) → Release-Workflows per Dry-Run dokumentieren → echter Release am Ende.'
+overview: 'Release v1 erledigt (v0.0.5 + VSIX 0.0.3). Als Nächstes: TS-Follow-ups (A1/A3) → Architektur-Doku 01–04 → guided release v2.'
 todos:
     - id: plan-file
-      content: Abschluss-Plan in core2ai/.cursor/plans/ (Deckel-Plan bleibt bis manuelles Löschen)
+      content: Abschluss-Plan in core2ai/.cursor/plans/
       status: completed
-    - id: verify-auto
-      content: 'Phase 1: build/check/test + generate:all/check:generated in allen drei Repos'
+    - id: release-v1
+      content: 'Erledigt: guided release v0.0.5, api2ai/db2ai VSIX 0.0.3, Skill + publish-only release:vsix'
+      status: completed
+    - id: followup-generator-parts
+      content: 'Phase A1: invoke-render.ts parts:string[] — api2ai (+ db2ai prüfen), generate:all, check:generated'
+      status: completed
+    - id: followup-tsconfig-ide
+      content: 'Phase A3 (optional): demos tsconfig.generated für IDE; nach A1 wenn nötig'
       status: pending
-    - id: verify-manual
-      content: 'Phase 1: Extension Save/Generate, test:smoke, optional MCP in Cursor'
-      status: pending
+    - id: followup-toolchain-version
+      content: 'Backlog: Toolchain/core2ai-Version sichtbar machen (Statusleiste oder Header) — nicht ausgegoren'
+      status: cancelled
     - id: docs-arch
-      content: 'Phase 2: docs/01–04 nach Ebenenmodell + Hub; cheatsheet; core2ai↔siblings'
+      content: 'Phase B: docs/01–04 + Hub + consumer-build-cheatsheet; README-Links'
+      status: completed
+    - id: release-v2
+      content: 'Phase C: guided release v2 (Library nur bei core2ai-Änderungen; sonst VSIX 0.0.4)'
       status: pending
+    - id: workflows-later
+      content: 'Backlog: docs/workflows/01–03 aus Skill (optional, nicht vor release v2)'
+      status: cancelled
+    - id: verify-auto
+      content: 'Entfällt als eigene Phase — abgedeckt durch release v1 + v2'
+      status: cancelled
+    - id: verify-manual
+      content: 'Entfällt als eigene Phase — abgedeckt durch release v1 + v2'
+      status: cancelled
     - id: release-dry-run-doc
-      content: 'Phase 3: Dry-Run; workflows/01 (core2ai library) + 02/03 (VSIX) aus Erfahrung'
-      status: pending
+      content: 'Skill ersetzt Dry-Run; Workflow-MDs optional (workflows-later)'
+      status: cancelled
     - id: workflows-prio
-      content: 'Phase 4: 04-version-bump, 10-daily, 05-fresh-clone, 06–07 DSL, Rest'
-      status: pending
+      content: 'Backlog Phase 4 (daily, fresh-clone, …) — nach Doku bei Bedarf'
+      status: cancelled
     - id: docs-wire
-      content: 'Phase 5: README Documentation-Links → core2ai/docs/'
-      status: pending
+      content: 'In Phase B integriert (README → core2ai/docs/)'
+      status: cancelled
     - id: release-real
-      content: 'Phase 6: echter @core2ai/core-Tag + Consumer-Pin; optional VSIX prerelease'
-      status: pending
-    - id: followup-extension-toolchain-version
-      content: 'Follow-up: Extension Status/Command mit VSIX + @core2ai/core Version (api2ai + db2ai)'
-      status: pending
-    - id: followup-generated-typecheck-ide
-      content: 'Follow-up: invoke-render.ts `parts: string[]` (api2ai+db2ai regen), IDE tsconfig.generated, optional type-aware ESLint'
-      status: pending
+      content: 'Alias release-v1 — erledigt Mai 2026'
+      status: completed
 isProject: false
 ---
 
-# Abschluss: Verify, Architektur (3 Ebenen), Release-Doku, Release
+# Abschluss: Follow-ups → Doku → Release v2
 
-## Ebenenmodell (verbindlich für die Doku)
+## Stand (Mai 2026)
+
+**Release v1 erledigt:** `@core2ai/core` **v0.0.5**, api2ai/db2ai Pin + **VSIX 0.0.3** auf GitHub, Skill [`guided-release/SKILL.md`](../.cursor/skills/guided-release/SKILL.md), `release:vsix` = Publish getesteter VSIX.
+
+**Als Nächstes (Reihenfolge):**
+
+| Phase | Inhalt                                                                                 |
+| ----- | -------------------------------------------------------------------------------------- |
+| **A** | TS-Follow-ups (Generator-Fix + optional IDE tsconfig)                                  |
+| **B** | Architektur-Doku `docs/01–04` + Hub + Cheatsheet                                       |
+| **C** | **Guided release v2** — soll glatt durchlaufen (evtl. nur VSIX-Bump, kein Library-Tag) |
+
+---
+
+## Phase A — TS-Follow-ups (Generator + IDE)
+
+| Follow-up                                  | Repo                                          | `use-local`? |
+| ------------------------------------------ | --------------------------------------------- | ------------ |
+| **A1** Generator `parts: string[]`         | **api2ai** (`invoke-render.ts`); db2ai prüfen | **Nein**     |
+| **A3** IDE `tsconfig.generated` (optional) | api2ai/db2ai demos                            | **Nein**     |
+
+**A2 (Toolchain-Version in Extension/Header) — gestrichen.** Thema nicht ausgegoren (Pin vs local, kein zuverlässiger core2ai-Indikator ohne Bump). Backlog.
+
+**`core2ai:use-local` nur wenn** du aktiv in **`core2ai/packages/`** entwickelst. Für A1/A3 reicht **Pin 0.0.5** (`use-pin`).
+
+### A1 — Generator-Fix (`never[]`)
+
+Strict-TypeScript: `const parts = []` → `never[]` in der IDE. Fix in `invoke-render.ts`, dann `generate:all`, `check:generated`.
+
+### A3 — IDE (optional)
+
+Nur wenn nach A1 Cursor in `generated/tools/` noch rot: `demos/tsconfig.json` → Reference auf `tsconfig.generated.json`.
+
+**Ende Phase A:** api2ai/db2ai grün (`check`, `check:generated`).
+
+---
+
+## Phase B — Architektur-Doku
+
+Unverändertes **Ebenenmodell** (Referenz für das Schreiben) — siehe Abschnitt „Ebenenmodell“ unten.
+
+Lieferumfang:
+
+1. `docs/01-three-layers-overview.md`
+2. `docs/02-layer1-dsl-extension-core2ai.md`
+3. `docs/03-layer2-mcp-server-and-tools.md`
+4. `docs/04-layer3-cursor-and-agent.md`
+5. `docs/consumer-build-cheatsheet.md`
+6. `docs/README.md` (Hub-TOC)
+7. Root-READMEs api2ai/db2ai/core2ai → Links auf Hub
+
+Sprache: EN für `01–04` + Cheatsheet (wie READMEs); Workflows später optional DE.
+
+---
+
+## Phase C — Guided release v2
+
+**Ziel:** Skill einmal **ohne Recovery-Pfade** (Pin+Version in CP5, VSIX publish-only).
+
+Erwartung CP1: **Kein Library-Release** (nur Extension/Generator-Follow-ups) → direkt Consumer-Pin-Check oder Skip zu VSIX-Bump **0.0.4**.
+
+Falls doch **core2ai** `packages/` geändert: normal CP2–3 (neuer Tag z. B. v0.0.6).
+
+Checkliste vor Start: alle Repos **clean**, `use-pin` (nicht `use-local`), Skill + Script in core2ai committed.
+
+---
+
+## Backlog (nicht vor release v2)
+
+- `docs/workflows/01–03.md` aus Skill (optional)
+- Weitere Workflows (daily, fresh-clone, …)
+- Formaler Verify-Lauf als eigene Phase — durch v1 + v2 abgedeckt
+
+---
+
+## Referenz: Ebenenmodell (für Phase B)
 
 **Wichtig:** Das unterscheidet sich vom alten Deckel-Plan (core2ai / Consumer / generated). Die Architektur-Doku folgt **deinem** Modell.
 
@@ -169,13 +256,13 @@ Alte Deckel-Zuordnung (`01-three-layers` = Pin, `02-mcp-stdio` separat) wird **e
 
 ---
 
-## Was vom alten Deckel-Plan noch gilt
+## Was vom alten Plan noch gilt
 
-| Todo       | Status / Anpassung                                                                                       |
-| ---------- | -------------------------------------------------------------------------------------------------------- |
-| verify-all | Unverändert — vor Release-Dry-Run                                                                        |
-| docs-wire  | README verlinken auf `docs/01` (Ebenen-Übersicht), nicht auf veraltetes Modell                           |
-| release    | **Zwei** dokumentierte Abläufe: core2ai-Library (Tag/Pin) **und** optional VSIX; echter Lauf **am Ende** |
+| Thema                | Status                                                    |
+| -------------------- | --------------------------------------------------------- |
+| Ebenenmodell 01–04   | **Phase B** — unverändert gültig                          |
+| Guided-release Skill | **Referenz** für Phase C; Workflow-MDs optional (Backlog) |
+| Release v1           | **Erledigt** — nicht wiederholen                          |
 
 ## Pläne
 
@@ -184,108 +271,9 @@ Alte Deckel-Zuordnung (`01-three-layers` = Pin, `02-mcp-stdio` separat) wird **e
 
 ---
 
-## Reihenfolge
-
-### Phase 1 — Verify (auto + manuell)
-
-Unverändert: `build` / `check` / `test` in core2ai, api2ai, db2ai; `generate:all`, `check:generated`; api2ai `test:e2e`; db2ai `test:e2e` (Docker).
-
-Manuell: Extension Save, `test:smoke`, ein MCP-Server in Cursor — das ist **Ebene-3-Verifikation**.
-
----
-
-### Phase 2 — Architektur-Doku (dein Modell)
-
-Reihenfolge beim Schreiben:
-
-1. **01** — Übersicht + Diagramm (dieser Abschnitt ausformulieren)
-2. **02** — Ebene 1 (Langium, core2ai, Siblings, VSIX-Build)
-3. **03** — Ebene 2 (zuerst Runtime Server↔Tools, dann Erzeugung durch Generator)
-4. **04** — Ebene 3 (Cursor, mcp.json, Agent, Tests)
-5. **cheatsheet** + Hub-TOC
-
-Sprache: READMEs EN; Architektur/Workflows **DE oder EN** — einmal festlegen (Vorschlag: DE für Workflows, EN für `docs/01–04` wie READMEs).
-
----
-
-### Phase 3 — Release-Workflows per Dry-Run dokumentieren
-
-**Dry-Run** (bis vor Tag/Push): zwei Checklisten ableiten:
-
-| Workflow                                  | Inhalt                                                                                    |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `workflows/01-core2ai-library-release.md` | Tag `@core2ai/core`, `use-pin`, bundle, generate — **Ebene-1-Infrastruktur**              |
-| `workflows/02-vsix-build-local-test.md`   | VSIX lokal, Extension Host, Demos                                                         |
-| `workflows/03-vsix-github-release.md`     | VSIX lokal bauen/testen, dann `release:vsix` (GitHub prerelease) — **Ebene-1-Endprodukt** |
-
-Skill [`guided-release/SKILL.md`](../.cursor/skills/guided-release/SKILL.md) — Checkpoint-Flow (Library optional, Preview, VSIX); Workflow 01 später menschliche Kopie.
-
----
-
-### Phase 4–6
-
-Wie zuvor: weitere Workflows (04 version-bump, 10 daily, …), docs-wire, **echter Release** zuletzt.
-
----
-
-## Follow-up (nach Release / Verify): Toolchain-Version in der Extension sichtbar
-
-**Ziel:** Direkt in Cursor sehen, welche **VSIX/Extension-Version** (api2ai bzw. db2ai) und welche **@core2ai/core**-Version aktiv sind — ohne MCP `serverInfo` zu verbiegen.
-
-**Warum nicht MCP `serverInfo.version`:** `mcpServerVersion` im Generator ist heute die **CLI-/Generator-Version**, nicht die spätere MCP-Tool-API. Generator/DSL-Toolchain gehört zu **Ebene 1 (VSIX)**, nicht zur MCP-Protokoll-Identität.
-
-### Was anzeigen
-
-| Teil         | Quelle                                                                     | Beispiel |
-| ------------ | -------------------------------------------------------------------------- | -------- |
-| **Consumer** | `packages/extension/package.json` (`vscode-api2ai` / `vscode-db2ai`)       | `0.0.2`  |
-| **Core**     | Aufgelöstes `@core2ai/core` (Embed/`node_modules`, gleicher Stand wie Pin) | `0.0.5`  |
-
-Anzeigeformat (Vorschlag): `api2ai 0.0.2 · core 0.0.5` (db2ai analog).
-
-### UI (einfach, sofort sichtbar)
-
-1. **Statusleiste** — permanentes Item beim Extension-Aktivieren (nur wenn api2ai/db2ai-Extension aktiv).
-2. **Command Palette** — z. B. `api2ai: Show toolchain versions` / `db2ai: Show toolchain versions` → kurze Meldung oder Output-Kanal mit beiden Versionen (+ optional CLI/Language-Paket später).
-3. Optional später: gleicher Text im **Welcome/About** oder Output-Kanal „api2ai“ bei Aktivierung.
-
-**Ort:** `packages/extension/src/` in **api2ai** und **db2ai** (parallele Implementierung, gleiches Muster).
-
-### Technik (Überblick)
-
-- Extension-Version: `context.extension.packageJSON.version`.
-- Core-Version: `@core2ai/core/package.json` aus dem Pfad, den die Extension ohnehin für CLI/Generate nutzt (Embed-Home oder Workspace-`node_modules`); Fallback `"unknown"` + Hinweis wenn Pin fehlt.
-- Keine Änderung an `mcp-host`, Generator oder `mcpServerVersion` nötig.
-- Kleiner Test (Unit oder Integration) für Version-Auflösung, wo sinnvoll.
-
-### Akzeptanz
-
-- Nach VSIX-Install / Extension Development Host: Statusleiste zeigt **beide** Versionen.
-- Nach `core2ai:use-pin` + Extension-Reload: **Core**-Teil aktualisiert sich (Consumer-Teil nur bei neuem VSIX).
-- Kein Einfluss auf MCP-Server-Namen, Tools oder `serverInfo`.
-
-### Doku
-
-- Kurz in **Ebene-1-Doku** (`docs/02-layer1-dsl-extension-core2ai.md`): „Toolchain-Version in der Statusleiste prüfen“.
-- Optional Verify-Checkliste Phase 1: ein Blick auf Statusleiste nach Pin/VSIX.
-
-### Abhängigkeit
-
-**Nach** guided-release CP5/CP6 (Consumer-Pin committed) oder als nächstes VSIX-Feature — kein core2ai-Tag zwingend, außer Core-Version-Auflösung braucht Hilfs-Export in `@core2ai/core` (nur falls `require('@core2ai/core/package.json')` im Extension-Bundle scheitert; erst prüfen, dann entscheiden).
-
-### Nicht in diesem Follow-up
-
-- MCP `serverInfo` mit Generator-Version füllen.
-- Provenance-JSON in `generated/` (optional später).
-- DSL-eigene `mcp { version … }` (später, separates Thema).
-
----
-
-## Follow-up: Generator-Fix + Typecheck/IDE (`github-tools` `never[]`)
+## Referenz: Follow-up A1 — Generator-Fix + Typecheck/IDE (`github-tools` `never[]`)
 
 **Auslöser:** `api2ai/packages/extension/demos/generated/tools/github-tools.ts` (~Z. 309) — IDE: `parts.push(String(element))` → `string` not assignable to `never` wegen `const parts = []` in `appendSerializedQueryParams` (OpenAPI query-array-Serialisierung).
-
-### 1 — Generator-Fix (Pflicht, zuerst)
 
 **Ursache:** Template in **`api2ai/packages/cli/src/generator/invoke-render.ts`** (query-array-Zweig) erzeugt untypisiertes `const parts = []` → unter strict inference `never[]`.
 
@@ -301,43 +289,29 @@ const parts: string[] = [];
 2. **db2ai:** gleiches Template prüfen (`packages/cli/src/generator/invoke-render.ts` — ggf. identisch anpassen) → `generate:all` → `check:generated`
 3. Regenerierte `generated/tools/*` committen (kein Hand-Patch in generated)
 
-**Verify:** `github-tools.ts` ohne IDE-Diagnostic; `mcpServerVersion`/Generate unverändert außer Regenerate.
-
 Regel: [codegen-generated-quality.mdc](../.cursor/rules/codegen-generated-quality.mdc) in api2ai/db2ai.
 
-### 2 — Warum Gates nicht blockiert haben
+**Warum Gates nicht blockiert haben:** `npm run typecheck:generated` war exit 0 — vor allem **IDE** (orphan file). pre-commit/pre-push laufen `check:generated`.
 
-| Gate                          | `check:generated`?                                        |
-| ----------------------------- | --------------------------------------------------------- |
-| pre-commit (`npm run check`)  | Ja                                                        |
-| pre-push                      | Ja                                                        |
-| `release:vsix` (publish only) | Nein — baut nicht; VSIX muss aus CP6/8 Preview existieren |
+**A3 optional:** `packages/extension/demos/tsconfig.json` → `references` → `tsconfig.generated.json`.
 
-`npm run typecheck:generated` war **exit 0** — CLI blockiert nicht; Problem vor allem **IDE** (orphan file, siehe unten).
-
-### 3 — IDE / DX (optional, nach Generator-Fix)
-
-- `packages/extension/demos/tsconfig.json`: `references` → `tsconfig.generated.json`, damit Cursor generated tools dem gleichen Projekt zuordnet wie CI.
-- Optional: type-aware ESLint für `generated/tools/**/*.ts` (langsamer in Hooks).
-
-### Akzeptanz
+### Akzeptanz A1
 
 - [ ] Generator-Fix in **invoke-render.ts**, beide Consumer regeneriert
 - [ ] `check:generated` grün in api2ai + db2ai
 - [ ] `github-tools.ts` in Cursor ohne `never[]`-Fehler
-- [ ] Kein manuelles Editieren von `generated/**`
-
-**Abhängigkeit:** Nach db2ai VSIX-Release (CP8/9) oder kleiner PR nur Generator — kein core2ai-Tag nötig.
 
 ---
 
-## Erfolg
+## Backlog: Toolchain-Version sichtbar (ehem. A2)
 
-- Ebene 1/2/3 sind in `docs/01` klar und entsprechen deiner VSIX-zentrierten Sicht
-- core2ai vs api2ai/db2ai und Library- vs VSIX-Release sind getrennt erklärt
-- Nächster Library-Release: Workflow 01; nächstes VSIX: Workflow 03
-- Agent-Test (Ebene 3) ist in Doku und Verify-Checkliste verankert
+Nicht umsetzen — Pin/local/core2ai-Stand nicht zuverlässig ohne Bump ablesbar. Später: Statusleiste, Header-Kommentar in generated, oder MCP-Metadaten — wenn Anforderung klarer ist.
 
 ---
 
-#Col3:23
+## Erfolg (gesamt)
+
+- [x] Release v1: v0.0.5 + VSIX 0.0.3 + Skill
+- [x] Phase A: TS-Follow-ups (A1, ggf. A3)
+- [x] Phase B: `docs/01–04` + Hub
+- [ ] Phase C: guided release v2 glatt

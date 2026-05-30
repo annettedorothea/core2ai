@@ -38,9 +38,18 @@ import { readGeneratedModule } from '@core2ai/core/mcp-host';
 
 ## Docs
 
-- Hub: [`docs/README.md`](./docs/README.md)
-- Active plan: [`.cursor/plans/docs_und_aufraeumen_deckel.plan.md`](./.cursor/plans/docs_und_aufraeumen_deckel.plan.md)
-- Guided release skill: [`.cursor/skills/guided-release/SKILL.md`](./.cursor/skills/guided-release/SKILL.md)
+Architecture hub (three layers, core2ai ↔ siblings, build cheatsheet):
+
+| Doc                                                                                | Topic                 |
+| ---------------------------------------------------------------------------------- | --------------------- |
+| [**docs/README.md**](./docs/README.md)                                             | Hub — start here      |
+| [01 — Three layers overview](./docs/01-three-layers-overview.md)                   | Big picture           |
+| [02 — Layer 1: DSL, extension, core2ai](./docs/02-layer1-dsl-extension-core2ai.md) | VSIX, pin, Langium    |
+| [03 — Layer 2: MCP server and tools](./docs/03-layer2-mcp-server-and-tools.md)     | Generated runtime     |
+| [04 — Layer 3: Cursor and the agent](./docs/04-layer3-cursor-and-agent.md)         | `mcp.json`, testing   |
+| [Consumer build cheatsheet](./docs/consumer-build-cheatsheet.md)                   | “I changed X → run Y” |
+
+Release (maintainers): [guided-release skill](./.cursor/skills/guided-release/SKILL.md)
 
 ## Build
 
