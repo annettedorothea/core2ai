@@ -1,0 +1,58 @@
+---
+description: Hybrid core2ai link mode — local file: for dev, GitHub pin for commits; check before consumer work
+globs:
+  - packages/**/*
+alwaysApply: false
+---
+
+# core2ai Dev Link Mode (Hybrid Pin)
+
+`@core2ai/core` has two **local** modes in consumer repos (api2ai, db2ai). **Git always uses GitHub pin** — never commit `file:…/core2ai`.
+
+## Modes
+
+| Mode | `package.json` spec | When |
+|------|---------------------|------|
+| **pin** | `github:annettedorothea/core2ai#vX.Y.Z` | Commits, CI, release, fresh clone |
+| **local** | `file:../…/core2ai` (relative per package) | Day-to-day dev with sibling `MCP/core2ai` |
+
+Pre-commit in api2ai/db2ai blocks staged `package.json` / `package-lock.json` containing `file:…core2ai`.
+
+## Commands (run from api2ai or db2ai root)
+
+```bash
+npm run core2ai:link-mode      # overall=local | pin | mixed
+npm run core2ai:use-local      # switch to file: sibling + npm install
+npm run core2ai:use-pin        # alias for core2ai:refresh-pin (GitHub pin + reinstall)
+npm run core2ai:refresh-pin    # same as use-pin
+```
+
+After **`packages/codegen/**`** or **`packages/mcp-host/**`** changes in **core2ai**:
+
+1. `npm run build && npm run check` in **core2ai**
+2. In each consumer you test: `npm run core2ai:link-mode` — expect **`local`** while developing; if **`pin`**, run `npm run core2ai:use-local`
+3. Consumer pipeline: `bundle:mcp-runtime`, `generate:all`, build, check; restart MCP in Cursor
+4. Before consumer commit/PR: `npm run core2ai:use-pin` and verify `core2ai:link-mode` → **`pin`**
+
+## Agent checklist
+
+When editing **core2ai** and the task affects **api2ai** or **db2ai**:
+
+1. Ask which consumer is in scope (or both).
+2. Run **`npm run core2ai:link-mode`** in that consumer — report `overall=…`.
+3. If developing cross-repo changes and mode is **`pin`**, tell the user to run **`core2ai:use-local`** (or run it if they want automation).
+4. Do **not** suggest committing `file:` pins; pre-commit will reject them.
+5. Before suggesting a consumer commit, remind **`core2ai:use-pin`** if link-mode is still **`local`**.
+
+## Layout contract
+
+Sibling checkout required for **local** mode:
+
+```
+MCP/core2ai
+MCP/api2ai   (or db2ai)
+```
+
+Without sibling, use **`core2ai:use-pin`** only.
+
+See also [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc) and consumer `github-core-dependency.mdc`.
