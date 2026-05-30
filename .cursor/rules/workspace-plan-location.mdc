@@ -1,13 +1,13 @@
 ---
-description: Where to store Cursor plan files in this repo
+description: Where to store Cursor plan files
 alwaysApply: true
 ---
 
-# Workspace Plan Location
+# Plan Location
 
-When creating or updating plan files for this repository:
+When creating or updating plan files for work across **core2ai**, **api2ai**, and **db2ai**:
 
-- Always create plan files under `.cursor/plans` inside the workspace root.
-- Do not store project plans only in global locations (for example under `~/.cursor/plans`) without also copying them into the workspace.
-- Prefer stable, descriptive plan filenames so they are easy to find in the repository.
+- Always store plans under **`core2ai/.cursor/plans/`**.
+- Do not keep project plans only in global locations (for example `~/.cursor/plans`) without also copying them into that folder.
+- Prefer stable, descriptive filenames so plans are easy to find.
 - Obsolete plans are removed manually by the maintainer; do not move plans to `done/` or delete them without being asked.

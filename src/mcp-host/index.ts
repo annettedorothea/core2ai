@@ -1,7 +1,6 @@
 export type { McpHostAdapter, McpToolDescriptor, GeneratedMcpModule } from './mcp-host-adapter.js';
 export { readGeneratedModule } from './mcp-host-adapter.js';
 export { loadLocalEnvFiles } from './env.js';
-export { decodeJwtPayloadUnsafe, resolveCredentialAndOptionalJwt, resolveCredentialFromEnv } from './jwt.js';
-export { runMcpServer } from './mcp-server.js';
+export { runMcpStandaloneFromArgv } from './mcp-standalone-entry.js';
 export type { McpStdioSmokeOptions, McpStdioSmokeResult } from './mcp-stdio-smoke.js';
 export { runMcpStdioSmoke } from './mcp-stdio-smoke.js';

@@ -1,4 +1,0 @@
-{
-    "files": [],
-    "references": [{ "path": "./packages/codegen/tsconfig.json" }, { "path": "./packages/mcp-host/tsconfig.json" }]
-}

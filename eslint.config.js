@@ -19,45 +19,28 @@ const nodeGlobals = {
 export default [
     {
         ignores: [
+            '**/.cursor/**',
             '**/node_modules/**',
             '**/out/**',
             '**/dist/**',
-            '**/coverage/**',
             '**/*.tsbuildinfo',
-            '**/src/generated/**',
-            '**/syntaxes/**',
+            '**/*.js',
+            '**/*.cjs',
             '**/*.mjs',
-            'packages/extension/demos/tmp/**'
+            '**/syntaxes/**'
         ]
     },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
-        files: ['**/*.{js,cjs,ts,tsx}'],
+        files: ['**/*.{ts,tsx}'],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
             globals: nodeGlobals
-        }
-    },
-    {
-        files: ['**/*.{ts,tsx}'],
+        },
         rules: {
             'no-undef': 'off',
-            'no-unused-vars': 'off',
-            '@typescript-eslint/no-unused-vars': [
-                'error',
-                {
-                    argsIgnorePattern: '^_',
-                    caughtErrorsIgnorePattern: '^_',
-                    varsIgnorePattern: '^_'
-                }
-            ]
-        }
-    },
-    {
-        files: ['packages/extension/demos/generated/**/*.ts'],
-        rules: {
             'no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars': [
                 'error',

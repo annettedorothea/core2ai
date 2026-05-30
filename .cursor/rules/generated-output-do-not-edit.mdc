@@ -1,25 +1,14 @@
 ---
-description: Never patch build output or consumer generated files; fix source and release
+description: Never hand-edit build or generated artifacts
 alwaysApply: true
 ---
 
 # Generated Output — Do Not Edit
 
-**Never** fix bugs by hand-editing build artifacts or consumer copies. Change **source** in this repo (or the consumer generator), then rebuild, tag, and let consumers refresh.
+**Never** fix bugs by hand-editing generated or compiled output. Change **source** (`src/` here, or the consumer generator / DSL), then rebuild or regenerate.
 
-## Do not edit (fix upstream instead)
+## Do not edit
 
-| Path | Fix in |
-|------|--------|
-| `packages/*/out/**` | `npm run build` in **core2ai** |
-| `node_modules/**` (any repo) | Install / pin refresh — not manual patches |
-| api2ai/db2ai `packages/extension/demos/generated/**` | Generator or DSL in that consumer, or mcp-host/codegen here + release + consumer `core2ai:use-pin` / `bundle:mcp-runtime` / `generate:all` |
-| api2ai/db2ai `packages/cli/resources/mcp-serve-emitted.mjs` | Consumer `npm run bundle:mcp-runtime` after pin refresh |
-
-Do **not** use manual `cp` into `node_modules` or consumer `generated/**` as a permanent fix.
-
-## Publisher workflow
-
-After **`packages/mcp-host/**`** or **`packages/codegen/**`** changes: `npm run build && npm run check`, then skill **guided release** so api2ai/db2ai can refresh pin, bundle, and regenerate.
-
-See [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc) and [core2ai-build.mdc](./core2ai-build.mdc).
+- **`out/**`** in core2ai — run `npm run build` or `npm run watch`
+- **`node_modules/**`** in any repo — fix upstream and relink/reinstall; no manual patches or `cp`
+- **Consumer `generated/**`** (api2ai, db2ai) — change generator or DSL, then `generate:all` and `build:generated`

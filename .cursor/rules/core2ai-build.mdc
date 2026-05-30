@@ -1,16 +1,53 @@
 ---
-description: Build core2ai after TypeScript changes
+description: Build core2ai after TypeScript changes (npm link consumers)
 globs:
-  - packages/**/*
+  - src/**/*
 alwaysApply: false
 ---
 
 # core2ai Build
 
-After code changes in this repository, run:
+`@core2ai/core` exports **`out/`** (compiled JS), not `src/`. Consumers resolve it via **`npm link`** — the symlink stays valid; only **`out/`** must stay current.
 
-`npm run build && npm run check`
+## One-time link setup
 
-Consumers (**api2ai**, **db2ai**) install `@core2ai/core` via **GitHub pin** (`github:annettedorothea/core2ai#vX.Y.Z`), not a sibling `file:` path.
+```bash
+# core2ai
+npm run build && npm link
 
-After **mcp-host** or **codegen** changes, follow [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc): tag release, then consumers refresh pin, **bundle MCP runtime**, and regenerate demos.
+# api2ai or db2ai (from repo root)
+cd packages/cli && npm link @core2ai/core && cd ../..
+npm install
+cd packages/extension/demos && npm link @core2ai/core && npm install
+```
+
+Verify: `ls -l node_modules/@core2ai/core` → symlink to sibling `../core2ai`.
+
+## After every change under `src/codegen/**` or `src/mcp-host/**`
+
+Pick one:
+
+| Mode | Command | When |
+|------|---------|------|
+| **Active editing** | `npm run watch` in **core2ai** (runs `tsc --watch`) | Saves recompile to `out/` automatically — **recommended** while hacking core2ai |
+| **Occasional change** | `npm run build` in **core2ai** | Enough if you change core2ai rarely |
+
+**No** consumer `npm link` again after rebuild — symlink already points at the repo; updated files land in `out/`.
+
+Optional sanity: `npm run check` in **core2ai** before switching to a consumer.
+
+## What consumers still need (depends on what you changed)
+
+| Change in core2ai | Consumer action |
+|-------------------|-----------------|
+| **codegen** (generator helpers) | Usually nothing beyond rebuild — CLI imports linked `out/codegen` on next run |
+| **mcp-host** (stdio host, env, JWT) | Regenerate demos if MCP bootstrap shape changed: `generate:all`, `build:generated`; **restart MCP** in Cursor |
+| **Extension / VSIX embed** | `npm run build` in `packages/extension` (re-runs `embed-cli-bundle.mjs`) — link alone does **not** update bundled `cli.cjs` |
+
+See [generated-output-do-not-edit.mdc](./generated-output-do-not-edit.mdc).
+
+## Do not
+
+- Edit `out/` by hand — always `src/` → `npm run build` or `npm run watch`
+- `cp` into `node_modules/@core2ai/core`
+- Rely on GitHub pin / registry (local dev uses **npm link** only)

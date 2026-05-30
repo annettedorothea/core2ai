@@ -1,13 +1,14 @@
 ---
-description: Respect project Prettier formatting for generated and edited artifacts
+description: Formatting, lint, and type-check for edited artifacts
 alwaysApply: true
 ---
 
-# Prettier Formatting
+# Formatting, Lint, and Type-Check
 
 When creating or editing code, generated code, plans, JSON, YAML, Markdown, or other repository artifacts:
 
 - Follow the repository Prettier configuration (`.prettierrc` and `.prettierignore`).
 - Prefer running `npm run format` after broad formatting changes or when many files were generated.
-- For focused edits, keep the touched files compatible with `npm run format:check`.
+- For focused edits, keep touched files compatible with `npm run format:check`.
 - Do not manually reformat files that are ignored by `.prettierignore`.
+- Before finishing substantive changes, ensure `npm run check` passes (`format:check`, `typecheck`, `lint`).

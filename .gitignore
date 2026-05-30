@@ -3,7 +3,6 @@
 !.vscode/settings.json
 node_modules/
 out/
-**/coverage/
 *.tsbuildinfo
 .idea
 docs/large-images/
