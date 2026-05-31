@@ -2,11 +2,9 @@
 
 **core2ai** is the shared **codegen** library for **api2ai** and **db2ai**: document validation, auth-stub bootstrap, Zod codegen, and static MCP `mcp-serve` source (`renderMcpServeSource`).
 
-| Subpath export                | Purpose                                                                                            |
-| ----------------------------- | -------------------------------------------------------------------------------------------------- |
-| `@core2ai/core/codegen`       | Document validation, auth-stub bootstrap, Zod codegen, MCP project bootstrap                       |
-| `@core2ai/core/test-helpers`  | Shared Vitest helpers for consumer integration tests (`asRecord`, `restoreEnv`)                    |
-| `@core2ai/core/test-fixtures` | Shared demo integration helpers (`readGeneratedToolModule`, `compileGeneratedForSmoke`, MCP stdio) |
+| Subpath export          | Purpose                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| `@core2ai/core/codegen` | Document validation, auth-stub bootstrap, Zod codegen, MCP project bootstrap, demo test emit |
 
 The repository root is **`@core2ai/core`**. Package exports resolve to compiled **`out/`**, not `src/`. The package is **not published to npm** — local development uses **`npm link`** against a sibling checkout.
 
@@ -19,10 +17,11 @@ Generated demo/runtime MCP host code lives in each consumer’s **`generated/cli
 Source layout:
 
 ```
-src/codegen/       — shared generator helpers (incl. render-mcp-serve.ts)
-src/test-helpers/  — shared Vitest helpers for consumers
-src/test-fixtures/ — shared demo integration test helpers (requires peer `@modelcontextprotocol/sdk`)
+src/codegen/       — shared generator helpers (incl. render-mcp-serve.ts, writeGeneratedDemosTestSupport)
+src/test-fixtures/ — render-* templates for consumer demos/test/generated (emitted on generate:all)
 ```
+
+Demo integration tests import committed `test/generated/` in each consumer — not `@core2ai/core`.
 
 ## Docs
 

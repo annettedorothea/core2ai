@@ -56,12 +56,22 @@ Agent: `git status` in **core2ai**, **api2ai**, **db2ai**.
 Agent runs in the **releasing consumer** (api2ai or db2ai):
 
 1. If **core2ai** `src/` changed: `npm run build && npm run check` in **core2ai** (or confirm `npm run watch` was running).
-2. `npm run langium:generate && npm run build`
-3. `npm run generate:all`
-4. `cd packages/extension/demos && npm run build:generated`
-5. `npm run check && npm test`
+2. From consumer root: **`npm run vsix:prepare`** — runs `langium:generate`, `build`, `install:demos`, `generate:all`, `build:generated` (demos), `check`, and workspace tests (language, cli, demos). Does **not** package a VSIX.
 
-**api2ai only:** `npm run install:demos` if demo deps may be stale.
+Manual equivalent (same order as `packages/extension/scripts/vsix-prepare.mjs`):
+
+```bash
+npm run langium:generate && npm run build
+npm run install:demos
+npm run generate:all
+npm run build:generated --prefix packages/extension/demos
+npm run check
+npm run test --workspace packages/language
+npm run test --workspace packages/cli
+npm run test --prefix packages/extension/demos
+```
+
+**Not enough before `vsix:build`:** `npm run build --workspace packages/extension` alone — missing regenerate, demos JS, check, and tests.
 
 **End CP1:** stop if red; else → **CP2**.
 
@@ -172,4 +182,4 @@ Repeat **CP0–CP6** for the other consumer if both extensions ship.
 ## Reference
 
 - Build/link: [`../../rules/core2ai-build.mdc`](../../rules/core2ai-build.mdc)
-- VSIX scripts: repo root `vsix:build`, `vsix:release` → `packages/extension/scripts/vsix-build.mjs`, `vsix-release.mjs`
+- VSIX scripts: repo root `vsix:prepare`, `vsix:build`, `vsix:release` → `packages/extension/scripts/vsix-prepare.mjs`, `vsix-build.mjs`, `vsix-release.mjs`

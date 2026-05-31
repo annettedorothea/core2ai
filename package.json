@@ -13,14 +13,6 @@
         "./codegen": {
             "types": "./out/codegen/index.d.ts",
             "default": "./out/codegen/index.js"
-        },
-        "./test-helpers": {
-            "types": "./out/test-helpers/index.d.ts",
-            "default": "./out/test-helpers/index.js"
-        },
-        "./test-fixtures": {
-            "types": "./out/test-fixtures/index.d.ts",
-            "default": "./out/test-fixtures/index.js"
         }
     },
     "scripts": {

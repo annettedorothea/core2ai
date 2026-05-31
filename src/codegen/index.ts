@@ -8,4 +8,5 @@ export * from './document-validation.js';
 export * from './langium-cli-types.js';
 export * from './project-bootstrap.js';
 export { renderMcpServeSource } from './render-mcp-serve.js';
+export { writeGeneratedDemosTestSupport } from './write-demos-test-support.js';
 export * from './zod-codegen.js';
