@@ -17,6 +17,10 @@
         "./test-helpers": {
             "types": "./out/test-helpers/index.d.ts",
             "default": "./out/test-helpers/index.js"
+        },
+        "./test-fixtures": {
+            "types": "./out/test-fixtures/index.d.ts",
+            "default": "./out/test-fixtures/index.js"
         }
     },
     "scripts": {
@@ -31,12 +35,16 @@
         "lint:fix": "eslint . --fix",
         "check": "npm run format:check && npm run typecheck && npm run lint"
     },
+    "peerDependencies": {
+        "@modelcontextprotocol/sdk": "^1.29.0"
+    },
     "dependencies": {
         "chalk": "~5.3.0",
         "langium": "~4.2.0",
         "zod": "^4.4.3"
     },
     "devDependencies": {
+        "@modelcontextprotocol/sdk": "^1.29.0",
         "@eslint/js": "^10.0.1",
         "@types/node": "~20.17.48",
         "eslint": "^10.4.0",

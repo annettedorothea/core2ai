@@ -2,6 +2,8 @@
 
 Systematische Abarbeitung über **core2ai**, **api2ai**, **db2ai**. Pro Block: verifizieren → ändern → `npm run check` / `npm test` → nächster Block.
 
+**Stand:** Audit **abgeschlossen** (Mai 2026). Offene Punkte unten nur noch als **wontfix** / bewusst unverändert dokumentiert.
+
 ---
 
 ## Block A — api2ai ↔ db2ai: strukturelle Inkonsistenzen
@@ -74,38 +76,28 @@ Systematische Abarbeitung über **core2ai**, **api2ai**, **db2ai**. Pro Block: v
 | D1.2 | **done** | api2ai `mock-api-direct-invoke.test.ts` importiert von core2ai |
 | D1.3 | **done** | db2ai `direct-invoke.ts` importiert/re-exportiert; `test/support/env.ts` gelöscht |
 
-### D2 Weitere Duplikate (noch lokal in beiden Consumern)
+### D2 Weitere Duplikate
 
-Bei Änderung **immer beide Repos** anfassen, bis extrahiert:
-
-- `test/support/generated-module.ts`
-- `test/support/mcp-stdio-smoke.ts`
-- `test/support/compile-generated-fixture.ts`
-- `packages/extension/demo-bundle-required.json` + `verify-demos-bundle.mjs`
-- `src/generator/render-bootstrap.ts`, `render-mcp-serve.ts`
-
-**Follow-up:** schrittweise nach core2ai heben (eigene Subpaths oder `@core2ai/core/test-fixtures`).
+| Datei | Status |
+| ----- | ------ |
+| `generated-module.ts` | **done** → `@core2ai/core/test-fixtures` |
+| `mcp-stdio-smoke.ts` | **done** → `@core2ai/core/test-fixtures` |
+| `compile-generated-fixture.ts` | **done** → `@core2ai/core/test-fixtures` (workspace root aus `runRoot`) |
+| `demo-bundle-required.json` + `verify-demos-bundle.mjs` | **wontfix** — pro Extension/VSIX-Build; Script + JSON bleiben lokal |
+| `render-bootstrap.ts`, `render-mcp-serve.ts` (Consumer) | **wontfix** — dünne Delegation auf `@core2ai/core/codegen`, bewusst behalten |
 
 ---
 
-## Block E — Bewusst unterschiedlich
+## Block E — Bewusst unterschiedlich — **wontfix**
 
 - HTTP vs SQL Generator, Docker-Tests nur db2ai, `json-schema-to-zod` nur api2ai, db2ai `cli/src/env.ts`
-
-Keine Angleichung nötig; optional docs-Absatz.
+- Keine Angleichung nötig; optionaler docs-Absatz nicht umgesetzt (bewusst)
 
 ---
 
-## Block F — Priorisierte Reihenfolge
+## Block F — Priorisierte Reihenfolge — **done**
 
-1. ~~B core2ai tot~~ (open)
-2. A4 Skills
-3. A5 + B Kleinkram
-4. A2 + A3 + C READMEs
-5. C1 api2ai generate:all
-6. A1.4 access-demo
-7. D2 weitere Extraktionen
-8. A1.5 optional
+Alle Punkte F1–F8 erledigt oder als wontfix markiert (A1.5 Sakila MCP stdio, B4 access-demo-docker, D2 Extension-Wrapper, E docs).
 
 **Verify:** core2ai `npm run build && npm run check`; Consumer `npm test`.
 
