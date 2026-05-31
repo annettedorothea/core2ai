@@ -75,7 +75,7 @@ Different roles interact with different layers of the system:
 | ---------------------------------- | ------------- |
 | Platform / Tool Factory Maintainer | Layer 1       |
 | Tool Author / Engineer             | Layer 2       |
-| AI Agent / Tool Consumer           | Layer 3       |
+| End User / Customer                | Layer 3       |
 
 See: [Personas](04-personas.md)
 
