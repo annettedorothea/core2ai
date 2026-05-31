@@ -16,23 +16,30 @@ Systematische Abarbeitung über **core2ai**, **api2ai**, **db2ai**. Pro Block: v
 | A1.4 | **done** | `access-demo-direct-invoke.test.ts`; Tests unter `packages/extension/demos/test/` |
 | A1.5 | **wontfix** | Sakila MCP stdio — bewusst weggelassen |
 
-### A2 Extension & Demos — open
+### A2 Extension & Demos — **done**
 
-- Command-Titel `.mjs` → `.ts`/MCP host
-- READMEs `mcp-serve.mjs` → `.js`
-- db2ai `.vscodeignore`: `langium-quickstart.md` entfernen
+- Command-Titel `.mjs` → `.ts`/MCP host (**done**)
+- READMEs `mcp-serve.mjs` → `.js` (**done**)
+- db2ai `.vscodeignore`: `langium-quickstart.md` entfernen (**done**)
 
-### A3 Root-README — open
+### A3 Root-README — **done**
 
-- db2ai an api2ai angleichen (Getting started, `watch`, `check`-Text, demos-Zeile)
+| # | Status | Thema |
+|---|--------|--------|
+| A3.1 | **done** | Getting started: Workflow-Tabelle wie api2ai |
+| A3.2 | **done** | Daily scripts: `watch`, `check`-Text (`format:check` + `typecheck` + `lint`) |
+| A3.3 | **done** | Demos-Zeile, Project layout `demos/`, Docs-Links (core2ai Layer 1–3) |
+| A3.4 | **done** | Launch: Links zu [`tasks.json`](../db2ai/.vscode/tasks.json) + `mcp-dsl.code-workspace` |
 
-### A4 Guided-release Skills — open
+### A4 Guided-release Skills — **done**
 
-- core2ai + db2ai SKILL: `npm test` statt `test:unit` / `test:smoke`
+- core2ai + db2ai SKILL: `npm test` statt `test:unit` / `test:smoke` (**done**; api2ai war schon aktuell)
 
-### A5 Kleinkram — open
+### A5 Kleinkram — **done**
 
-- api2ai: `esbuild` aus CLI devDependencies, leere `test/smoke`/`test/e2e`, main.ts TODO
+- api2ai: `esbuild` aus CLI devDependencies (**done**)
+- leere `test/smoke`/`test/e2e` (**bereits entfernt**)
+- main.ts TODO (**done** — an db2ai angeglichen)
 
 ---
 

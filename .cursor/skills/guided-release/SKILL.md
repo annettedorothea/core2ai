@@ -59,7 +59,7 @@ Agent runs in the **releasing consumer** (api2ai or db2ai):
 2. `npm run langium:generate && npm run build`
 3. `npm run generate:all`
 4. `cd packages/extension/demos && npm run build:generated`
-5. `npm run check && npm run test:unit`
+5. `npm run check && npm test`
 
 **api2ai only:** `npm run install:demos` if demo deps may be stale.
 
@@ -83,7 +83,7 @@ Then:
 ```bash
 npm run generate:all
 cd packages/extension/demos && npm run build:generated
-npm run check && npm run test:unit
+npm run check && npm test
 ```
 
 Shortcut (extension only): `npm run version:patch` bumps `packages/extension` — still align root + cli (+ language for db2ai) manually or via agent.
@@ -126,7 +126,7 @@ Output (local, not committed): `packages/extension/vscode-api2ai-X.Y.Z.vsix` or 
 1. Install the **`.vsix`** from CP4; reload window.
 2. Extension Dev Host → demos: generate/save, MCP tools smoke.
 3. **db2ai:** Docker demos if relevant.
-4. Optional agent smoke: `npm run test:smoke` (consumer root).
+4. Optional: `npm test` (consumer root) — includes MCP stdio integration tests.
 
 **End CP5:** stop until OK → **CP6** or done.
 
