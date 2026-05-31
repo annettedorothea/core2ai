@@ -50,8 +50,8 @@ If **`out/`** looks stale (renamed/deleted files), delete the folder manually an
 Sibling layout:
 
 ```
-MCP/core2ai
-MCP/api2ai   (or db2ai)
+./core2ai
+./api2ai   (or db2ai)
 ```
 
 One-time setup per machine:

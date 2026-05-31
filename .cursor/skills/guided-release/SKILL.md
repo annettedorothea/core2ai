@@ -21,8 +21,8 @@ description: >-
 2. **User commits in the IDE** — at commit CPs, output only **repo** + **commit message** (+ optional one-line note). No `git add` lists.
 3. **One checkpoint per turn** — status table with `[x]` / `[ ]`; wait for `release weiter` or manual test OK.
 4. **Agent may run** `npm run …` — not git.
-5. **Version before VSIX** — bump and **push** consumer version **before** `extension:vsix` (VSIX filename = committed version).
-6. **`.vsix` is local** — not committed; GitHub upload only via `release:vsix` after manual preview.
+5. **Version before VSIX** — bump and **push** consumer version **before** `vsix:build` (VSIX filename = committed version).
+6. **`.vsix` is local** — not committed; GitHub upload only via `vsix:release` after manual preview.
 
 ## Checkpoint map
 
@@ -34,7 +34,7 @@ description: >-
 | **3** | Commit + push                     | User  |
 | **4** | VSIX build                        | Agent |
 | **5** | Manual preview                    | User  |
-| **6** | GitHub release (`release:vsix`)   | User  |
+| **6** | GitHub release (`vsix:release`)   | User  |
 
 Optional **core2ai library tag** (only if `src/codegen/**` changed since last tag): before **CP1**, bump `core2ai/package.json`, `npm run build && npm run check`, user commit + tag on **core2ai** — no consumer pin step (dev uses **npm link**).
 
@@ -71,12 +71,15 @@ Agent runs in the **releasing consumer** (api2ai or db2ai):
 
 Ask target **VSIX version** (`X.Y.Z`) — do not guess.
 
-Bump **the same version** in that consumer:
+**Agent sets `"version": "X.Y.Z"` directly** in every `package.json` below (same value in all). Do **not** use `npm version` or root scripts like `version:patch` — they only touch one file and are easy to misalign.
 
-| Repo       | `package.json` files                                              |
-| ---------- | ----------------------------------------------------------------- |
-| **api2ai** | root, `packages/cli`, `packages/extension`                        |
-| **db2ai**  | root, `packages/cli`, `packages/language`, `packages/extension` |
+| Repo                    | Edit `version` in                                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **api2ai** or **db2ai** | `./package.json`, `packages/cli/package.json`, `packages/language/package.json`, `packages/extension/package.json` |
+
+Optional **core2ai** prelude: only `core2ai/package.json` when tagging the library.
+
+After edits, confirm every listed file shows the same `X.Y.Z`.
 
 Then:
 
@@ -85,8 +88,6 @@ npm run generate:all
 cd packages/extension/demos && npm run build:generated
 npm run check && npm test
 ```
-
-Shortcut (extension only): `npm run version:patch` bumps `packages/extension` — still align root + cli (+ language for db2ai) manually or via agent.
 
 **End CP2:** stop → **CP3**.
 
@@ -112,7 +113,7 @@ If **core2ai** was tagged in the optional prelude, that is a **separate** commit
 From consumer root:
 
 ```bash
-npm run extension:vsix --workspace packages/extension
+npm run vsix:build
 ```
 
 Output (local, not committed): `packages/extension/vscode-api2ai-X.Y.Z.vsix` or `vscode-db2ai-X.Y.Z.vsix`.
@@ -139,7 +140,7 @@ Only after **CP5** OK — publish the **same VSIX** you tested.
 From consumer root:
 
 ```bash
-npm run release:vsix
+npm run vsix:release
 ```
 
 Runs `gh release create` (prerelease) for `vscode-*-X.Y.Z.vsix`. No rebuild.
@@ -164,11 +165,11 @@ Repeat **CP0–CP6** for the other consumer if both extensions ship.
 | Problem                         | Action                                                                 |
 | ------------------------------- | ---------------------------------------------------------------------- |
 | VSIX wrong version in filename  | Bump in **CP2**, commit in **CP3**, then **CP4** again                  |
-| `release:vsix` missing file     | Run **CP4** first                                                      |
+| `vsix:release` missing file     | Run **CP4** (`vsix:build`) first                                       |
 | MCP broken after core2ai change | Rebuild core2ai (`watch`/`build`), regenerate demos, restart MCP       |
 | Check fails on generated output | Fix generator or DSL — never hand-edit `generated/**` (see rules)      |
 
 ## Reference
 
 - Build/link: [`../../rules/core2ai-build.mdc`](../../rules/core2ai-build.mdc)
-- VSIX scripts: `packages/extension/package.json` → `extension:vsix`, `release:vsix`
+- VSIX scripts: repo root `vsix:build`, `vsix:release` → `packages/extension/scripts/vsix-build.mjs`, `vsix-release.mjs`

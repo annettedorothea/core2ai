@@ -6,26 +6,46 @@ import * as path from 'node:path';
 const require = createRequire(import.meta.url);
 const tscBin = require.resolve('typescript/bin/tsc');
 
-function findConsumerWorkspaceRoot(startDir: string): string {
+type CompileWorkspaceRoot = {
+    root: string;
+    extendsConfig: 'tsconfig.json' | 'tsconfig.generated.json';
+};
+
+function findCompileWorkspaceRoot(startDir: string): CompileWorkspaceRoot {
     let dir = path.resolve(startDir);
+    let demosCandidate: CompileWorkspaceRoot | undefined;
     while (true) {
+        if (
+            fs.existsSync(path.join(dir, 'tsconfig.base.json')) &&
+            fs.existsSync(path.join(dir, 'demos-generate.config.json'))
+        ) {
+            demosCandidate = { root: dir, extendsConfig: 'tsconfig.generated.json' };
+        }
         if (fs.existsSync(path.join(dir, 'tsconfig.build.json'))) {
-            return dir;
+            return { root: dir, extendsConfig: 'tsconfig.json' };
         }
         const parent = path.dirname(dir);
         if (parent === dir) {
-            throw new Error('[compile-generated-fixture] consumer workspace root not found (tsconfig.build.json)');
+            if (demosCandidate) {
+                return demosCandidate;
+            }
+            throw new Error(
+                '[compile-generated-fixture] compile workspace root not found (tsconfig.build.json or demos tsconfig.generated.json)'
+            );
         }
         dir = parent;
     }
 }
 
-function compileGeneratedInDir(projectRoot: string, consumerWorkspaceRoot: string, include: string[]): void {
+function compileGeneratedInDir(projectRoot: string, workspace: CompileWorkspaceRoot, include: string[]): void {
     const tsconfigRelExtends = path
-        .relative(projectRoot, path.join(consumerWorkspaceRoot, 'tsconfig.json'))
+        .relative(projectRoot, path.join(workspace.root, workspace.extendsConfig))
         .split(path.sep)
         .join('/');
-    const tsconfig = {
+    const isDemosTmpFixture =
+        workspace.extendsConfig === 'tsconfig.generated.json' &&
+        path.resolve(projectRoot) !== path.resolve(workspace.root);
+    const tsconfig: Record<string, unknown> = {
         extends: tsconfigRelExtends,
         compilerOptions: {
             noEmit: false,
@@ -40,6 +60,9 @@ function compileGeneratedInDir(projectRoot: string, consumerWorkspaceRoot: strin
         },
         include
     };
+    if (isDemosTmpFixture) {
+        tsconfig.exclude = [];
+    }
     const tsconfigPath = path.join(projectRoot, 'tsconfig.generated-fixture.json');
     fs.writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2));
     try {
@@ -55,17 +78,17 @@ function compileGeneratedInDir(projectRoot: string, consumerWorkspaceRoot: strin
 
 /** Emit `.js` next to generated `.ts` (and optional `src/auth` stubs) for Vitest fixtures. */
 export function compileGeneratedForSmoke(runRoot: string): void {
-    const consumerWorkspaceRoot = findConsumerWorkspaceRoot(runRoot);
-    compileGeneratedInDir(runRoot, consumerWorkspaceRoot, ['generated/**/*.ts']);
+    const workspace = findCompileWorkspaceRoot(runRoot);
+    compileGeneratedInDir(runRoot, workspace, ['generated/**/*.ts']);
 
     const localAuth = path.join(runRoot, 'src', 'auth');
     if (fs.existsSync(localAuth)) {
-        compileGeneratedInDir(runRoot, consumerWorkspaceRoot, ['src/auth/**/*.ts']);
+        compileGeneratedInDir(runRoot, workspace, ['src/auth/**/*.ts']);
     }
 
     const parentRoot = path.dirname(runRoot);
     const parentAuth = path.join(parentRoot, 'src', 'auth');
     if (parentRoot !== runRoot && fs.existsSync(parentAuth)) {
-        compileGeneratedInDir(parentRoot, consumerWorkspaceRoot, ['src/auth/**/*.ts']);
+        compileGeneratedInDir(parentRoot, workspace, ['src/auth/**/*.ts']);
     }
 }
