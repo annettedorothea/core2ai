@@ -2,9 +2,10 @@
 
 **core2ai** is the shared **codegen** library for **api2ai** and **db2ai**: document validation, auth-stub bootstrap, Zod codegen, and static MCP `mcp-serve` source (`renderMcpServeSource`).
 
-| Subpath export          | Purpose                                                                      |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| `@core2ai/core/codegen` | Document validation, auth-stub bootstrap, Zod codegen, MCP project bootstrap |
+| Subpath export               | Purpose                                                                             |
+| ---------------------------- | ----------------------------------------------------------------------------------- |
+| `@core2ai/core/codegen`      | Document validation, auth-stub bootstrap, Zod codegen, MCP project bootstrap        |
+| `@core2ai/core/test-helpers` | Shared Vitest helpers for consumer CLI integration tests (`asRecord`, `restoreEnv`) |
 
 The repository root is **`@core2ai/core`**. Package exports resolve to compiled **`out/`**, not `src/`. The package is **not published to npm** — local development uses **`npm link`** against a sibling checkout.
 
