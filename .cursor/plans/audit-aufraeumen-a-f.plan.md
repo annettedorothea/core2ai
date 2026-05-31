@@ -43,18 +43,24 @@ Systematische Abarbeitung über **core2ai**, **api2ai**, **db2ai**. Pro Block: v
 
 ---
 
-## Block B — Toter Code — open
+## Block B — Toter Code — **done**
 
-- core2ai: `consumer-dev-smoke.mjs`, leerer `src/mcp-host/`, README
-- db2ai: `access-demo-docker.ts` (wenn A1.4 = löschen)
+| # | Status | Thema |
+|---|--------|--------|
+| B1 | **done** | `consumer-dev-smoke.mjs` gelöscht |
+| B2 | **done** | leerer `src/mcp-host/` entfernt |
+| B3 | **done** | `core2ai/README.md` + `package.json` `files` ohne `scripts/` |
+| B4 | **wontfix** | `access-demo-docker.ts` — in Vitest genutzt, behalten |
 
 ---
 
-## Block C — Veraltete Texte — open
+## Block C — Veraltete Texte — **done**
 
-- api2ai `generate:all` (smoke-generated in generated tools)
-- README `.mjs` → `.js`
-- db2ai demos-README Test-Skripte
+| # | Status | Thema |
+|---|--------|--------|
+| C1 | **done** | api2ai `generate:all` + `build:generated` (ohne `smoke-generated` in Fehlertexten) |
+| C2 | **done** | api2ai README; db2ai `mcp-db2ai-only.mdc` (`.js` statt `.mjs`) |
+| C3 | **done** | db2ai demos-README „Verify“ → `npm test --prefix …/demos` |
 
 ---
 

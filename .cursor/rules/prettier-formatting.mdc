@@ -1,5 +1,5 @@
 ---
-description: Formatting, lint, and type-check for edited artifacts
+description: Formatting, lint, and type-check for edited artifacts (incl. Markdown)
 alwaysApply: true
 ---
 
@@ -12,3 +12,18 @@ When creating or editing code, generated code, plans, JSON, YAML, Markdown, or o
 - For focused edits, keep touched files compatible with `npm run format:check`.
 - Do not manually reformat files that are ignored by `.prettierignore`.
 - Before finishing substantive changes, ensure `npm run check` passes (`format:check`, `typecheck`, `lint`).
+
+## Markdown
+
+When creating or editing **`.md`** files (README, docs, changelogs, package notes):
+
+- Treat Markdown as formatted source — do not leave MD-only edits failing Prettier.
+- After touching one or a few files: `prettier --check "<path>"` or confirm root `npm run format:check` passes.
+- After many MD edits (or MD mixed with code): `npm run format` from the repo root.
+- For **`README.md`**: also follow [readme-footer.mdc](./readme-footer.mdc) (`#Col3:23` footer where that rule applies).
+- Prose/layout (Prettier does not enforce all of this — keep it consistent):
+  - Opening ` ``` ` on its own line (not after list markers or inline text).
+  - Valid tables (header row, `|---|` separator, same column count per row).
+  - Prefer markdown links for paths users should open.
+
+**`.cursor/**` is in `.prettierignore`** (plans, skills, rules). When editing those Markdown files anyway, match Prettier manually (`printWidth: 120`, `tabWidth: 4`, trailing commas off) and keep the same structural conventions as above.

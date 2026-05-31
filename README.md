@@ -18,8 +18,8 @@ Generated demo/runtime MCP host code lives in each consumer’s **`generated/cli
 Source layout:
 
 ```
-src/codegen/   — shared generator helpers (incl. render-mcp-serve.ts)
-scripts/       — consumer-dev-smoke.mjs (called from api2ai/db2ai dev-smoke scripts)
+src/codegen/      — shared generator helpers (incl. render-mcp-serve.ts)
+src/test-helpers/ — shared Vitest helpers for consumers
 ```
 
 ## Docs
