@@ -81,15 +81,23 @@ npm run test --prefix packages/extension/demos
 
 Ask target **VSIX version** (`X.Y.Z`) — do not guess.
 
-**Agent sets `"version": "X.Y.Z"` directly** in every `package.json` below (same value in all). Do **not** use `npm version` or root scripts like `version:patch` — they only touch one file and are easy to misalign.
+From the **releasing consumer** root (or **core2ai** for library tag):
 
-| Repo                    | Edit `version` in                                                                                                      |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **api2ai** or **db2ai** | `./package.json`, `packages/cli/package.json`, `packages/language/package.json`, `packages/extension/package.json` |
+```bash
+npm run vsix:version -- X.Y.Z
+```
 
-Optional **core2ai** prelude: only `core2ai/package.json` when tagging the library.
+(api2ai / db2ai — updates root + `packages/cli`, `packages/language`, `packages/extension` `package.json`.)
 
-After edits, confirm every listed file shows the same `X.Y.Z`.
+Optional **core2ai** prelude:
+
+```bash
+cd ../core2ai && npm run version -- X.Y.Z
+```
+
+Do **not** use `npm version` or ad-hoc single-file edits — easy to misalign VSIX filename vs package versions.
+
+After the command, confirm all four consumer `package.json` files show the same `X.Y.Z`.
 
 Then:
 

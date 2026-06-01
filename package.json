@@ -16,6 +16,7 @@
         }
     },
     "scripts": {
+        "version": "node scripts/bump-version.mjs",
         "build": "tsc -p tsconfig.json",
         "watch": "tsc -p tsconfig.json --watch",
         "postinstall": "husky",
