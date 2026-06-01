@@ -2,9 +2,10 @@
 name: guided-release
 description: >-
     Guided VSIX release for api2ai and db2ai (optional core2ai tag). One checkpoint per
-    turn: verify, version bump, commit, VSIX build, manual test, GitHub release. Use for
-    guided release, release, release CPn, or release weiter. Never git commit/push/tag/gh
-    unless the user explicitly asks. For commits: repo + message only (user checks in via IDE).
+    turn: clean git, version bump, verify (vsix:prepare), commit, VSIX build, manual test,
+    GitHub release. Use for guided release, release, release CPn, or release weiter. Never
+    git commit/push/tag/gh unless the user explicitly asks. For commits: repo + message only
+    (user checks in via IDE).
 ---
 
 # Guided release
@@ -23,20 +24,21 @@ description: >-
 4. **Agent may run** `npm run …` — not git.
 5. **Version before VSIX** — bump and **push** consumer version **before** `vsix:build` (VSIX filename = committed version).
 6. **`.vsix` is local** — not committed; GitHub upload only via `vsix:release` after manual preview.
+7. **Verify once after bump** — `npm run vsix:prepare` after `vsix:version` replaces a separate `generate:all` / `check` / `npm test` pass (those steps are already inside `vsix:prepare`).
 
 ## Checkpoint map
 
-| CP    | Name                              | Who   |
-| ----- | --------------------------------- | ----- |
-| **0** | Clean git (three repos)           | Agent |
-| **1** | Verify pipeline                   | Agent |
-| **2** | Version bump + regenerate         | Agent |
-| **3** | Commit + push                     | User  |
-| **4** | VSIX build                        | Agent |
-| **5** | Manual preview                    | User  |
-| **6** | GitHub release (`vsix:release`)   | User  |
+| CP    | Name                            | Who   |
+| ----- | ------------------------------- | ----- |
+| **0** | Clean git (three repos)         | Agent |
+| **1** | Version bump                    | Agent |
+| **2** | Verify pipeline (`vsix:prepare`) | Agent |
+| **3** | Commit + push                   | User  |
+| **4** | VSIX build                      | Agent |
+| **5** | Manual preview                  | User  |
+| **6** | GitHub release (`vsix:release`) | User  |
 
-Optional **core2ai library tag** (only if `src/codegen/**` changed since last tag): before **CP1**, bump `core2ai/package.json`, `npm run build && npm run check`, user commit + tag on **core2ai** — no consumer pin step (dev uses **npm link**).
+Optional **core2ai library tag** (only if `src/codegen/**` changed since last tag): bump with `npm run version -- X.Y.Z`, `npm run build && npm run check` in **core2ai**, user commit + tag — before consumer **CP1** (dev uses **npm link**, no consumer pin step).
 
 ---
 
@@ -45,17 +47,37 @@ Optional **core2ai library tag** (only if `src/codegen/**` changed since last ta
 Agent: `git status` in **core2ai**, **api2ai**, **db2ai**.
 
 - **Stop** if dirty before release work — **repo + commit message** per repo (IDE).
-- **Exception:** after **CP2** until **CP3** push, the releasing consumer may stay dirty — expected.
+- **Exception:** after **CP1–CP2** until **CP3** push, the releasing consumer may stay dirty (version bump ± regenerated demos from `vsix:prepare`) — expected.
 
 → **CP1**
 
 ---
 
-## CP1 — Verify pipeline
+## CP1 — Version bump
+
+Ask target **VSIX version** (`X.Y.Z`) — do not guess.
+
+From the **releasing consumer** root:
+
+```bash
+npm run vsix:version -- X.Y.Z
+```
+
+Updates root + `packages/cli`, `packages/language`, `packages/extension` `package.json`.
+
+Do **not** use `npm version` or single-file edits — misaligns VSIX filename vs package versions.
+
+Confirm all four consumer `package.json` files show the same `X.Y.Z`.
+
+**End CP1:** stop → **CP2**.
+
+---
+
+## CP2 — Verify pipeline
 
 Agent runs in the **releasing consumer** (api2ai or db2ai):
 
-1. If **core2ai** `src/` changed: `npm run build && npm run check` in **core2ai** (or confirm `npm run watch` was running).
+1. If **core2ai** `src/codegen/**` changed since last tag: `npm run build && npm run check` in **core2ai** (or confirm `npm run watch` was running) — optional prelude, not a VSIX step.
 2. From consumer root: **`npm run vsix:prepare`** — runs `langium:generate`, `build`, `install:demos`, `generate:all`, `build:generated` (demos), `check`, and workspace tests (language, cli, demos). Does **not** package a VSIX.
 
 Manual equivalent (same order as `packages/extension/scripts/vsix-prepare.mjs`):
@@ -73,50 +95,18 @@ npm run test --prefix packages/extension/demos
 
 **Not enough before `vsix:build`:** `npm run build --workspace packages/extension` alone — missing regenerate, demos JS, check, and tests.
 
-**End CP1:** stop if red; else → **CP2**.
+**Do not** re-run `generate:all` / `check` / `npm test` after a green `vsix:prepare` unless you skipped CP2 or changed DSL/generator between CP2 and CP3.
 
----
-
-## CP2 — Version bump + regenerate
-
-Ask target **VSIX version** (`X.Y.Z`) — do not guess.
-
-From the **releasing consumer** root (or **core2ai** for library tag):
-
-```bash
-npm run vsix:version -- X.Y.Z
-```
-
-(api2ai / db2ai — updates root + `packages/cli`, `packages/language`, `packages/extension` `package.json`.)
-
-Optional **core2ai** prelude:
-
-```bash
-cd ../core2ai && npm run version -- X.Y.Z
-```
-
-Do **not** use `npm version` or ad-hoc single-file edits — easy to misalign VSIX filename vs package versions.
-
-After the command, confirm all four consumer `package.json` files show the same `X.Y.Z`.
-
-Then:
-
-```bash
-npm run generate:all
-cd packages/extension/demos && npm run build:generated
-npm run check && npm test
-```
-
-**End CP2:** stop → **CP3**.
+**End CP2:** stop if red; else → **CP3**.
 
 ---
 
 ## CP3 — Commit + push (user)
 
-**One commit** in the releasing consumer — version bump + regenerated demos together, then **push**.
+**One commit** in the releasing consumer — feature/fix changes, version bump, and any regenerated `generated/**/*.ts` from `vsix:prepare`, then **push**.
 
-| Repo     | Message (example)              |
-| -------- | ------------------------------ |
+| Repo     | Message (example)                |
+| -------- | -------------------------------- |
 | `api2ai` | `Release v0.0.5: <one line why>` |
 | `db2ai`  | `Release v0.0.5: <one line why>` |
 
@@ -143,9 +133,9 @@ Output (local, not committed): `packages/extension/vscode-api2ai-X.Y.Z.vsix` or 
 ## CP5 — Manual preview (user)
 
 1. Install the **`.vsix`** from CP4; reload window.
-2. Extension Dev Host → demos: generate/save, MCP tools smoke.
-3. **db2ai:** Docker demos if relevant.
-4. Optional: `npm test` (consumer root) — includes MCP stdio integration tests.
+2. Extension Dev Host or copied demo workspace: **`npm run init`**, enable MCP, smoke-test tools.
+3. **db2ai:** Docker required for DB demos.
+4. Optional: repeat `npm run vsix:prepare` only if something failed in preview and you fixed it — then new commit before rebuilding VSIX.
 
 **End CP5:** stop until OK → **CP6** or done.
 
@@ -169,25 +159,28 @@ Repeat **CP0–CP6** for the other consumer if both extensions ship.
 
 ## Resume
 
-| User says        | Agent does        |
-| ---------------- | ----------------- |
-| `guided release` | CP0 → CP1         |
-| `release CP4`    | CP4 VSIX only     |
-| `release CP2`    | CP2 bump only     |
-| `release weiter` | Next open CP      |
+| User says        | Agent does              |
+| ---------------- | ----------------------- |
+| `guided release` | CP0 → CP1                |
+| `release CP2`    | CP2 `vsix:prepare` only  |
+| `release CP1`    | CP1 version bump only    |
+| `release CP4`    | CP4 VSIX only            |
+| `release weiter` | Next open CP             |
 
 ---
 
 ## Troubleshooting
 
-| Problem                         | Action                                                                 |
-| ------------------------------- | ---------------------------------------------------------------------- |
-| VSIX wrong version in filename  | Bump in **CP2**, commit in **CP3**, then **CP4** again                  |
-| `vsix:release` missing file     | Run **CP4** (`vsix:build`) first                                       |
-| MCP broken after core2ai change | Rebuild core2ai (`watch`/`build`), regenerate demos, restart MCP       |
-| Check fails on generated output | Fix generator or DSL — never hand-edit `generated/**` (see rules)      |
+| Problem                         | Action                                                           |
+| ------------------------------- | ---------------------------------------------------------------- |
+| VSIX wrong version in filename  | **CP1** bump, **CP3** commit, **CP4** rebuild                    |
+| `vsix:release` missing file     | Run **CP4** (`vsix:build`) first                                 |
+| Prepare fails after bump        | Fix code/generator; version in package.json may stay — re-run CP2 |
+| MCP broken after core2ai change | Rebuild core2ai (`watch`/`build`), **CP2** again, restart MCP    |
+| Check fails on generated output | Fix generator or DSL — never hand-edit `generated/**` (see rules) |
 
 ## Reference
 
-- Build/link: [`../../rules/core2ai-build.mdc`](../../rules/core2ai-build.mdc)
-- VSIX scripts: repo root `vsix:prepare`, `vsix:build`, `vsix:release` → `packages/extension/scripts/vsix-prepare.mjs`, `vsix-build.mjs`, `vsix-release.mjs`
+- Build/link: [`.cursor/rules/core2ai-build.mdc`](../../.cursor/rules/core2ai-build.mdc)
+- core2ai tag only: `npm run version -- X.Y.Z` → `scripts/bump-version.mjs`
+- Consumers: `vsix:version`, `vsix:prepare`, `vsix:build`, `vsix:release` in sibling api2ai/db2ai
