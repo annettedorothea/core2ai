@@ -5,6 +5,7 @@ import {
     resolveHostContextForCallFn,
     resolveHostContextForHttpCallFn,
     resolveHostContextForOAuthSessionDbBranch,
+    generatedModuleParam,
     validateHostAtStartupFn,
     validateOAuthHttpHostAtStartupDbBranch,
     validateOAuthHttpHostAtStartupDbBranchClose,
@@ -672,7 +673,7 @@ function generatedHasProtectedOrCheckedTool(generated: GeneratedHostModule): boo
 
 async function validateOAuthHttpHostAtStartup(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
-    generated: GeneratedHostModule
+    ${generatedModuleParam(product)}: GeneratedHostModule
 ): Promise<void> {
     if (httpHostConfig.tokenValidation === 'hs256') {
         readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey!);
@@ -695,7 +696,7 @@ async function validateOAuthHttpHostAtStartup(
 
 async function resolveHostContextForOAuthSession(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
-    generated: GeneratedHostModule,
+    ${generatedModuleParam(product)}: GeneratedHostModule,
     headers: Record<string, string | string[] | undefined>,
     sessionStore: Map<string, McpOAuthSession>,
     sessionId: string | undefined

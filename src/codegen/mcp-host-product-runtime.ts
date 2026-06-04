@@ -3,6 +3,11 @@
  */
 export type McpHostProduct = 'api2ai' | 'db2ai';
 
+/** Parameter name when GeneratedHostModule is required only for db2ai branches (api2ai → eslint _ prefix). */
+export function generatedModuleParam(product: McpHostProduct): string {
+    return product === 'api2ai' ? '_generated' : 'generated';
+}
+
 export function hostCoreTypes(product: McpHostProduct): string {
     if (product === 'db2ai') {
         return `
@@ -180,7 +185,7 @@ export function resolveHostContextForCallFn(product: McpHostProduct): string {
     }`
             : '';
     return `
-function resolveHostContextForCall(hostConfig: HostRuntimeConfig, generated: GeneratedHostModule): ApiLikeHostContext {
+function resolveHostContextForCall(hostConfig: HostRuntimeConfig, ${generatedModuleParam(product)}: GeneratedHostModule): ApiLikeHostContext {
     const credential = readCredentialFromEnv(hostConfig.authEnvKey);
     const { credential: c, jwt } = credentialWithOptionalJwt(credential);
     ${dbBranch}
@@ -203,7 +208,7 @@ export function validateStatelessHttpHostAtStartupFn(product: McpHostProduct): s
     return `
 function validateStatelessHttpHostAtStartup(
     httpHostConfig: StatelessHttpHostRuntimeConfig,
-    generated: GeneratedHostModule
+    ${generatedModuleParam(product)}: GeneratedHostModule
 ): void {
     ${dbBranch}
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
@@ -229,7 +234,7 @@ export function resolveHostContextForHttpCallFn(product: McpHostProduct): string
     return `
 function resolveHostContextForHttpCall(
     httpHostConfig: StatelessHttpHostRuntimeConfig,
-    generated: GeneratedHostModule,
+    ${generatedModuleParam(product)}: GeneratedHostModule,
     incomingHeaders: Record<string, string | string[] | undefined>
 ): ApiLikeHostContext {
     const headerName = readAuthHeaderNameFromEnv();
