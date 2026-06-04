@@ -1,6 +1,6 @@
 # core2ai
 
-**core2ai** is the shared **codegen** library for **api2ai** and **db2ai**: document validation, auth-stub bootstrap, Zod codegen, and static MCP `mcp-serve` source (`renderMcpServeSource`).
+**core2ai** is the shared **codegen** library for **api2ai** and **db2ai**: document validation, auth-stub bootstrap, Zod codegen, and static MCP stdio host source (`renderStdioMcpServerSource`).
 
 | Subpath export          | Purpose                                                                                      |
 | ----------------------- | -------------------------------------------------------------------------------------------- |
@@ -12,12 +12,12 @@ The repository root is **`@core2ai/core`**. Package exports resolve to compiled 
 import { assertDocumentValidForGenerate } from '@core2ai/core/codegen';
 ```
 
-Generated demo/runtime MCP host code lives in each consumer’s **`generated/cli/mcp-serve.ts`** (no `@core2ai/core` at runtime).
+Generated demo/runtime MCP host code lives in each consumer’s **`generated/cli/stdio-mcp-server.ts`** (no `@core2ai/core` at runtime).
 
 Source layout:
 
 ```
-src/codegen/       — shared generator helpers (incl. render-mcp-serve.ts, writeGeneratedDemosTestSupport)
+src/codegen/       — shared generator helpers (incl. render-stdio-mcp-server.ts, writeGeneratedDemosTestSupport)
 src/test-fixtures/ — render-* templates for consumer demos/test/generated (emitted on generate:all)
 ```
 
@@ -77,10 +77,10 @@ No need to re-link after core2ai rebuilds — the symlink stays; only **`out/`**
 
 ### After core2ai changes
 
-| What changed                               | In consumer                                                                                            |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| **codegen** (incl. `renderMcpServeSource`) | `generate:all`, `build:generated` in demos when MCP bootstrap shape changed; **restart MCP** in Cursor |
-| **VSIX / extension embed**                 | `npm run build` in `packages/extension` — embed bundles CLI separately from link                       |
+| What changed                                     | In consumer                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| **codegen** (incl. `renderStdioMcpServerSource`) | `generate:all`, `build:generated` in demos when MCP bootstrap shape changed; **restart MCP** in Cursor |
+| **VSIX / extension embed**                       | `npm run build` in `packages/extension` — embed bundles CLI separately from link                       |
 
 ## Git hooks
 

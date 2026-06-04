@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { renderMcpServeSource } from './render-mcp-serve.js';
+import { renderStdioMcpServerSource } from './render-stdio-mcp-server.js';
 
 export type ProjectBootstrapConfig = {
     generatorImplementationDir: string;
@@ -41,12 +41,12 @@ function resolveCliPackageJsonPathForVersions(config: ProjectBootstrapConfig): s
     return path.join(resolveCliPackageRoot(config), 'package.json');
 }
 
-export function writeGeneratedMcpServe(cliDir: string, _config?: ProjectBootstrapConfig): string {
+export function writeGeneratedStdioMcpHost(cliDir: string, _config?: ProjectBootstrapConfig): string {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
-    const dest = path.join(cliDir, 'mcp-serve.ts');
-    fs.writeFileSync(dest, renderMcpServeSource(), 'utf-8');
+    const dest = path.join(cliDir, 'stdio-mcp-server.ts');
+    fs.writeFileSync(dest, renderStdioMcpServerSource(), 'utf-8');
     return dest;
 }
 
@@ -106,7 +106,7 @@ function warnIfPackageJsonMissingMcpDeps(packageJsonDir: string, config: Project
     if (missing.length > 0) {
         console.warn(
             config.missingDepsMessage?.(pjsonPath, missing) ??
-                `[generate] "${pjsonPath}": install runtime dependencies: ${missing.join(', ')} (npm install), then generated/cli/mcp-serve.js can run.`
+                `[generate] "${pjsonPath}": install runtime dependencies: ${missing.join(', ')} (npm install), then generated/cli/stdio-mcp-server.js can run.`
         );
     }
 }
