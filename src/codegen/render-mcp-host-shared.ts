@@ -1,16 +1,10 @@
 /**
  * Shared generated MCP host runtime (env loading, host config, tool registration).
- * Included by stdio-mcp-server.ts (and http-mcp-server.ts in Phase 2).
+ * Included by stdio-mcp-server.ts and stateless-http-mcp-server.ts.
  */
-export function renderMcpHostSharedSource(): string {
-    return `
+export function renderMcpHostSharedSource(mode: 'stdio' | 'stateless-http'): string {
+    const core = `
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
-
-type HostRuntimeConfig = {
-    baseUrlEnvKey?: string;
-    authEnvKey?: string;
-    envDirs: string[];
-};
 
 type DatabaseDialect = 'postgres' | 'mysql';
 
@@ -150,108 +144,11 @@ function credentialWithOptionalJwt(credential: string | undefined): {
     }
 }
 
-function readCredentialFromEnv(authEnvKey: string | undefined): string | undefined {
-    const key = authEnvKey?.trim();
-    if (!key) {
-        return undefined;
-    }
-    const value = process.env[key]?.trim();
-    return value && value.length > 0 ? value : undefined;
-}
-
 function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialect): boolean {
     if (dialect === 'mysql') {
         return connectionString.startsWith('mysql://');
     }
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
-}
-
-function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
-    let baseUrlEnv: string | undefined;
-    let authEnv: string | undefined;
-    for (let i = 0; i < argv.length; i++) {
-        const arg = argv[i];
-        if (arg === '--base-url-env') {
-            baseUrlEnv = argv[++i];
-            if (!baseUrlEnv) {
-                throw new Error('Missing value after --base-url-env');
-            }
-            continue;
-        }
-        if (arg === '--auth-env') {
-            authEnv = argv[++i];
-            if (!authEnv) {
-                throw new Error('Missing value after --auth-env');
-            }
-            continue;
-        }
-        if (arg.startsWith('-')) {
-            throw new Error('Unknown option: ' + arg);
-        }
-        throw new Error('Unexpected positional argument: ' + arg);
-    }
-    return { baseUrlEnvKey: baseUrlEnv, authEnvKey: authEnv, envDirs };
-}
-
-function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: GeneratedHostModule): void {
-    if (generated.connectionEnv) {
-        const connectionString = process.env[generated.connectionEnv]?.trim();
-        if (!connectionString) {
-            throw new Error(
-                'Environment variable "' + generated.connectionEnv + '" is missing or empty (database env from .db2ai).'
-            );
-        }
-        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
-        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
-            throw new Error(
-                'Environment variable "' +
-                    generated.connectionEnv +
-                    '" does not match generated database dialect "' +
-                    dialect +
-                    '".'
-            );
-        }
-    } else {
-        const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
-        if (!baseUrlKey) {
-            throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
-        }
-        const baseUrl = process.env[baseUrlKey]?.trim();
-        if (!baseUrl) {
-            throw new Error(
-                'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
-            );
-        }
-    }
-    if (generated.requiresAuth && !hostConfig.authEnvKey?.trim()) {
-        throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
-    }
-}
-
-function resolveHostContextForCall(hostConfig: HostRuntimeConfig, generated: GeneratedHostModule): ApiLikeHostContext {
-    const credential = readCredentialFromEnv(hostConfig.authEnvKey);
-    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
-    if (generated.connectionEnv) {
-        const connectionString = process.env[generated.connectionEnv]?.trim();
-        if (!connectionString) {
-            throw new Error(
-                'Missing database URL. Set environment variable "' + generated.connectionEnv + '" (from .db2ai).'
-            );
-        }
-        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
-        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
-            throw new Error(
-                'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
-            );
-        }
-        return { connectionString, databaseDialect: dialect, credential: c, jwt };
-    }
-    const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
-    const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
-    if (!baseUrl) {
-        throw new Error('Missing host base URL. Pass --base-url-env on stdio-mcp-server.js and set the variable.');
-    }
-    return { baseUrl, credential: c, jwt };
 }
 
 function formatToolError(err: unknown): string {
@@ -319,7 +216,7 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
 async function registerMcpTools(
     server: McpServer,
     generated: GeneratedHostModule,
-    hostConfig: HostRuntimeConfig
+    options: { envDirs: string[]; resolveContext: () => ApiLikeHostContext }
 ): Promise<void> {
     for (const tool of generated.generatedTools) {
         const inputSchema = requireInputZodSchema(generated.inputZodByTool, tool.toolName);
@@ -331,8 +228,8 @@ async function registerMcpTools(
                 inputSchema
             },
             async (args) => {
-                loadLocalEnvFiles(hostConfig.envDirs, { refresh: true });
-                const hostContext = resolveHostContextForCall(hostConfig, generated);
+                loadLocalEnvFiles(options.envDirs, { refresh: true });
+                const hostContext = options.resolveContext();
                 try {
                     const result = await generated.invokeTool(
                         tool.toolName,
@@ -363,4 +260,261 @@ async function registerMcpTools(
     }
 }
 `.trim();
+
+    const stdioExtras = `
+type HostRuntimeConfig = {
+    baseUrlEnvKey?: string;
+    authEnvKey?: string;
+    envDirs: string[];
+};
+
+function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
+    let baseUrlEnv: string | undefined;
+    let authEnv: string | undefined;
+    for (let i = 0; i < argv.length; i++) {
+        const arg = argv[i];
+        if (arg === '--base-url-env') {
+            baseUrlEnv = argv[++i];
+            if (!baseUrlEnv) {
+                throw new Error('Missing value after --base-url-env');
+            }
+            continue;
+        }
+        if (arg === '--auth-env') {
+            authEnv = argv[++i];
+            if (!authEnv) {
+                throw new Error('Missing value after --auth-env');
+            }
+            continue;
+        }
+        if (arg.startsWith('-')) {
+            throw new Error('Unknown option: ' + arg);
+        }
+        throw new Error('Unexpected positional argument: ' + arg);
+    }
+    return { baseUrlEnvKey: baseUrlEnv, authEnvKey: authEnv, envDirs };
+}
+
+function readCredentialFromEnv(authEnvKey: string | undefined): string | undefined {
+    const key = authEnvKey?.trim();
+    if (!key) {
+        return undefined;
+    }
+    const value = process.env[key]?.trim();
+    return value && value.length > 0 ? value : undefined;
+}
+
+function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: GeneratedHostModule): void {
+    if (generated.connectionEnv) {
+        const connectionString = process.env[generated.connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Environment variable "' + generated.connectionEnv + '" is missing or empty (database env from .db2ai).'
+            );
+        }
+        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
+        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
+            throw new Error(
+                'Environment variable "' +
+                    generated.connectionEnv +
+                    '" does not match generated database dialect "' +
+                    dialect +
+                    '".'
+            );
+        }
+    } else {
+        const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
+        if (!baseUrlKey) {
+            throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
+        }
+        const baseUrl = process.env[baseUrlKey]?.trim();
+        if (!baseUrl) {
+            throw new Error(
+                'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
+            );
+        }
+    }
+    if (generated.requiresAuth && !hostConfig.authEnvKey?.trim()) {
+        throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
+    }
+}
+
+function resolveHostContextForCall(hostConfig: HostRuntimeConfig, generated: GeneratedHostModule): ApiLikeHostContext {
+    const credential = readCredentialFromEnv(hostConfig.authEnvKey);
+    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
+    if (generated.connectionEnv) {
+        const connectionString = process.env[generated.connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Missing database URL. Set environment variable "' + generated.connectionEnv + '" (from .db2ai).'
+            );
+        }
+        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
+        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
+            throw new Error(
+                'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
+            );
+        }
+        return { connectionString, databaseDialect: dialect, credential: c, jwt };
+    }
+    const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
+    const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
+    if (!baseUrl) {
+        throw new Error('Missing host base URL. Pass --base-url-env on stdio-mcp-server.js and set the variable.');
+    }
+    return { baseUrl, credential: c, jwt };
+}
+`.trim();
+
+    const httpExtras = `
+type StatelessHttpHostRuntimeConfig = {
+    baseUrlEnvKey?: string;
+    envDirs: string[];
+    listenHost: string;
+    port: number;
+    mcpPath: string;
+};
+
+const DEFAULT_MCP_AUTH_HEADER = 'x-api-token';
+
+function parseStatelessHttpHostArgv(argv: string[], envDirs: string[]): StatelessHttpHostRuntimeConfig {
+    let baseUrlEnv: string | undefined;
+    let listenHost = '127.0.0.1';
+    let port: number | undefined;
+    let mcpPath = '/mcp';
+    for (let i = 0; i < argv.length; i++) {
+        const arg = argv[i];
+        if (arg === '--base-url-env') {
+            baseUrlEnv = argv[++i];
+            if (!baseUrlEnv) {
+                throw new Error('Missing value after --base-url-env');
+            }
+            continue;
+        }
+        if (arg === '--host') {
+            listenHost = argv[++i];
+            if (!listenHost) {
+                throw new Error('Missing value after --host');
+            }
+            continue;
+        }
+        if (arg === '--port') {
+            const raw = argv[++i];
+            if (!raw) {
+                throw new Error('Missing value after --port');
+            }
+            port = Number.parseInt(raw, 10);
+            if (!Number.isFinite(port) || port <= 0) {
+                throw new Error('Invalid --port value: ' + raw);
+            }
+            continue;
+        }
+        if (arg === '--path') {
+            mcpPath = argv[++i];
+            if (!mcpPath) {
+                throw new Error('Missing value after --path');
+            }
+            if (!mcpPath.startsWith('/')) {
+                mcpPath = '/' + mcpPath;
+            }
+            continue;
+        }
+        if (arg.startsWith('-')) {
+            throw new Error('Unknown option: ' + arg);
+        }
+        throw new Error('Unexpected positional argument: ' + arg);
+    }
+    if (port === undefined) {
+        throw new Error('Required: --port <number>');
+    }
+    return { baseUrlEnvKey: baseUrlEnv, envDirs, listenHost, port, mcpPath };
+}
+
+function readAuthHeaderNameFromEnv(): string {
+    const configured = process.env.MCP_AUTH_HEADER?.trim();
+    return configured && configured.length > 0 ? configured : DEFAULT_MCP_AUTH_HEADER;
+}
+
+function readCredentialFromHttpHeaders(
+    headers: Record<string, string | string[] | undefined>,
+    headerName: string
+): string | undefined {
+    const normalized = headerName.trim().toLowerCase();
+    const raw = headers[normalized];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    const trimmed = typeof value === 'string' ? value.trim() : '';
+    return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function validateStatelessHttpHostAtStartup(
+    httpHostConfig: StatelessHttpHostRuntimeConfig,
+    generated: GeneratedHostModule
+): void {
+    if (generated.connectionEnv) {
+        const connectionString = process.env[generated.connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Environment variable "' + generated.connectionEnv + '" is missing or empty (database env from .db2ai).'
+            );
+        }
+        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
+        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
+            throw new Error(
+                'Environment variable "' +
+                    generated.connectionEnv +
+                    '" does not match generated database dialect "' +
+                    dialect +
+                    '".'
+            );
+        }
+    } else {
+        const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
+        if (!baseUrlKey) {
+            throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
+        }
+        const baseUrl = process.env[baseUrlKey]?.trim();
+        if (!baseUrl) {
+            throw new Error(
+                'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
+            );
+        }
+    }
+}
+
+function resolveHostContextForHttpCall(
+    httpHostConfig: StatelessHttpHostRuntimeConfig,
+    generated: GeneratedHostModule,
+    incomingHeaders: Record<string, string | string[] | undefined>
+): ApiLikeHostContext {
+    const headerName = readAuthHeaderNameFromEnv();
+    const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);
+    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
+    if (generated.connectionEnv) {
+        const connectionString = process.env[generated.connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Missing database URL. Set environment variable "' + generated.connectionEnv + '" (from .db2ai).'
+            );
+        }
+        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
+        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
+            throw new Error(
+                'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
+            );
+        }
+        return { connectionString, databaseDialect: dialect, credential: c, jwt };
+    }
+    const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
+    const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
+    if (!baseUrl) {
+        throw new Error(
+            'Missing host base URL. Pass --base-url-env on stateless-http-mcp-server.js and set the variable.'
+        );
+    }
+    return { baseUrl, credential: c, jwt };
+}
+`.trim();
+
+    const modeExtras = mode === 'stdio' ? stdioExtras : httpExtras;
+    return `${core}\n\n${modeExtras}`;
 }

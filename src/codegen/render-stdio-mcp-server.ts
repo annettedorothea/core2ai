@@ -4,7 +4,7 @@ import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
  * Static MCP stdio host for generated `cli/stdio-mcp-server.ts`.
  */
 export function renderStdioMcpServerSource(): string {
-    const shared = renderMcpHostSharedSource();
+    const shared = renderMcpHostSharedSource('stdio');
     return `#!/usr/bin/env node
 /**
  * Generated MCP stdio host (static runtime — no @core2ai/core).
@@ -24,7 +24,10 @@ async function runStdioMcpServer(
 ): Promise<void> {
     const { name, version } = requireMcpServerIdentity(generated);
     const server = new McpServer({ name, version });
-    await registerMcpTools(server, generated, hostConfig);
+    await registerMcpTools(server, generated, {
+        envDirs: hostConfig.envDirs,
+        resolveContext: () => resolveHostContextForCall(hostConfig, generated)
+    });
     const transport = new StdioServerTransport();
     await server.connect(transport);
 }
