@@ -1,10 +1,11 @@
 import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
+import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
 /**
  * Static stateless MCP Streamable HTTP host for generated `cli/stateless-http-mcp-server.ts`.
  */
-export function renderStatelessHttpMcpServerSource(): string {
-    const shared = renderMcpHostSharedSource('stateless-http');
+export function renderStatelessHttpMcpServerSource(product: McpHostProduct = 'api2ai'): string {
+    const shared = renderMcpHostSharedSource('stateless-http', product);
     return `#!/usr/bin/env node
 /**
  * Generated stateless MCP Streamable HTTP host (static runtime — no @core2ai/core).
@@ -19,35 +20,6 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import * as z from 'zod/v4';
 
 ${shared}
-
-async function readJsonBody(req: IncomingMessage): Promise<unknown> {
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    if (chunks.length === 0) {
-        return undefined;
-    }
-    const text = Buffer.concat(chunks).toString('utf-8');
-    if (text.trim().length === 0) {
-        return undefined;
-    }
-    return JSON.parse(text) as unknown;
-}
-
-function jsonRpcMethodNotAllowed(res: ServerResponse): void {
-    if (res.headersSent) {
-        return;
-    }
-    res.writeHead(405, { 'content-type': 'application/json' });
-    res.end(
-        JSON.stringify({
-            jsonrpc: '2.0',
-            error: { code: -32000, message: 'Method not allowed.' },
-            id: null
-        })
-    );
-}
 
 async function handleStatelessMcpPost(
     req: IncomingMessage,
@@ -65,7 +37,7 @@ async function handleStatelessMcpPost(
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     try {
         await server.connect(transport);
-        const parsedBody = await readJsonBody(req);
+        const parsedBody = await readMcpHttpJsonBody(req);
         res.on('close', () => {
             void transport.close();
             void server.close();
@@ -74,14 +46,7 @@ async function handleStatelessMcpPost(
     } catch (err) {
         console.error('[mcp] stateless HTTP request failed:', err);
         if (!res.headersSent) {
-            res.writeHead(500, { 'content-type': 'application/json' });
-            res.end(
-                JSON.stringify({
-                    jsonrpc: '2.0',
-                    error: { code: -32603, message: 'Internal server error' },
-                    id: null
-                })
-            );
+            writeJsonRpcInternalError(res);
         }
     }
 }
@@ -101,11 +66,7 @@ async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<vo
     }
     const generated = readGeneratedModule(imported as Record<string, unknown>);
     const httpHostConfig = parseStatelessHttpHostArgv(argv.slice(1), envDirs);
-    if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
-        throw new Error(
-            'Required: --base-url-env <ENV_VAR_NAME> (api2ai tools). db2ai uses connectionEnv from the tool module.'
-        );
-    }
+    ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
     validateStatelessHttpHostAtStartup(httpHostConfig, generated);
     const authHeaderName = readAuthHeaderNameFromEnv();
     console.error(
@@ -130,7 +91,7 @@ async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<vo
             return;
         }
         if (req.method === 'GET' || req.method === 'DELETE') {
-            jsonRpcMethodNotAllowed(res);
+            writeJsonRpcMethodNotAllowed(res);
             return;
         }
         res.writeHead(405).end('Method not allowed');

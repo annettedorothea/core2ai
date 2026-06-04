@@ -1,10 +1,11 @@
 import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
+import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
 /**
  * Static MCP stdio host for generated `cli/stdio-mcp-server.ts`.
  */
-export function renderStdioMcpServerSource(): string {
-    const shared = renderMcpHostSharedSource('stdio');
+export function renderStdioMcpServerSource(product: McpHostProduct = 'api2ai'): string {
+    const shared = renderMcpHostSharedSource('stdio', product);
     return `#!/usr/bin/env node
 /**
  * Generated MCP stdio host (static runtime — no @core2ai/core).
@@ -45,9 +46,7 @@ async function runStdioMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     }
     const generated = readGeneratedModule(imported as Record<string, unknown>);
     const hostConfig = parseHostArgv(argv.slice(1), envDirs);
-    if (!generated.connectionEnv && !hostConfig.baseUrlEnvKey) {
-        throw new Error('Required: --base-url-env <ENV_VAR_NAME> (api2ai tools). db2ai uses connectionEnv from the tool module.');
-    }
+    ${requireBaseUrlEnvArgvCheck(product, 'hostConfig.baseUrlEnvKey')}
     validateHostAtStartup(hostConfig, generated);
     console.error('[mcp] host context refreshed each tool call');
     await runStdioMcpServer(generated, hostConfig);

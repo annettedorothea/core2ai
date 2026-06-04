@@ -1,39 +1,31 @@
+import {
+    dbOnlyHelperFunctions,
+    hostCoreTypes,
+    readGeneratedModuleTail,
+    resolveHostContextForCallFn,
+    resolveHostContextForHttpCallFn,
+    resolveHostContextForOAuthSessionDbBranch,
+    validateHostAtStartupFn,
+    validateOAuthHttpHostAtStartupDbBranch,
+    validateOAuthHttpHostAtStartupDbBranchClose,
+    validateStatelessHttpHostAtStartupFn,
+    type McpHostProduct
+} from './mcp-host-product-runtime.js';
+
+export type { McpHostProduct };
+
 /**
  * Shared generated MCP host runtime (env loading, host config, tool registration).
  * Included by stdio-mcp-server.ts, stateless-http-mcp-server.ts, and oauth-http-mcp-server.ts.
  */
-export function renderMcpHostSharedSource(mode: 'stdio' | 'stateless-http' | 'oauth-http'): string {
+export function renderMcpHostSharedSource(
+    mode: 'stdio' | 'stateless-http' | 'oauth-http',
+    product: McpHostProduct = 'api2ai'
+): string {
     const core = `
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
-type DatabaseDialect = 'postgres' | 'mysql';
-
-type ApiLikeHostContext = {
-    baseUrl?: string;
-    connectionString?: string;
-    databaseDialect?: DatabaseDialect;
-    credential?: string;
-    jwt?: Record<string, unknown>;
-};
-
-type GeneratedHostModule = {
-    generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
-    invokeTool: (
-        toolName: string,
-        args?: Record<string, unknown>,
-        hostContext?: unknown
-    ) => Promise<unknown>;
-    inputZodByTool?: Record<string, unknown>;
-    mcpServerName?: string;
-    mcpServerVersion?: string;
-    requiresAuth: boolean;
-    connectionEnv?: string;
-    databaseDialect?: DatabaseDialect;
-};
-
-function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
-    return value === 'postgres' || value === 'mysql' ? value : undefined;
-}
+${hostCoreTypes(product)}
 
 function stripOptionalQuotes(value: string): string {
     if (value.length < 2) {
@@ -144,12 +136,7 @@ function credentialWithOptionalJwt(credential: string | undefined): {
     }
 }
 
-function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialect): boolean {
-    if (dialect === 'mysql') {
-        return connectionString.startsWith('mysql://');
-    }
-    return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
-}
+${dbOnlyHelperFunctions(product)}
 
 function formatToolError(err: unknown): string {
     if (err instanceof Error) {
@@ -170,24 +157,7 @@ function readGeneratedModule(imported: Record<string, unknown>): GeneratedHostMo
     const inputZodByTool = imported.inputZodByTool;
     const mcpServerName = imported.mcpServerName;
     const mcpServerVersion = imported.mcpServerVersion;
-    const connectionEnv = imported.connectionEnv;
-    return {
-        generatedTools: generatedTools as Array<{ toolName: string; title?: string; description: string }>,
-        invokeTool: invokeTool as (
-            toolName: string,
-            args?: Record<string, unknown>,
-            hostContext?: unknown
-        ) => Promise<unknown>,
-        inputZodByTool:
-            inputZodByTool && typeof inputZodByTool === 'object' && !Array.isArray(inputZodByTool)
-                ? (inputZodByTool as Record<string, unknown>)
-                : undefined,
-        mcpServerName: typeof mcpServerName === 'string' ? mcpServerName : undefined,
-        mcpServerVersion: typeof mcpServerVersion === 'string' ? mcpServerVersion : undefined,
-        requiresAuth: imported.requiresAuth === true,
-        connectionEnv: typeof connectionEnv === 'string' ? connectionEnv : undefined,
-        databaseDialect: parseDatabaseDialect(imported.databaseDialect)
-    };
+    ${readGeneratedModuleTail(product)}
 }
 
 function requireMcpServerIdentity(generated: GeneratedHostModule): { name: string; version: string } {
@@ -216,7 +186,7 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
 async function registerMcpTools(
     server: McpServer,
     generated: GeneratedHostModule,
-    options: { envDirs: string[]; resolveContext: () => ApiLikeHostContext }
+    options: { envDirs: string[]; resolveContext: () => ApiLikeHostContext | Promise<ApiLikeHostContext> }
 ): Promise<void> {
     for (const tool of generated.generatedTools) {
         const inputSchema = requireInputZodSchema(generated.inputZodByTool, tool.toolName);
@@ -229,7 +199,7 @@ async function registerMcpTools(
             },
             async (args) => {
                 loadLocalEnvFiles(options.envDirs, { refresh: true });
-                const hostContext = options.resolveContext();
+                const hostContext = await Promise.resolve(options.resolveContext());
                 try {
                     const result = await generated.invokeTool(
                         tool.toolName,
@@ -304,66 +274,9 @@ function readCredentialFromEnv(authEnvKey: string | undefined): string | undefin
     return value && value.length > 0 ? value : undefined;
 }
 
-function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: GeneratedHostModule): void {
-    if (generated.connectionEnv) {
-        const connectionString = process.env[generated.connectionEnv]?.trim();
-        if (!connectionString) {
-            throw new Error(
-                'Environment variable "' + generated.connectionEnv + '" is missing or empty (database env from .db2ai).'
-            );
-        }
-        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
-        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
-            throw new Error(
-                'Environment variable "' +
-                    generated.connectionEnv +
-                    '" does not match generated database dialect "' +
-                    dialect +
-                    '".'
-            );
-        }
-    } else {
-        const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
-        if (!baseUrlKey) {
-            throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
-        }
-        const baseUrl = process.env[baseUrlKey]?.trim();
-        if (!baseUrl) {
-            throw new Error(
-                'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
-            );
-        }
-    }
-    if (generated.requiresAuth && !hostConfig.authEnvKey?.trim()) {
-        throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
-    }
-}
+${validateHostAtStartupFn(product)}
 
-function resolveHostContextForCall(hostConfig: HostRuntimeConfig, generated: GeneratedHostModule): ApiLikeHostContext {
-    const credential = readCredentialFromEnv(hostConfig.authEnvKey);
-    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
-    if (generated.connectionEnv) {
-        const connectionString = process.env[generated.connectionEnv]?.trim();
-        if (!connectionString) {
-            throw new Error(
-                'Missing database URL. Set environment variable "' + generated.connectionEnv + '" (from .db2ai).'
-            );
-        }
-        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
-        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
-            throw new Error(
-                'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
-            );
-        }
-        return { connectionString, databaseDialect: dialect, credential: c, jwt };
-    }
-    const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
-    const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
-    if (!baseUrl) {
-        throw new Error('Missing host base URL. Pass --base-url-env on stdio-mcp-server.js and set the variable.');
-    }
-    return { baseUrl, credential: c, jwt };
-}
+${resolveHostContextForCallFn(product)}
 `.trim();
 
     const httpExtras = `
@@ -446,76 +359,14 @@ function readCredentialFromHttpHeaders(
     return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function validateStatelessHttpHostAtStartup(
-    httpHostConfig: StatelessHttpHostRuntimeConfig,
-    generated: GeneratedHostModule
-): void {
-    if (generated.connectionEnv) {
-        const connectionString = process.env[generated.connectionEnv]?.trim();
-        if (!connectionString) {
-            throw new Error(
-                'Environment variable "' + generated.connectionEnv + '" is missing or empty (database env from .db2ai).'
-            );
-        }
-        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
-        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
-            throw new Error(
-                'Environment variable "' +
-                    generated.connectionEnv +
-                    '" does not match generated database dialect "' +
-                    dialect +
-                    '".'
-            );
-        }
-    } else {
-        const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
-        if (!baseUrlKey) {
-            throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
-        }
-        const baseUrl = process.env[baseUrlKey]?.trim();
-        if (!baseUrl) {
-            throw new Error(
-                'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
-            );
-        }
-    }
-}
+${validateStatelessHttpHostAtStartupFn(product)}
 
-function resolveHostContextForHttpCall(
-    httpHostConfig: StatelessHttpHostRuntimeConfig,
-    generated: GeneratedHostModule,
-    incomingHeaders: Record<string, string | string[] | undefined>
-): ApiLikeHostContext {
-    const headerName = readAuthHeaderNameFromEnv();
-    const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);
-    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
-    if (generated.connectionEnv) {
-        const connectionString = process.env[generated.connectionEnv]?.trim();
-        if (!connectionString) {
-            throw new Error(
-                'Missing database URL. Set environment variable "' + generated.connectionEnv + '" (from .db2ai).'
-            );
-        }
-        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
-        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
-            throw new Error(
-                'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
-            );
-        }
-        return { connectionString, databaseDialect: dialect, credential: c, jwt };
-    }
-    const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
-    const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
-    if (!baseUrl) {
-        throw new Error(
-            'Missing host base URL. Pass --base-url-env on stateless-http-mcp-server.js and set the variable.'
-        );
-    }
-    return { baseUrl, credential: c, jwt };
-}
+${resolveHostContextForHttpCallFn(product)}
 `.trim();
 
     const oauthExtras = `
+type OAuthTokenValidationMode = 'hs256' | 'oidc';
+
 type OAuthHttpHostRuntimeConfig = {
     baseUrlEnvKey?: string;
     envDirs: string[];
@@ -523,7 +374,13 @@ type OAuthHttpHostRuntimeConfig = {
     port: number;
     mcpPath: string;
     oauthIdpUrl: string;
-    jwtSecretEnvKey: string;
+    oauthScope: string;
+    tokenValidation: OAuthTokenValidationMode;
+    jwtSecretEnvKey?: string;
+    oauthIssuer: string;
+    oauthAudience?: string;
+    jwtClaimCustomerId: string;
+    jwtClaimRole: string;
 };
 
 type McpOAuthSession = {
@@ -532,6 +389,9 @@ type McpOAuthSession = {
     createdAt: number;
 };
 
+let oidcJwks: ReturnType<typeof createRemoteJWKSet> | undefined;
+let oidcJwksIssuer = '';
+
 function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
     let listenHost = '127.0.0.1';
@@ -539,6 +399,12 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
     let mcpPath = '/mcp';
     let oauthIdpUrl: string | undefined;
     let jwtSecretEnvKey: string | undefined;
+    let tokenValidation: OAuthTokenValidationMode = 'hs256';
+    let oauthIssuer: string | undefined;
+    let oauthAudience: string | undefined;
+    let jwtClaimCustomerId = 'customerId';
+    let jwtClaimRole = 'role';
+    let oauthScope = 'mcp';
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--base-url-env') {
@@ -555,10 +421,53 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
             }
             continue;
         }
+        if (arg === '--oauth-scope') {
+            oauthScope = argv[++i];
+            if (!oauthScope?.trim()) {
+                throw new Error('Missing value after --oauth-scope');
+            }
+            continue;
+        }
+        if (arg === '--oauth-token-validation') {
+            const raw = argv[++i];
+            if (raw !== 'hs256' && raw !== 'oidc') {
+                throw new Error('Invalid --oauth-token-validation (expected hs256 or oidc): ' + raw);
+            }
+            tokenValidation = raw;
+            continue;
+        }
         if (arg === '--jwt-secret-env') {
             jwtSecretEnvKey = argv[++i];
             if (!jwtSecretEnvKey) {
                 throw new Error('Missing value after --jwt-secret-env');
+            }
+            continue;
+        }
+        if (arg === '--oauth-issuer') {
+            oauthIssuer = argv[++i];
+            if (!oauthIssuer) {
+                throw new Error('Missing value after --oauth-issuer');
+            }
+            continue;
+        }
+        if (arg === '--oauth-audience') {
+            oauthAudience = argv[++i];
+            if (!oauthAudience) {
+                throw new Error('Missing value after --oauth-audience');
+            }
+            continue;
+        }
+        if (arg === '--jwt-claim-customer-id') {
+            jwtClaimCustomerId = argv[++i];
+            if (!jwtClaimCustomerId) {
+                throw new Error('Missing value after --jwt-claim-customer-id');
+            }
+            continue;
+        }
+        if (arg === '--jwt-claim-role') {
+            jwtClaimRole = argv[++i];
+            if (!jwtClaimRole) {
+                throw new Error('Missing value after --jwt-claim-role');
             }
             continue;
         }
@@ -601,8 +510,10 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
     if (!oauthIdpUrl?.trim()) {
         throw new Error('Required: --oauth-idp-url <url>');
     }
-    if (!jwtSecretEnvKey?.trim()) {
-        throw new Error('Required: --jwt-secret-env <ENV_VAR_NAME>');
+    const idpUrl = oauthIdpUrl.replace(/\\/$/, '');
+    const issuer = (oauthIssuer ?? idpUrl).replace(/\\/$/, '');
+    if (tokenValidation === 'hs256' && !jwtSecretEnvKey?.trim()) {
+        throw new Error('Required for hs256: --jwt-secret-env <ENV_VAR_NAME>');
     }
     return {
         baseUrlEnvKey: baseUrlEnv,
@@ -610,8 +521,14 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
         listenHost,
         port,
         mcpPath,
-        oauthIdpUrl: oauthIdpUrl.replace(/\\/$/, ''),
-        jwtSecretEnvKey: jwtSecretEnvKey.trim()
+        oauthIdpUrl: idpUrl,
+        oauthScope: oauthScope.trim(),
+        tokenValidation,
+        jwtSecretEnvKey: jwtSecretEnvKey?.trim(),
+        oauthIssuer: issuer,
+        oauthAudience: oauthAudience?.trim(),
+        jwtClaimCustomerId: jwtClaimCustomerId.trim(),
+        jwtClaimRole: jwtClaimRole.trim()
     };
 }
 
@@ -670,6 +587,81 @@ function verifyAccessTokenJwt(token: string, secret: string): { ok: true; payloa
     }
 }
 
+async function ensureOidcJwks(issuer: string): Promise<ReturnType<typeof createRemoteJWKSet>> {
+    const normalized = issuer.replace(/\\/$/, '');
+    if (oidcJwks && oidcJwksIssuer === normalized) {
+        return oidcJwks;
+    }
+    const discoveryUrl = normalized + '/.well-known/openid-configuration';
+    const response = await fetch(discoveryUrl);
+    if (!response.ok) {
+        throw new Error('OIDC discovery failed (' + response.status + '): ' + discoveryUrl);
+    }
+    const document = (await response.json()) as { jwks_uri?: string };
+    const jwksUri = document.jwks_uri;
+    if (typeof jwksUri !== 'string' || jwksUri.trim().length === 0) {
+        throw new Error('OIDC discovery document missing jwks_uri: ' + discoveryUrl);
+    }
+    oidcJwks = createRemoteJWKSet(new URL(jwksUri));
+    oidcJwksIssuer = normalized;
+    return oidcJwks;
+}
+
+function normalizeHostJwtClaims(
+    payload: Record<string, unknown>,
+    httpHostConfig: OAuthHttpHostRuntimeConfig
+): Record<string, unknown> {
+    const customerRaw = payload[httpHostConfig.jwtClaimCustomerId];
+    const roleRaw = payload[httpHostConfig.jwtClaimRole];
+    const customerId =
+        customerRaw !== undefined && customerRaw !== null ? String(customerRaw).trim() : '';
+    const role = roleRaw !== undefined && roleRaw !== null ? String(roleRaw).trim() : '';
+    const normalized: Record<string, unknown> = { ...payload };
+    if (customerId.length > 0) {
+        normalized.customerId = customerId;
+    }
+    if (role.length > 0) {
+        normalized.role = role;
+    }
+    return normalized;
+}
+
+async function verifyOAuthBearerToken(
+    httpHostConfig: OAuthHttpHostRuntimeConfig,
+    token: string
+): Promise<{ ok: true; payload: Record<string, unknown> } | { ok: false }> {
+    if (httpHostConfig.tokenValidation === 'hs256') {
+        const secret = readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey!);
+        return verifyAccessTokenJwt(token, secret);
+    }
+    try {
+        const jwks = await ensureOidcJwks(httpHostConfig.oauthIssuer);
+        const verifyOptions: { issuer: string; audience?: string } = { issuer: httpHostConfig.oauthIssuer };
+        if (httpHostConfig.oauthAudience) {
+            verifyOptions.audience = httpHostConfig.oauthAudience;
+        }
+        const { payload } = await jwtVerify(token, jwks, verifyOptions);
+        return { ok: true, payload: payload as Record<string, unknown> };
+    } catch {
+        return { ok: false };
+    }
+}
+
+function hostContextFromOAuthCredential(
+    httpHostConfig: OAuthHttpHostRuntimeConfig,
+    credential: string | undefined,
+    verifiedPayload: Record<string, unknown> | undefined
+): { credential?: string; jwt?: Record<string, unknown> } {
+    if (!credential?.trim()) {
+        return {};
+    }
+    const trimmed = credential.trim();
+    if (verifiedPayload) {
+        return { credential: trimmed, jwt: normalizeHostJwtClaims(verifiedPayload, httpHostConfig) };
+    }
+    return credentialWithOptionalJwt(trimmed);
+}
+
 function generatedHasPublicTool(generated: GeneratedHostModule): boolean {
     return generated.generatedTools.some((t) => t.access === 'public');
 }
@@ -678,53 +670,44 @@ function generatedHasProtectedOrCheckedTool(generated: GeneratedHostModule): boo
     return generated.generatedTools.some((t) => t.access === 'protected' || t.access === 'checked');
 }
 
-function validateOAuthHttpHostAtStartup(httpHostConfig: OAuthHttpHostRuntimeConfig, generated: GeneratedHostModule): void {
-    readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey);
-    if (generated.connectionEnv) {
-        const connectionString = process.env[generated.connectionEnv]?.trim();
-        if (!connectionString) {
-            throw new Error(
-                'Environment variable "' + generated.connectionEnv + '" is missing or empty (database env from .db2ai).'
-            );
-        }
-        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
-        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
-            throw new Error(
-                'Environment variable "' +
-                    generated.connectionEnv +
-                    '" does not match generated database dialect "' +
-                    dialect +
-                    '".'
-            );
-        }
+async function validateOAuthHttpHostAtStartup(
+    httpHostConfig: OAuthHttpHostRuntimeConfig,
+    generated: GeneratedHostModule
+): Promise<void> {
+    if (httpHostConfig.tokenValidation === 'hs256') {
+        readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey!);
     } else {
-        const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
-        if (!baseUrlKey) {
-            throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
-        }
-        const baseUrl = process.env[baseUrlKey]?.trim();
-        if (!baseUrl) {
-            throw new Error(
-                'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
-            );
-        }
+        await ensureOidcJwks(httpHostConfig.oauthIssuer);
     }
+    ${validateOAuthHttpHostAtStartupDbBranch(product)}
+    const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
+    if (!baseUrlKey) {
+        throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
+    }
+    const baseUrl = process.env[baseUrlKey]?.trim();
+    if (!baseUrl) {
+        throw new Error(
+            'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
+        );
+    }
+    ${validateOAuthHttpHostAtStartupDbBranchClose(product)}
 }
 
-function resolveHostContextForOAuthSession(
+async function resolveHostContextForOAuthSession(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     generated: GeneratedHostModule,
     headers: Record<string, string | string[] | undefined>,
     sessionStore: Map<string, McpOAuthSession>,
     sessionId: string | undefined
-): ApiLikeHostContext {
-    const secret = readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey);
+): Promise<ApiLikeHostContext> {
     let credential: string | undefined;
+    let verifiedPayload: Record<string, unknown> | undefined;
     const bearer = readBearerFromHeaders(headers);
     if (bearer) {
-        const verified = verifyAccessTokenJwt(bearer, secret);
+        const verified = await verifyOAuthBearerToken(httpHostConfig, bearer);
         if (verified.ok) {
             credential = bearer;
+            verifiedPayload = verified.payload;
             if (sessionId) {
                 const existing = sessionStore.get(sessionId);
                 if (existing) {
@@ -741,23 +724,17 @@ function resolveHostContextForOAuthSession(
     }
     if (!credential && sessionId) {
         credential = sessionStore.get(sessionId)?.upstreamCredential;
-    }
-    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
-    if (generated.connectionEnv) {
-        const connectionString = process.env[generated.connectionEnv]?.trim();
-        if (!connectionString) {
-            throw new Error(
-                'Missing database URL. Set environment variable "' + generated.connectionEnv + '" (from .db2ai).'
-            );
+        if (credential) {
+            const cached = await verifyOAuthBearerToken(httpHostConfig, credential);
+            if (cached.ok) {
+                verifiedPayload = cached.payload;
+            } else {
+                credential = undefined;
+            }
         }
-        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
-        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
-            throw new Error(
-                'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
-            );
-        }
-        return { connectionString, databaseDialect: dialect, credential: c, jwt };
     }
+    const { credential: c, jwt } = hostContextFromOAuthCredential(httpHostConfig, credential, verifiedPayload);
+    ${resolveHostContextForOAuthSessionDbBranch(product)}
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
@@ -766,15 +743,13 @@ function resolveHostContextForOAuthSession(
     return { baseUrl, credential: c, jwt };
 }
 
-const MCP_OAUTH_SCOPE = 'mock-api';
-
 function oauthResourceMetadataDocument(httpHostConfig: OAuthHttpHostRuntimeConfig): Record<string, unknown> {
     const resource = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
     return {
         resource,
         authorization_servers: [httpHostConfig.oauthIdpUrl],
         bearer_methods_supported: ['header'],
-        scopes_supported: [MCP_OAUTH_SCOPE]
+        scopes_supported: [httpHostConfig.oauthScope]
     };
 }
 
@@ -790,7 +765,7 @@ function sendOAuthUnauthorized(res: ServerResponse, httpHostConfig: OAuthHttpHos
             '", resource="' +
             resource +
             '", scope="' +
-            MCP_OAUTH_SCOPE +
+            httpHostConfig.oauthScope +
             '"'
     });
     res.end(
@@ -803,6 +778,57 @@ function sendOAuthUnauthorized(res: ServerResponse, httpHostConfig: OAuthHttpHos
 }
 `.trim();
 
+    const httpTransportExtras = `
+async function readMcpHttpJsonBody(req: IncomingMessage): Promise<unknown> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    }
+    if (chunks.length === 0) {
+        return undefined;
+    }
+    const text = Buffer.concat(chunks).toString('utf-8');
+    if (text.trim().length === 0) {
+        return undefined;
+    }
+    return JSON.parse(text) as unknown;
+}
+
+function writeJsonRpcError(res: ServerResponse, status: number, code: number, message: string): void {
+    if (res.headersSent) {
+        return;
+    }
+    res.writeHead(status, { 'content-type': 'application/json' });
+    res.end(
+        JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code, message },
+            id: null
+        })
+    );
+}
+
+function writeJsonRpcInternalError(res: ServerResponse): void {
+    writeJsonRpcError(res, 500, -32_603, 'Internal server error');
+}
+`.trim();
+
+    const httpTransportStatelessOnly =
+        mode === 'stateless-http'
+            ? `
+function writeJsonRpcMethodNotAllowed(res: ServerResponse): void {
+    writeJsonRpcError(res, 405, -32_000, 'Method not allowed.');
+}
+`.trim()
+            : '';
+
     const modeExtras = mode === 'stdio' ? stdioExtras : mode === 'stateless-http' ? httpExtras : oauthExtras;
+    const usesHttpTransport = mode === 'stateless-http' || mode === 'oauth-http';
+    if (usesHttpTransport) {
+        const httpBlock = httpTransportStatelessOnly
+            ? `${httpTransportExtras}\n\n${httpTransportStatelessOnly}`
+            : httpTransportExtras;
+        return `${core}\n\n${httpBlock}\n\n${modeExtras}`;
+    }
     return `${core}\n\n${modeExtras}`;
 }

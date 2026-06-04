@@ -1,10 +1,11 @@
 import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
+import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
 /**
  * Static OAuth + stateful MCP Streamable HTTP host for generated `cli/oauth-http-mcp-server.ts`.
  */
-export function renderOAuthHttpMcpServerSource(): string {
-    const shared = renderMcpHostSharedSource('oauth-http');
+export function renderOAuthHttpMcpServerSource(product: McpHostProduct = 'api2ai'): string {
+    const shared = renderMcpHostSharedSource('oauth-http', product);
     return `#!/usr/bin/env node
 /**
  * Generated OAuth + stateful MCP Streamable HTTP host (static runtime — no @core2ai/core).
@@ -19,6 +20,7 @@ import { pathToFileURL } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import * as z from 'zod/v4';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 ${shared}
 
@@ -41,35 +43,6 @@ function isInitializeRequestBody(body: unknown): boolean {
     }
     const record = body as Record<string, unknown>;
     return record.jsonrpc === '2.0' && record.method === 'initialize';
-}
-
-async function readJsonBody(req: IncomingMessage): Promise<unknown> {
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    if (chunks.length === 0) {
-        return undefined;
-    }
-    const text = Buffer.concat(chunks).toString('utf-8');
-    if (text.trim().length === 0) {
-        return undefined;
-    }
-    return JSON.parse(text) as unknown;
-}
-
-function jsonRpcError(res: ServerResponse, status: number, code: number, message: string): void {
-    if (res.headersSent) {
-        return;
-    }
-    res.writeHead(status, { 'content-type': 'application/json' });
-    res.end(
-        JSON.stringify({
-            jsonrpc: '2.0',
-            error: { code, message },
-            id: null
-        })
-    );
 }
 
 function mcpRequiresBearerOnInitialize(generated: GeneratedHostModule): boolean {
@@ -97,9 +70,9 @@ async function createMcpServerForSession(
     sessionStore.set(sessionId, session);
     await registerMcpTools(server, generated, {
         envDirs: httpHostConfig.envDirs,
-        resolveContext: () => {
+        resolveContext: async () => {
             const hdr = sessionHeaders.get(sessionId) ?? headers;
-            return resolveHostContextForOAuthSession(httpHostConfig, generated, hdr, sessionStore, sessionId);
+            return await resolveHostContextForOAuthSession(httpHostConfig, generated, hdr, sessionStore, sessionId);
         }
     });
     const transport = new StreamableHTTPServerTransport({
@@ -126,12 +99,12 @@ async function handleOAuthMcpRequest(
 ): Promise<void> {
     const headers = req.headers as Record<string, string | string[] | undefined>;
     const sessionIdHeader = readSessionId(req);
-    const parsedBody = req.method === 'POST' ? await readJsonBody(req) : undefined;
+    const parsedBody = req.method === 'POST' ? await readMcpHttpJsonBody(req) : undefined;
 
     if (mcpRequiresBearerOnInitialize(generated)) {
         const bearer = readBearerFromHeaders(headers);
-        const secret = readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey);
-        if (!bearer || !verifyAccessTokenJwt(bearer, secret).ok) {
+        const verified = bearer ? await verifyOAuthBearerToken(httpHostConfig, bearer) : { ok: false as const };
+        if (!verified.ok) {
             if (!sessionIdHeader && isInitializeRequestBody(parsedBody)) {
                 sendOAuthUnauthorized(res, httpHostConfig);
                 return;
@@ -151,10 +124,10 @@ async function handleOAuthMcpRequest(
         entry = await createMcpServerForSession(generated, httpHostConfig, newSessionId, headers);
         sessionEntries.set(newSessionId, entry);
     } else if (sessionIdHeader) {
-        jsonRpcError(res, 404, -32_001, 'Session not found');
+        writeJsonRpcError(res, 404, -32_001, 'Session not found');
         return;
     } else if (req.method === 'POST') {
-        jsonRpcError(res, 400, -32_000, 'Bad Request: Session ID required');
+        writeJsonRpcError(res, 400, -32_000, 'Bad Request: Session ID required');
         return;
     } else {
         res.writeHead(400).end('Missing session ID');
@@ -162,7 +135,7 @@ async function handleOAuthMcpRequest(
     }
 
     if (!entry) {
-        jsonRpcError(res, 500, -32_603, 'Internal server error');
+        writeJsonRpcInternalError(res);
         return;
     }
 
@@ -174,7 +147,7 @@ async function handleOAuthMcpRequest(
     } catch (err) {
         console.error('[mcp] oauth HTTP request failed:', err);
         if (!res.headersSent) {
-            jsonRpcError(res, 500, -32_603, 'Internal server error');
+            writeJsonRpcInternalError(res);
         }
     }
 }
@@ -183,7 +156,7 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
-            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --jwt-secret-env ENV --port N [--host HOST] [--path /mcp]'
+            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-token-validation hs256|oidc] [--jwt-secret-env ENV] [--oauth-issuer URL] [--oauth-audience AUD] [--host HOST] [--path /mcp]'
         );
     }
     const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
@@ -194,16 +167,16 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     }
     const generated = readGeneratedModule(imported as Record<string, unknown>);
     const httpHostConfig = parseOAuthHttpHostArgv(argv.slice(1), envDirs);
-    if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
-        throw new Error(
-            'Required: --base-url-env <ENV_VAR_NAME> (api2ai tools). db2ai uses connectionEnv from the tool module.'
-        );
-    }
-    validateOAuthHttpHostAtStartup(httpHostConfig, generated);
+    ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
+    await validateOAuthHttpHostAtStartup(httpHostConfig, generated);
     const resourceUrl =
         'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
     console.error('[mcp] oauth HTTP on ' + resourceUrl);
     console.error('[mcp] authorization server: ' + httpHostConfig.oauthIdpUrl);
+    console.error('[mcp] token validation: ' + httpHostConfig.tokenValidation);
+    if (httpHostConfig.tokenValidation === 'oidc') {
+        console.error('[mcp] oauth issuer: ' + httpHostConfig.oauthIssuer);
+    }
     console.error(
         '[mcp] OAuth on initialize: ' +
             (mcpRequiresBearerOnInitialize(generated)

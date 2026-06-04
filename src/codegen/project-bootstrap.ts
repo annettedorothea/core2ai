@@ -3,9 +3,12 @@ import * as path from 'node:path';
 import { renderStdioMcpServerSource } from './render-stdio-mcp-server.js';
 import { renderOAuthHttpMcpServerSource } from './render-oauth-http-mcp-server.js';
 import { renderStatelessHttpMcpServerSource } from './render-stateless-http-mcp-server.js';
+import type { McpHostProduct } from './mcp-host-product-runtime.js';
 
 export type ProjectBootstrapConfig = {
     generatorImplementationDir: string;
+    /** api2ai: HTTP/OpenAPI hosts only. db2ai: adds connectionEnv / database URL validation. Default api2ai. */
+    hostProduct?: McpHostProduct;
     embedHomeEnv?: string;
     fallbackProjectName: string;
     requiredRuntimeDeps: readonly string[];
@@ -43,30 +46,30 @@ function resolveCliPackageJsonPathForVersions(config: ProjectBootstrapConfig): s
     return path.join(resolveCliPackageRoot(config), 'package.json');
 }
 
-export function writeGeneratedStdioMcpHost(cliDir: string, _config?: ProjectBootstrapConfig): string {
+export function writeGeneratedStdioMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
     const dest = path.join(cliDir, 'stdio-mcp-server.ts');
-    fs.writeFileSync(dest, renderStdioMcpServerSource(), 'utf-8');
+    fs.writeFileSync(dest, renderStdioMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
     return dest;
 }
 
-export function writeGeneratedStatelessHttpMcpHost(cliDir: string, _config?: ProjectBootstrapConfig): string {
+export function writeGeneratedStatelessHttpMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
     const dest = path.join(cliDir, 'stateless-http-mcp-server.ts');
-    fs.writeFileSync(dest, renderStatelessHttpMcpServerSource(), 'utf-8');
+    fs.writeFileSync(dest, renderStatelessHttpMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
     return dest;
 }
 
-export function writeGeneratedOAuthHttpMcpHost(cliDir: string, _config?: ProjectBootstrapConfig): string {
+export function writeGeneratedOAuthHttpMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
     const dest = path.join(cliDir, 'oauth-http-mcp-server.ts');
-    fs.writeFileSync(dest, renderOAuthHttpMcpServerSource(), 'utf-8');
+    fs.writeFileSync(dest, renderOAuthHttpMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
     return dest;
 }
 
