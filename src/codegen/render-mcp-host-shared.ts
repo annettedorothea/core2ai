@@ -1,8 +1,8 @@
 /**
  * Shared generated MCP host runtime (env loading, host config, tool registration).
- * Included by stdio-mcp-server.ts and stateless-http-mcp-server.ts.
+ * Included by stdio-mcp-server.ts, stateless-http-mcp-server.ts, and oauth-http-mcp-server.ts.
  */
-export function renderMcpHostSharedSource(mode: 'stdio' | 'stateless-http'): string {
+export function renderMcpHostSharedSource(mode: 'stdio' | 'stateless-http' | 'oauth-http'): string {
     const core = `
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -17,7 +17,7 @@ type ApiLikeHostContext = {
 };
 
 type GeneratedHostModule = {
-    generatedTools: Array<{ toolName: string; title?: string; description: string }>;
+    generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
     invokeTool: (
         toolName: string,
         args?: Record<string, unknown>,
@@ -515,6 +515,294 @@ function resolveHostContextForHttpCall(
 }
 `.trim();
 
-    const modeExtras = mode === 'stdio' ? stdioExtras : httpExtras;
+    const oauthExtras = `
+type OAuthHttpHostRuntimeConfig = {
+    baseUrlEnvKey?: string;
+    envDirs: string[];
+    listenHost: string;
+    port: number;
+    mcpPath: string;
+    oauthIdpUrl: string;
+    jwtSecretEnvKey: string;
+};
+
+type McpOAuthSession = {
+    sessionId: string;
+    upstreamCredential?: string;
+    createdAt: number;
+};
+
+function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHostRuntimeConfig {
+    let baseUrlEnv: string | undefined;
+    let listenHost = '127.0.0.1';
+    let port: number | undefined;
+    let mcpPath = '/mcp';
+    let oauthIdpUrl: string | undefined;
+    let jwtSecretEnvKey: string | undefined;
+    for (let i = 0; i < argv.length; i++) {
+        const arg = argv[i];
+        if (arg === '--base-url-env') {
+            baseUrlEnv = argv[++i];
+            if (!baseUrlEnv) {
+                throw new Error('Missing value after --base-url-env');
+            }
+            continue;
+        }
+        if (arg === '--oauth-idp-url') {
+            oauthIdpUrl = argv[++i];
+            if (!oauthIdpUrl) {
+                throw new Error('Missing value after --oauth-idp-url');
+            }
+            continue;
+        }
+        if (arg === '--jwt-secret-env') {
+            jwtSecretEnvKey = argv[++i];
+            if (!jwtSecretEnvKey) {
+                throw new Error('Missing value after --jwt-secret-env');
+            }
+            continue;
+        }
+        if (arg === '--host') {
+            listenHost = argv[++i];
+            if (!listenHost) {
+                throw new Error('Missing value after --host');
+            }
+            continue;
+        }
+        if (arg === '--port') {
+            const raw = argv[++i];
+            if (!raw) {
+                throw new Error('Missing value after --port');
+            }
+            port = Number.parseInt(raw, 10);
+            if (!Number.isFinite(port) || port <= 0) {
+                throw new Error('Invalid --port value: ' + raw);
+            }
+            continue;
+        }
+        if (arg === '--path') {
+            mcpPath = argv[++i];
+            if (!mcpPath) {
+                throw new Error('Missing value after --path');
+            }
+            if (!mcpPath.startsWith('/')) {
+                mcpPath = '/' + mcpPath;
+            }
+            continue;
+        }
+        if (arg.startsWith('-')) {
+            throw new Error('Unknown option: ' + arg);
+        }
+        throw new Error('Unexpected positional argument: ' + arg);
+    }
+    if (port === undefined) {
+        throw new Error('Required: --port <number>');
+    }
+    if (!oauthIdpUrl?.trim()) {
+        throw new Error('Required: --oauth-idp-url <url>');
+    }
+    if (!jwtSecretEnvKey?.trim()) {
+        throw new Error('Required: --jwt-secret-env <ENV_VAR_NAME>');
+    }
+    return {
+        baseUrlEnvKey: baseUrlEnv,
+        envDirs,
+        listenHost,
+        port,
+        mcpPath,
+        oauthIdpUrl: oauthIdpUrl.replace(/\\/$/, ''),
+        jwtSecretEnvKey: jwtSecretEnvKey.trim()
+    };
+}
+
+function readJwtSecretFromEnv(jwtSecretEnvKey: string): string {
+    const value = process.env[jwtSecretEnvKey]?.trim();
+    if (!value) {
+        throw new Error('Environment variable "' + jwtSecretEnvKey + '" is missing or empty.');
+    }
+    return value;
+}
+
+function readBearerFromHeaders(headers: Record<string, string | string[] | undefined>): string | undefined {
+    const raw = headers.authorization ?? headers.Authorization;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+    const match = /^Bearer\\s+(.+)$/i.exec(value.trim());
+    return match?.[1]?.trim() || undefined;
+}
+
+function verifyAccessTokenJwt(token: string, secret: string): { ok: true; payload: Record<string, unknown> } | { ok: false } {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+        return { ok: false };
+    }
+    const [headerSeg, payloadSeg, sigSeg] = parts;
+    const signingInput = headerSeg + '.' + payloadSeg;
+    const expected = crypto.createHmac('sha256', secret).update(signingInput).digest();
+    let actual: Buffer;
+    try {
+        let b64 = sigSeg.replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4 !== 0) {
+            b64 += '=';
+        }
+        actual = Buffer.from(b64, 'base64');
+    } catch {
+        return { ok: false };
+    }
+    if (actual.length !== expected.length || !actual.equals(expected)) {
+        return { ok: false };
+    }
+    try {
+        let b64 = payloadSeg.replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4 !== 0) {
+            b64 += '=';
+        }
+        const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as Record<string, unknown>;
+        const now = Math.floor(Date.now() / 1000);
+        if (typeof payload.exp === 'number' && payload.exp < now) {
+            return { ok: false };
+        }
+        return { ok: true, payload };
+    } catch {
+        return { ok: false };
+    }
+}
+
+function generatedHasPublicTool(generated: GeneratedHostModule): boolean {
+    return generated.generatedTools.some((t) => t.access === 'public');
+}
+
+function generatedHasProtectedOrCheckedTool(generated: GeneratedHostModule): boolean {
+    return generated.generatedTools.some((t) => t.access === 'protected' || t.access === 'checked');
+}
+
+function validateOAuthHttpHostAtStartup(httpHostConfig: OAuthHttpHostRuntimeConfig, generated: GeneratedHostModule): void {
+    readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey);
+    if (generated.connectionEnv) {
+        const connectionString = process.env[generated.connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Environment variable "' + generated.connectionEnv + '" is missing or empty (database env from .db2ai).'
+            );
+        }
+        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
+        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
+            throw new Error(
+                'Environment variable "' +
+                    generated.connectionEnv +
+                    '" does not match generated database dialect "' +
+                    dialect +
+                    '".'
+            );
+        }
+    } else {
+        const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
+        if (!baseUrlKey) {
+            throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
+        }
+        const baseUrl = process.env[baseUrlKey]?.trim();
+        if (!baseUrl) {
+            throw new Error(
+                'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
+            );
+        }
+    }
+}
+
+function resolveHostContextForOAuthSession(
+    httpHostConfig: OAuthHttpHostRuntimeConfig,
+    generated: GeneratedHostModule,
+    headers: Record<string, string | string[] | undefined>,
+    sessionStore: Map<string, McpOAuthSession>,
+    sessionId: string | undefined
+): ApiLikeHostContext {
+    const secret = readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey);
+    let credential: string | undefined;
+    const bearer = readBearerFromHeaders(headers);
+    if (bearer) {
+        const verified = verifyAccessTokenJwt(bearer, secret);
+        if (verified.ok) {
+            credential = bearer;
+            if (sessionId) {
+                const existing = sessionStore.get(sessionId);
+                if (existing) {
+                    existing.upstreamCredential = bearer;
+                } else {
+                    sessionStore.set(sessionId, {
+                        sessionId,
+                        upstreamCredential: bearer,
+                        createdAt: Date.now()
+                    });
+                }
+            }
+        }
+    }
+    if (!credential && sessionId) {
+        credential = sessionStore.get(sessionId)?.upstreamCredential;
+    }
+    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
+    if (generated.connectionEnv) {
+        const connectionString = process.env[generated.connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Missing database URL. Set environment variable "' + generated.connectionEnv + '" (from .db2ai).'
+            );
+        }
+        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
+        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
+            throw new Error(
+                'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
+            );
+        }
+        return { connectionString, databaseDialect: dialect, credential: c, jwt };
+    }
+    const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
+    const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
+    if (!baseUrl) {
+        throw new Error('Missing host base URL. Pass --base-url-env on oauth-http-mcp-server.js and set the variable.');
+    }
+    return { baseUrl, credential: c, jwt };
+}
+
+const MCP_OAUTH_SCOPE = 'mock-api';
+
+function oauthResourceMetadataDocument(httpHostConfig: OAuthHttpHostRuntimeConfig): Record<string, unknown> {
+    const resource = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
+    return {
+        resource,
+        authorization_servers: [httpHostConfig.oauthIdpUrl],
+        bearer_methods_supported: ['header'],
+        scopes_supported: [MCP_OAUTH_SCOPE]
+    };
+}
+
+function sendOAuthUnauthorized(res: ServerResponse, httpHostConfig: OAuthHttpHostRuntimeConfig): void {
+    const resource = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
+    const metadataUrl =
+        'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + '/.well-known/oauth-protected-resource';
+    res.writeHead(401, {
+        'content-type': 'application/json',
+        'www-authenticate':
+            'Bearer error="invalid_token", realm="mcp", resource_metadata="' +
+            metadataUrl +
+            '", resource="' +
+            resource +
+            '", scope="' +
+            MCP_OAUTH_SCOPE +
+            '"'
+    });
+    res.end(
+        JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code: -32_001, message: 'Unauthorized' },
+            id: null
+        })
+    );
+}
+`.trim();
+
+    const modeExtras = mode === 'stdio' ? stdioExtras : mode === 'stateless-http' ? httpExtras : oauthExtras;
     return `${core}\n\n${modeExtras}`;
 }

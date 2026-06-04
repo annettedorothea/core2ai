@@ -4,19 +4,19 @@ overview: "Phase 3: stateful Streamable-HTTP-MCP-Host (SDK-Sessions) + MCP-Autho
 todos:
   - id: mock-oauth-idp
     content: "api2ai mock-api/oauth-idp + db2ai access-demo/oauth-idp (Copy&Paste, je JWT-Secret/Port; cursor:// + PKCE)"
-    status: pending
+    status: completed
   - id: core2ai-oauth-host
     content: "core2ai: oauth-http-mcp-server — stateful transport, PRM/401, Bearer→hostContext, Session-Cache; optional /oauth/login fallback"
-    status: pending
+    status: completed
   - id: consumers-generate
     content: "api2ai + db2ai: render-oauth-http-mcp-host, bootstrap, generate:all, build:generated"
-    status: pending
+    status: completed
   - id: demos-mcp-json
     content: "mcp.json url + auth.CLIENT_ID (static OAuth); README Cursor-Login; scripts; .env.example"
-    status: pending
+    status: completed
   - id: tests-oauth-http
-    content: "Vitest: mock-api + access-demo OAuth-MCP integration; optional mcp-http-smoke session helper"
-    status: pending
+    content: "Vitest: mock-api OAuth-MCP integration (access-demo manual CP2)"
+    status: completed
 isProject: false
 ---
 

@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { renderStdioMcpServerSource } from './render-stdio-mcp-server.js';
+import { renderOAuthHttpMcpServerSource } from './render-oauth-http-mcp-server.js';
 import { renderStatelessHttpMcpServerSource } from './render-stateless-http-mcp-server.js';
 
 export type ProjectBootstrapConfig = {
@@ -57,6 +58,15 @@ export function writeGeneratedStatelessHttpMcpHost(cliDir: string, _config?: Pro
     }
     const dest = path.join(cliDir, 'stateless-http-mcp-server.ts');
     fs.writeFileSync(dest, renderStatelessHttpMcpServerSource(), 'utf-8');
+    return dest;
+}
+
+export function writeGeneratedOAuthHttpMcpHost(cliDir: string, _config?: ProjectBootstrapConfig): string {
+    if (!fs.existsSync(cliDir)) {
+        fs.mkdirSync(cliDir, { recursive: true });
+    }
+    const dest = path.join(cliDir, 'oauth-http-mcp-server.ts');
+    fs.writeFileSync(dest, renderOAuthHttpMcpServerSource(), 'utf-8');
     return dest;
 }
 
