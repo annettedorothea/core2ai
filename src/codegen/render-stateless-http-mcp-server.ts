@@ -57,7 +57,6 @@ async function handleStatelessMcpPost(
 ): Promise<void> {
     const incomingHeaders = req.headers as Record<string, string | string[] | undefined>;
     const { name, version } = requireMcpServerIdentity(generated);
-    // TODO(perf): Reuse one McpServer with tools registered once per process; today each POST creates a server and re-registers tools (OK for demos, not for high load).
     const server = new McpServer({ name, version });
     await registerMcpTools(server, generated, {
         envDirs: httpHostConfig.envDirs,
