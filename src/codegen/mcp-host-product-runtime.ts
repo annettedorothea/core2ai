@@ -175,6 +175,7 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
     if (generated.requiresAuth && !hostConfig.authEnvKey?.trim()) {
         throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
     }
+    validateStdioOrHttpCredentialValidationAtStartup(generated, hostConfig);
 }`.trim();
 }
 
@@ -185,9 +186,12 @@ export function resolveHostContextForCallFn(product: McpHostProduct): string {
     }`
             : '';
     return `
-function resolveHostContextForCall(hostConfig: HostRuntimeConfig, ${generatedModuleParam(product)}: GeneratedHostModule): ApiLikeHostContext {
+async function resolveHostContextForCall(
+    hostConfig: HostRuntimeConfig,
+    ${generatedModuleParam(product)}: GeneratedHostModule
+): Promise<ApiLikeHostContext> {
     const credential = readCredentialFromEnv(hostConfig.authEnvKey);
-    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
+    const { credential: c, jwt } = await resolveVerifiedHostCredential(credential, ${generatedModuleParam(product)}, hostConfig);
     ${dbBranch}
     const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
@@ -222,6 +226,7 @@ function validateStatelessHttpHostAtStartup(
         );
     }
     ${closeDbBranch}
+    validateStdioOrHttpCredentialValidationAtStartup(${generatedModuleParam(product)}, httpHostConfig);
 }`.trim();
 }
 
@@ -232,14 +237,14 @@ export function resolveHostContextForHttpCallFn(product: McpHostProduct): string
     }`
             : '';
     return `
-function resolveHostContextForHttpCall(
+async function resolveHostContextForHttpCall(
     httpHostConfig: StatelessHttpHostRuntimeConfig,
     ${generatedModuleParam(product)}: GeneratedHostModule,
     incomingHeaders: Record<string, string | string[] | undefined>
-): ApiLikeHostContext {
+): Promise<ApiLikeHostContext> {
     const headerName = readAuthHeaderNameFromEnv();
     const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);
-    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
+    const { credential: c, jwt } = await resolveVerifiedHostCredential(credential, ${generatedModuleParam(product)}, httpHostConfig);
     ${dbBranch}
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;

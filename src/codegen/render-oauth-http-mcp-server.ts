@@ -103,7 +103,12 @@ async function handleOAuthMcpRequest(
 
     if (mcpRequiresBearerOnInitialize(generated)) {
         const bearer = readBearerFromHeaders(headers);
-        const verified = bearer ? await verifyOAuthBearerToken(httpHostConfig, bearer) : { ok: false as const };
+        const verified =
+            httpHostConfig.tokenValidation === 'opaque'
+                ? { ok: Boolean(bearer?.trim()) }
+                : bearer
+                  ? await verifyOAuthBearerToken(httpHostConfig, bearer)
+                  : { ok: false as const };
         if (!verified.ok) {
             if (!sessionIdHeader && isInitializeRequestBody(parsedBody)) {
                 sendOAuthUnauthorized(res, httpHostConfig);
@@ -156,7 +161,7 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
-            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-token-validation hs256|oidc] [--jwt-secret-env ENV] [--oauth-issuer URL] [--oauth-audience AUD] [--host HOST] [--path /mcp]'
+            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-token-validation hs256|oidc|opaque] [--jwt-secret-env ENV] [--oauth-issuer URL] [--oauth-audience AUD] [--host HOST] [--path /mcp]'
         );
     }
     const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];

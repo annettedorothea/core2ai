@@ -10,6 +10,7 @@ export function renderStdioMcpServerSource(product: McpHostProduct = 'api2ai'): 
 /**
  * Generated MCP stdio host (static runtime — no @core2ai/core).
  */
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';

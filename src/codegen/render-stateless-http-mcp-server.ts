@@ -10,6 +10,7 @@ export function renderStatelessHttpMcpServerSource(product: McpHostProduct = 'ap
 /**
  * Generated stateless MCP Streamable HTTP host (static runtime — no @core2ai/core).
  */
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
