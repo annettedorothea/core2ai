@@ -1,3 +1,4 @@
+import { LOGGING_ADAPTER_IMPORT_FROM_GENERATED } from './logging-adapter-bootstrap.js';
 import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
@@ -19,8 +20,10 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { loggingAdapter } from '${LOGGING_ADAPTER_IMPORT_FROM_GENERATED}';
 
 ${shared}
 
@@ -150,7 +153,9 @@ async function handleOAuthMcpRequest(
     try {
         await entry.transport.handleRequest(req, res, parsedBody);
     } catch (err) {
-        console.error('[mcp] oauth HTTP request failed:', err);
+        loggingAdapter.error('[mcp] oauth HTTP request failed', {
+            error: err instanceof Error ? err.message : String(err)
+        });
         if (!res.headersSent) {
             writeJsonRpcInternalError(res);
         }
@@ -176,20 +181,18 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     await validateOAuthHttpHostAtStartup(httpHostConfig, generated);
     const resourceUrl =
         'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
-    console.error('[mcp] oauth HTTP on ' + resourceUrl);
-    console.error('[mcp] authorization server: ' + httpHostConfig.oauthIdpUrl);
-    console.error('[mcp] token validation: ' + httpHostConfig.tokenValidation);
-    if (httpHostConfig.tokenValidation === 'oidc') {
-        console.error('[mcp] oauth issuer: ' + httpHostConfig.oauthIssuer);
-    }
-    console.error(
-        '[mcp] OAuth on initialize: ' +
-            (mcpRequiresBearerOnInitialize(generated)
-                ? 'Bearer required (protected/checked tools — Cursor login when enabling MCP' +
-                  (generatedHasPublicTool(generated) ? '; public tools after login' : '') +
-                  ')'
-                : 'no Bearer required (only public tools)')
-    );
+    loggingAdapter.info('[mcp] oauth HTTP listening', {
+        resourceUrl,
+        authorizationServer: httpHostConfig.oauthIdpUrl,
+        tokenValidation: httpHostConfig.tokenValidation,
+        oauthIssuer:
+            httpHostConfig.tokenValidation === 'oidc' ? httpHostConfig.oauthIssuer : undefined,
+        oauthOnInitialize: mcpRequiresBearerOnInitialize(generated)
+            ? 'Bearer required (protected/checked tools — Cursor login when enabling MCP' +
+              (generatedHasPublicTool(generated) ? '; public tools after login' : '') +
+              ')'
+            : 'no Bearer required (only public tools)'
+    });
 
     const httpServer = http.createServer(async (req, res) => {
         const url = new URL(req.url ?? '/', 'http://' + (req.headers.host ?? 'localhost'));

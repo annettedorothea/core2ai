@@ -1,3 +1,4 @@
+import { LOGGING_ADAPTER_IMPORT_FROM_GENERATED } from './logging-adapter-bootstrap.js';
 import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
@@ -18,7 +19,9 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
+import { loggingAdapter } from '${LOGGING_ADAPTER_IMPORT_FROM_GENERATED}';
 
 ${shared}
 
@@ -70,16 +73,15 @@ async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<vo
     ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
     validateStatelessHttpHostAtStartup(httpHostConfig, generated);
     const authHeaderName = readAuthHeaderNameFromEnv();
-    console.error(
-        '[mcp] stateless HTTP on http://' +
+    loggingAdapter.info('[mcp] stateless HTTP listening', {
+        url:
+            'http://' +
             httpHostConfig.listenHost +
             ':' +
             httpHostConfig.port +
-            httpHostConfig.mcpPath +
-            ' (credential header: ' +
-            authHeaderName +
-            ')'
-    );
+            httpHostConfig.mcpPath,
+        credentialHeader: authHeaderName
+    });
 
     const httpServer = http.createServer(async (req, res) => {
         const url = new URL(req.url ?? '/', 'http://' + (req.headers.host ?? 'localhost'));

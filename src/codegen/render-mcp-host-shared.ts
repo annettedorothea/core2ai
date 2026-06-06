@@ -192,6 +192,23 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
     return schema as z.ZodTypeAny;
 }
 
+/** Log when the MCP client requests tools/list (wraps SDK handler set by registerTool). */
+function attachListToolsDebugLogging(mcpServer: McpServer, generated: GeneratedHostModule): void {
+    type ListToolsHandler = (request: unknown, extra: unknown) => Promise<ListToolsResult>;
+    const handlers = (mcpServer.server as unknown as { _requestHandlers: Map<string, ListToolsHandler> })._requestHandlers;
+    const previous = handlers.get('tools/list');
+    if (!previous) {
+        return;
+    }
+    mcpServer.server.setRequestHandler(ListToolsRequestSchema, async (request, extra) => {
+        loggingAdapter.debug('listTools', {
+            toolCount: generated.generatedTools.length,
+            toolNames: generated.generatedTools.map((t) => t.toolName)
+        });
+        return previous(request, extra);
+    });
+}
+
 async function registerMcpTools(
     server: McpServer,
     generated: GeneratedHostModule,
@@ -237,6 +254,7 @@ async function registerMcpTools(
             }
         );
     }
+    attachListToolsDebugLogging(server, generated);
 }
 `.trim();
 

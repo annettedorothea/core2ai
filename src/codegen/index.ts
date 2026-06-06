@@ -4,6 +4,7 @@
  */
 export { parameterCheckExportName } from './access-stubs.js';
 export * from './auth-stub-bootstrap.js';
+export * from './logging-adapter-bootstrap.js';
 export * from './document-validation.js';
 export * from './langium-cli-types.js';
 export * from './project-bootstrap.js';

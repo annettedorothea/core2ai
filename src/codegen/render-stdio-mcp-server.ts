@@ -1,3 +1,4 @@
+import { LOGGING_ADAPTER_IMPORT_FROM_GENERATED } from './logging-adapter-bootstrap.js';
 import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
@@ -16,7 +17,9 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
+import { loggingAdapter } from '${LOGGING_ADAPTER_IMPORT_FROM_GENERATED}';
 
 ${shared}
 
@@ -49,7 +52,7 @@ async function runStdioMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     const hostConfig = parseHostArgv(argv.slice(1), envDirs);
     ${requireBaseUrlEnvArgvCheck(product, 'hostConfig.baseUrlEnvKey')}
     validateHostAtStartup(hostConfig, generated);
-    console.error('[mcp] host context refreshed each tool call');
+    loggingAdapter.info('[mcp] host context refreshed each tool call');
     await runStdioMcpServer(generated, hostConfig);
 }
 

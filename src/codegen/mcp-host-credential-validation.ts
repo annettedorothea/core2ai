@@ -5,8 +5,8 @@ function warnCredentialValidationBlock(product: McpHostProduct): string {
         product === 'db2ai'
             ? `
     if (mode === 'opaque' && generated.connectionEnv) {
-        console.error(
-            '[mcp] warn: opaque credential validation on db2ai — host is the only auth layer; prefer static or hs256 in production.'
+        loggingAdapter.warn(
+            '[mcp] opaque credential validation on db2ai — host is the only auth layer; prefer static or hs256 in production.'
         );
     }`
             : '';
@@ -21,8 +21,8 @@ function warnCredentialValidationModeAtStartup(
 ): void {
     ${db2aiOpaqueWarn}
     if (mode === 'opaque' && generatedHasCheckedTool(generated)) {
-        console.error(
-            '[mcp] warn: opaque mode with checked tools — JWT claims in src/auth are not cryptographically verified.'
+        loggingAdapter.warn(
+            '[mcp] opaque mode with checked tools — JWT claims in src/auth are not cryptographically verified.'
         );
     }
 }`.trim();
