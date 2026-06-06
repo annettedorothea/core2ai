@@ -84,7 +84,7 @@ No need to re-link after core2ai rebuilds — the symlink stays; only **`out/`**
 
 ## Git hooks
 
-[Husky](https://typicode.github.io/husky/) runs **`npm run check`** on pre-commit (via `postinstall`). Re-init after clone: `npx husky`.
+[Husky](https://typicode.github.io/husky/) runs **`npm run check`** on pre-commit (via `postinstall`). Re-init after clone: `npx husky`. In **api2ai** and **db2ai**, pre-commit also runs **`npm run test`**.
 
 ---
 

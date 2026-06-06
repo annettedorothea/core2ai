@@ -25,6 +25,80 @@ import * as z from 'zod/v4';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { loggingAdapter } from '${LOGGING_ADAPTER_IMPORT_FROM_GENERATED}';
 
+type CredentialTransformInput = {
+    inboundCredential: string;
+    inboundClaims?: Record<string, unknown>;
+};
+
+type CredentialTransformResult = {
+    upstreamCredential: string;
+    sessionJwtClaims?: Record<string, unknown>;
+};
+
+type CredentialTransformFn = (input: CredentialTransformInput) => Promise<CredentialTransformResult>;
+
+/** Set at startup when --credential-transform-module is passed; otherwise inbound credential pass-through. */
+let credentialTransformFn: CredentialTransformFn | undefined;
+
+function resolveCredentialTransformModulePath(
+    raw: string,
+    envDirs: string[]
+): string {
+    const trimmed = raw.trim();
+    if (path.isAbsolute(trimmed)) {
+        return path.resolve(trimmed);
+    }
+    const fromCwd = path.resolve(process.cwd(), trimmed);
+    if (fs.existsSync(fromCwd)) {
+        return fromCwd;
+    }
+    for (const dir of envDirs) {
+        const candidate = path.resolve(dir, trimmed);
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+    return fromCwd;
+}
+
+function missingCredentialTransformModuleError(resolvedPath: string, raw: string): string {
+    return (
+        '[credential-transform] --credential-transform-module points to a missing file: ' +
+        resolvedPath +
+        ' (argument: ' +
+        raw +
+        '). Create a credential transform module, e.g. src/auth/<mcpModule>/credentialTransform.ts ' +
+        'exporting async function transformCredential(), run build:generated for credentialTransform.js, ' +
+        'then pass --credential-transform-module with the path to that .js file.'
+    );
+}
+
+async function loadCredentialTransformModule(
+    httpHostConfig: OAuthHttpHostRuntimeConfig
+): Promise<void> {
+    const raw = httpHostConfig.credentialTransformModule?.trim();
+    if (!raw) {
+        credentialTransformFn = undefined;
+        return;
+    }
+    const modulePath = resolveCredentialTransformModulePath(raw, httpHostConfig.envDirs);
+    if (!fs.existsSync(modulePath)) {
+        throw new Error(missingCredentialTransformModuleError(modulePath, raw));
+    }
+    const imported = await import(pathToFileURL(modulePath).href);
+    const fn = imported?.transformCredential;
+    if (typeof fn !== 'function') {
+        throw new Error(
+            '[credential-transform] Module "' +
+                modulePath +
+                '" must export async function transformCredential() ' +
+                '(hook for --credential-transform-module).'
+        );
+    }
+    credentialTransformFn = fn as CredentialTransformFn;
+    loggingAdapter.info('[mcp] credential transform module loaded', { module: modulePath });
+}
+
 ${shared}
 
 type SessionEntry = {
@@ -166,7 +240,7 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
-            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-token-validation hs256|oidc|opaque] [--jwt-secret-env ENV] [--oauth-issuer URL] [--oauth-audience AUD] [--host HOST] [--path /mcp]'
+            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-token-validation hs256|oidc|opaque] [--jwt-secret-env ENV] [--oauth-issuer URL] [--oauth-audience AUD] [--credential-transform-module PATH] [--host HOST] [--path /mcp]'
         );
     }
     const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
@@ -177,6 +251,7 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     }
     const generated = readGeneratedModule(imported as Record<string, unknown>);
     const httpHostConfig = parseOAuthHttpHostArgv(argv.slice(1), envDirs);
+    await loadCredentialTransformModule(httpHostConfig);
     ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
     await validateOAuthHttpHostAtStartup(httpHostConfig, generated);
     const resourceUrl =
