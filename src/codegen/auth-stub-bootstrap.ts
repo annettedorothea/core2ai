@@ -14,7 +14,22 @@ function relativeJsImportPath(fromTsPath: string, toTsPath: string): string {
     return rel.replace(/\.ts$/, '.js');
 }
 
-export function renderAuthStubFileContent(toolName: string, authStubTsPath: string, toolsModuleTsPath: string): string {
+/** Basename of `generated/tools/<name>-tools.ts` — matches exported `mcpServerName`. */
+export function resolveMcpModuleNameFromToolsModule(toolsModuleTsPath: string): string {
+    return path.parse(toolsModuleTsPath).name;
+}
+
+export function resolveAuthStubDir(projectRoot: string, toolsModuleTsPath: string): string {
+    const mcpModuleName = resolveMcpModuleNameFromToolsModule(toolsModuleTsPath);
+    return path.join(projectRoot, 'src', 'auth', mcpModuleName);
+}
+
+export function renderAuthStubFileContent(
+    toolName: string,
+    authStubTsPath: string,
+    toolsModuleTsPath: string,
+    mcpModuleName: string
+): string {
     const fn = parameterCheckExportName(toolName);
     const importSpec = relativeJsImportPath(authStubTsPath, toolsModuleTsPath);
     return `/**
@@ -25,7 +40,7 @@ import type { InvokeOptions, CheckedHostContext } from '${importSpec}';
 export function ${fn}(options: InvokeOptions, host: CheckedHostContext): InvokeOptions {
     void options;
     void host;
-    throw new Error('Implement ${fn} in src/auth/${toolName}.ts');
+    throw new Error('Implement ${fn} in src/auth/${mcpModuleName}/${toolName}.ts');
 }
 `;
 }
@@ -35,7 +50,8 @@ export async function ensureCheckedAuthStubsAtProjectRoot(
     checkedToolNames: readonly string[],
     toolsModuleTsPath: string
 ): Promise<Map<string, string>> {
-    const authDir = path.join(projectRoot, 'src', 'auth');
+    const mcpModuleName = resolveMcpModuleNameFromToolsModule(toolsModuleTsPath);
+    const authDir = resolveAuthStubDir(projectRoot, toolsModuleTsPath);
     if (!fs.existsSync(authDir)) {
         fs.mkdirSync(authDir, { recursive: true });
     }
@@ -48,7 +64,11 @@ export async function ensureCheckedAuthStubsAtProjectRoot(
     for (const toolName of checkedToolNames) {
         const tsPath = path.join(authDir, `${toolName}.ts`);
         if (!fs.existsSync(tsPath)) {
-            fs.writeFileSync(tsPath, renderAuthStubFileContent(toolName, tsPath, toolsModuleTsPath), 'utf-8');
+            fs.writeFileSync(
+                tsPath,
+                renderAuthStubFileContent(toolName, tsPath, toolsModuleTsPath, mcpModuleName),
+                'utf-8'
+            );
         }
         importPaths.set(toolName, tsPath);
     }
