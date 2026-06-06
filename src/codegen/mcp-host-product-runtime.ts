@@ -286,6 +286,30 @@ export function resolveHostContextForOAuthSessionDbBranch(product: McpHostProduc
     }`;
 }
 
+/** Skip baseUrl for db2ai modules that export connectionEnv (.db2ai SQL tools). */
+export function oauthHostContextBaseUrlFieldsFn(product: McpHostProduct): string {
+    const generatedParam = generatedModuleParam(product);
+    if (product === 'db2ai') {
+        return `
+function oauthHostContextBaseUrlFields(
+    httpHostConfig: OAuthHttpHostRuntimeConfig,
+    ${generatedParam}: GeneratedHostModule
+): Pick<ApiLikeHostContext, 'baseUrl'> {
+    if (${generatedParam}.connectionEnv) {
+        return {};
+    }
+    return { baseUrl: resolveOAuthHostBaseUrl(httpHostConfig) };
+}`.trim();
+    }
+    return `
+function oauthHostContextBaseUrlFields(
+    httpHostConfig: OAuthHttpHostRuntimeConfig,
+    _generated: GeneratedHostModule
+): Pick<ApiLikeHostContext, 'baseUrl'> {
+    return { baseUrl: resolveOAuthHostBaseUrl(httpHostConfig) };
+}`.trim();
+}
+
 export function requireBaseUrlEnvArgvCheck(product: McpHostProduct, hostConfigExpr: string): string {
     if (product === 'db2ai') {
         return `if (!generated.connectionEnv && !${hostConfigExpr}) {

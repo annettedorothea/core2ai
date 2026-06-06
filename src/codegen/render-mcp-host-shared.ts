@@ -11,6 +11,7 @@ import {
     resolveHostContextForCallFn,
     resolveHostContextForHttpCallFn,
     resolveHostContextForOAuthSessionDbBranch,
+    oauthHostContextBaseUrlFieldsFn,
     generatedModuleParam,
     validateHostAtStartupFn,
     validateOAuthHttpHostAtStartupDbBranch,
@@ -710,8 +711,11 @@ function resolveOAuthHostBaseUrl(httpHostConfig: OAuthHttpHostRuntimeConfig): st
     return baseUrl;
 }
 
+${oauthHostContextBaseUrlFieldsFn(product)}
+
 async function resolveHostContextOAuthPassThrough(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
+    ${generatedModuleParam(product)}: GeneratedHostModule,
     bearer: string | undefined,
     sessionStore: Map<string, McpOAuthSession>,
     sessionId: string | undefined
@@ -752,17 +756,18 @@ async function resolveHostContextOAuthPassThrough(
             }
         }
     }
-    const baseUrl = resolveOAuthHostBaseUrl(httpHostConfig);
+    const apiFields = oauthHostContextBaseUrlFields(httpHostConfig, ${generatedModuleParam(product)});
     if (!credential?.trim()) {
-        return { baseUrl };
+        return { ...apiFields };
     }
     const trimmed = credential.trim();
     const jwt = verifiedPayload ? normalizeHostJwtClaims(verifiedPayload, httpHostConfig) : undefined;
-    return { baseUrl, credential: trimmed, jwt };
+    return { ...apiFields, credential: trimmed, jwt };
 }
 
 async function resolveHostContextWithCredentialTransform(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
+    ${generatedModuleParam(product)}: GeneratedHostModule,
     bearer: string | undefined,
     sessionStore: Map<string, McpOAuthSession>,
     sessionId: string | undefined
@@ -779,7 +784,7 @@ async function resolveHostContextWithCredentialTransform(
                 ? session.sessionJwtClaims
                 : undefined;
         return {
-            baseUrl: resolveOAuthHostBaseUrl(httpHostConfig),
+            ...oauthHostContextBaseUrlFields(httpHostConfig, ${generatedModuleParam(product)}),
             credential: session.upstreamCredential,
             jwt
         };
@@ -790,7 +795,7 @@ async function resolveHostContextWithCredentialTransform(
         idpToken = session.upstreamCredential.trim();
     }
     if (!idpToken) {
-        return { baseUrl: resolveOAuthHostBaseUrl(httpHostConfig) };
+        return { ...oauthHostContextBaseUrlFields(httpHostConfig, ${generatedModuleParam(product)}) };
     }
 
     const verified = await verifyOAuthBearerToken(httpHostConfig, idpToken);
@@ -824,7 +829,7 @@ async function resolveHostContextWithCredentialTransform(
 
     const jwt = claims && Object.keys(claims).length > 0 ? claims : undefined;
     return {
-        baseUrl: resolveOAuthHostBaseUrl(httpHostConfig),
+        ...oauthHostContextBaseUrlFields(httpHostConfig, ${generatedModuleParam(product)}),
         credential: accessToken,
         jwt
     };
@@ -841,11 +846,18 @@ async function resolveHostContextForOAuthSession(
     const hostContext = credentialTransformFn
         ? await resolveHostContextWithCredentialTransform(
               httpHostConfig,
+              ${generatedModuleParam(product)},
               bearer,
               sessionStore,
               sessionId
           )
-        : await resolveHostContextOAuthPassThrough(httpHostConfig, bearer, sessionStore, sessionId);
+        : await resolveHostContextOAuthPassThrough(
+              httpHostConfig,
+              ${generatedModuleParam(product)},
+              bearer,
+              sessionStore,
+              sessionId
+          );
     ${resolveHostContextForOAuthSessionDbBranch(product)}
     return hostContext;
 }
