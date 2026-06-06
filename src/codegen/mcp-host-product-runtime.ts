@@ -134,7 +134,7 @@ function dbConnectionStartupCheck(): string {
         }`;
 }
 
-function dbConnectionResolveReturn(): string {
+function dbConnectionEnvValidationBlock(): string {
     return `
         const connectionString = process.env[generated.connectionEnv]?.trim();
         if (!connectionString) {
@@ -147,8 +147,17 @@ function dbConnectionResolveReturn(): string {
             throw new Error(
                 'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
             );
-        }
+        }`;
+}
+
+function dbConnectionResolveReturn(): string {
+    return `${dbConnectionEnvValidationBlock()}
         return { connectionString, databaseDialect: dialect, credential: c, jwt };`;
+}
+
+function dbConnectionResolveReturnMergeHostContext(): string {
+    return `${dbConnectionEnvValidationBlock()}
+        return { ...hostContext, connectionString, databaseDialect: dialect };`;
 }
 
 export function validateHostAtStartupFn(product: McpHostProduct): string {
@@ -273,7 +282,7 @@ export function resolveHostContextForOAuthSessionDbBranch(product: McpHostProduc
     if (product === 'api2ai') {
         return '';
     }
-    return `if (generated.connectionEnv) {${dbConnectionResolveReturn()}
+    return `if (generated.connectionEnv) {${dbConnectionResolveReturnMergeHostContext()}
     }`;
 }
 
