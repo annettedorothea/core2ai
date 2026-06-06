@@ -25,20 +25,22 @@ description: >-
 5. **Version before VSIX** — bump and **push** consumer version **before** `vsix:build` (VSIX filename = committed version).
 6. **`.vsix` is local** — not committed; GitHub upload only via `vsix:release` after manual preview.
 7. **Verify once after bump** — `npm run vsix:prepare` after `vsix:version` replaces a separate `generate:all` / `check` / `npm test` pass (those steps are already inside `vsix:prepare`).
+8. **core2ai pin sync** — after any **core2ai** version bump, run `npm run sync:core2ai-pin` in **api2ai** and **db2ai** (updates `packages/cli` + `package-lock.json`). CI needs pin === sibling `../core2ai` version; mismatch → `npm ci` 404 on registry.
 
 ## Checkpoint map
 
 | CP    | Name                            | Who   |
 | ----- | ------------------------------- | ----- |
 | **0** | Clean git (three repos)         | Agent |
-| **1** | Version bump                    | Agent |
+| **C** | core2ai bump + consumer pin sync (when core changes) | Agent |
+| **1** | Consumer VSIX version bump      | Agent |
 | **2** | Verify pipeline (`vsix:prepare`) | Agent |
 | **3** | Commit + push                   | User  |
 | **4** | VSIX build                      | Agent |
 | **5** | Manual preview                  | User  |
 | **6** | GitHub release (`vsix:release`) | User  |
 
-Optional **core2ai library tag** (only if `src/codegen/**` changed since last tag): bump with `npm run version -- X.Y.Z`, `npm run build && npm run check` in **core2ai**, user commit + tag — before consumer **CP1** (dev uses **npm link**, no consumer pin step).
+**CP C** is required whenever **core2ai** `package.json` version changes (codegen release or coordinated minor). Skip only if core2ai version is already synced in both consumers.
 
 ---
 
@@ -49,13 +51,53 @@ Agent: `git status` in **core2ai**, **api2ai**, **db2ai**.
 - **Stop** if dirty before release work — **repo + commit message** per repo (IDE).
 - **Exception:** after **CP1–CP2** until **CP3** push, the releasing consumer may stay dirty (version bump ± regenerated demos from `vsix:prepare`) — expected.
 
-→ **CP1**
+→ **CP C** (if core2ai bump needed) or **CP1**
 
 ---
 
-## CP1 — Version bump
+## CP C — core2ai version + consumer pin sync
 
-Ask target **VSIX version** (`X.Y.Z`) — do not guess.
+When **core2ai** gets a new library version (especially `src/codegen/**` or coordinated release):
+
+### 1. Bump core2ai
+
+From **core2ai** root:
+
+```bash
+npm run version -- X.Y.Z
+npm run build && npm run check
+```
+
+User commit + push (or tag) **core2ai** separately.
+
+### 2. Sync pin in both consumers
+
+`@core2ai/core` is **not** on npm. Local dev uses **npm link**; CI checks out sibling `../core2ai` and `package-lock.json` links there. The semver in `packages/cli/package.json` **must match** `core2ai/package.json` exactly.
+
+From **api2ai** root, then **db2ai** root:
+
+```bash
+npm run sync:core2ai-pin
+```
+
+This runs `scripts/sync-core2ai-pin.mjs` (reads `../core2ai/package.json`) and `npm install` (refreshes lockfile `../core2ai` link entry).
+
+Confirm:
+
+- `packages/cli/package.json` → `"@core2ai/core": "X.Y.Z"`
+- `package-lock.json` → `"../core2ai"` version `X.Y.Z`, `"link": true`
+
+**Do not** use `file:../../../core2ai` in `package.json` — keep semver pin + lockfile link.
+
+Include pin + lockfile in the **next consumer commit** (CP3), even when only core2ai changed and no VSIX ships yet — otherwise CI breaks on the other consumer too.
+
+**End CP C:** stop → **CP1** (or **CP2** if consumer version already bumped).
+
+---
+
+## CP1 — Consumer VSIX version bump
+
+Ask target **VSIX version** (`X.Y.Z`) — do not guess. VSIX version may differ from **core2ai** library version; if both ship together, they are often the same tag (e.g. `0.1.0`).
 
 From the **releasing consumer** root:
 
@@ -63,11 +105,13 @@ From the **releasing consumer** root:
 npm run vsix:version -- X.Y.Z
 ```
 
-Updates root + `packages/cli`, `packages/language`, `packages/extension` `package.json`.
+Updates root + `packages/cli`, `packages/language`, `packages/extension` `package.json` (workspace semver only — **not** `@core2ai/core` pin; use **CP C** for that).
 
 Do **not** use `npm version` or single-file edits — misaligns VSIX filename vs package versions.
 
-Confirm all four consumer `package.json` files show the same `X.Y.Z`.
+Confirm all four consumer workspace `package.json` files show the same `X.Y.Z`.
+
+If core2ai was bumped in **CP C** and pin not yet synced: run `npm run sync:core2ai-pin` here before **CP2**.
 
 **End CP1:** stop → **CP2**.
 
@@ -77,7 +121,7 @@ Confirm all four consumer `package.json` files show the same `X.Y.Z`.
 
 Agent runs in the **releasing consumer** (api2ai or db2ai):
 
-1. If **core2ai** `src/codegen/**` changed since last tag: `npm run build && npm run check` in **core2ai** (or confirm `npm run watch` was running) — optional prelude, not a VSIX step.
+1. If **core2ai** `src/codegen/**` changed: `npm run build && npm run check` in **core2ai** (or confirm `npm run watch` was running) — optional prelude if not done in **CP C**.
 2. From consumer root: **`npm run vsix:prepare`** — runs `langium:generate`, `build`, `install:demos`, `generate:all`, `build:generated` (demos), `check`, and workspace tests (language, cli, demos). Does **not** package a VSIX.
 
 Manual equivalent (same order as `packages/extension/scripts/vsix-prepare.mjs`):
@@ -103,16 +147,17 @@ npm run test --prefix packages/extension/demos
 
 ## CP3 — Commit + push (user)
 
-**One commit** in the releasing consumer — feature/fix changes, version bump, and any regenerated `generated/**/*.ts` from `vsix:prepare`, then **push**.
+**One commit** per repo — feature/fix changes, version bumps, pin sync, and any regenerated `generated/**/*.ts` from `vsix:prepare`, then **push**.
 
-| Repo     | Message (example)                |
-| -------- | -------------------------------- |
-| `api2ai` | `Release v0.0.5: <one line why>` |
-| `db2ai`  | `Release v0.0.5: <one line why>` |
+| Repo      | Message (example)                              |
+| --------- | ---------------------------------------------- |
+| `core2ai` | `Release v0.1.0: <codegen / library change>`   |
+| `api2ai`  | `Release v0.1.0: <one line why>`               |
+| `db2ai`   | `Release v0.1.0: <one line why>`               |
 
-If **core2ai** was tagged in the optional prelude, that is a **separate** commit on **core2ai**.
+Pin-only follow-up (no VSIX): `Sync @core2ai/core pin to v0.1.0 for CI`
 
-**End CP3:** consumer clean and pushed → **CP4**.
+**End CP3:** repos clean and pushed → **CP4**.
 
 ---
 
@@ -161,7 +206,7 @@ Repeat **CP0–CP6** for the other consumer if both extensions ship.
 
 | User says        | Agent does              |
 | ---------------- | ----------------------- |
-| `guided release` | CP0 → CP1                |
+| `guided release` | CP0 → CP C or CP1       |
 | `release CP2`    | CP2 `vsix:prepare` only  |
 | `release CP1`    | CP1 version bump only    |
 | `release CP4`    | CP4 VSIX only            |
@@ -178,9 +223,11 @@ Repeat **CP0–CP6** for the other consumer if both extensions ship.
 | Prepare fails after bump        | Fix code/generator; version in package.json may stay — re-run CP2 |
 | MCP broken after core2ai change | Rebuild core2ai (`watch`/`build`), **CP2** again, restart MCP    |
 | Check fails on generated output | Fix generator or DSL — never hand-edit `generated/**` (see rules) |
+| CI `npm ci` 404 `@core2ai/core` | Pin stale vs `../core2ai` — **CP C** `sync:core2ai-pin` in both consumers, commit lockfiles |
 
 ## Reference
 
 - Build/link: [`.cursor/rules/core2ai-build.mdc`](../../.cursor/rules/core2ai-build.mdc)
-- core2ai tag only: `npm run version -- X.Y.Z` → `scripts/bump-version.mjs`
+- core2ai library version: `npm run version -- X.Y.Z` → `scripts/bump-version.mjs`
+- Consumer pin sync: `npm run sync:core2ai-pin` → `scripts/sync-core2ai-pin.mjs`
 - Consumers: `vsix:version`, `vsix:prepare`, `vsix:build`, `vsix:release` in sibling api2ai/db2ai
