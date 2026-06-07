@@ -11,7 +11,7 @@ export function generatedModuleParam(product: McpHostProduct): string {
 export function hostCoreTypes(product: McpHostProduct): string {
     if (product === 'db2ai') {
         return `
-type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver';
+type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
 
 type ApiLikeHostContext = {
     baseUrl?: string;
@@ -63,7 +63,9 @@ export function dbOnlyHelperFunctions(product: McpHostProduct): string {
     }
     return `
 function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
-    return value === 'postgres' || value === 'mysql' || value === 'mariadb' || value === 'sqlserver' ? value : undefined;
+    return value === 'postgres' || value === 'mysql' || value === 'mariadb' || value === 'sqlserver' || value === 'oracle'
+        ? value
+        : undefined;
 }
 
 function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialect): boolean {
@@ -79,6 +81,9 @@ function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialec
             connectionString.startsWith('mssql://') ||
             /^Server=/i.test(connectionString)
         );
+    }
+    if (dialect === 'oracle') {
+        return connectionString.startsWith('oracle://');
     }
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
 }`.trim();
