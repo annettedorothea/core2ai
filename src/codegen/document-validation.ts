@@ -84,6 +84,7 @@ function reportValidationErrorsAndExit(
     );
     printDocumentValidationErrors(document, errors);
     process.exit(1);
+    throw new Error('unreachable');
 }
 
 export async function assertDocumentValidForGenerate(

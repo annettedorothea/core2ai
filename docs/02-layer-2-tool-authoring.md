@@ -27,7 +27,7 @@ It allows selection and enrichment of API operations with AI-facing metadata suc
 
 Developers write SQL queries that are:
 
-- validated against a real database using `EXPLAIN`
+- validated against a real database using `EXPLAIN` (dry-run, no data changes)
 - supported for PostgreSQL and MySQL
 - enriched with AI-facing metadata (intent, examples, tool names, optional column documentation)
 - optional authentication configuration
