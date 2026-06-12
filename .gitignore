@@ -1,8 +1,10 @@
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+.cursor/plans/
 node_modules/
 out/
 *.tsbuildinfo
 .idea
 docs/large-images/
+.local/
