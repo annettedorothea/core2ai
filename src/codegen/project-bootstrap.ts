@@ -2,7 +2,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { renderStdioMcpServerSource } from './render-stdio-mcp-server.js';
 import { renderOAuthHttpMcpServerSource } from './render-oauth-http-mcp-server.js';
-import { renderStatelessHttpMcpServerSource } from './render-stateless-http-mcp-server.js';
+import {
+    renderPassthroughHttpMcpServerSource,
+    renderPublicHttpMcpServerSource
+} from './render-relay-http-mcp-server.js';
 import type { McpHostProduct } from './mcp-host-product-runtime.js';
 
 export type ProjectBootstrapConfig = {
@@ -55,13 +58,33 @@ export function writeGeneratedStdioMcpHost(cliDir: string, config?: ProjectBoots
     return dest;
 }
 
-export function writeGeneratedStatelessHttpMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
+export function writeGeneratedPublicHttpMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
-    const dest = path.join(cliDir, 'stateless-http-mcp-server.ts');
-    fs.writeFileSync(dest, renderStatelessHttpMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
+    const dest = path.join(cliDir, 'public-http-mcp-server.ts');
+    fs.writeFileSync(dest, renderPublicHttpMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
     return dest;
+}
+
+export function writeGeneratedPassthroughHttpMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
+    if (!fs.existsSync(cliDir)) {
+        fs.mkdirSync(cliDir, { recursive: true });
+    }
+    const dest = path.join(cliDir, 'passthrough-http-mcp-server.ts');
+    fs.writeFileSync(dest, renderPassthroughHttpMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
+    return dest;
+}
+
+/** Writes public and passthrough HTTP MCP hosts. */
+export function writeGeneratedRelayHttpMcpHosts(
+    cliDir: string,
+    config?: ProjectBootstrapConfig
+): { publicHttpMcpHostPath: string; passthroughHttpMcpHostPath: string } {
+    return {
+        publicHttpMcpHostPath: writeGeneratedPublicHttpMcpHost(cliDir, config),
+        passthroughHttpMcpHostPath: writeGeneratedPassthroughHttpMcpHost(cliDir, config)
+    };
 }
 
 export function writeGeneratedOAuthHttpMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {

@@ -18,8 +18,19 @@ type ApiLikeHostContext = {
     connectionString?: string;
     databaseDialect?: DatabaseDialect;
     credential?: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
+
+type VerifyCredentialInput = {
+    inboundCredential: string;
+};
+
+type VerifyCredentialResult = {
+    upstreamCredential: string;
+    sessionClaims?: Record<string, unknown>;
+};
+
+type VerifyCredentialFn = (input: VerifyCredentialInput) => Promise<VerifyCredentialResult>;
 
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
@@ -34,14 +45,26 @@ type GeneratedHostModule = {
     requiresAuth: boolean;
     connectionEnv?: string;
     databaseDialect?: DatabaseDialect;
+    verifyCredential?: VerifyCredentialFn;
 };`.trim();
     }
     return `
 type ApiLikeHostContext = {
     baseUrl?: string;
     credential?: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
+
+type VerifyCredentialInput = {
+    inboundCredential: string;
+};
+
+type VerifyCredentialResult = {
+    upstreamCredential: string;
+    sessionClaims?: Record<string, unknown>;
+};
+
+type VerifyCredentialFn = (input: VerifyCredentialInput) => Promise<VerifyCredentialResult>;
 
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
@@ -54,6 +77,7 @@ type GeneratedHostModule = {
     mcpServerName?: string;
     mcpServerVersion?: string;
     requiresAuth: boolean;
+    verifyCredential?: VerifyCredentialFn;
 };`.trim();
 }
 
@@ -89,10 +113,18 @@ function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialec
 }`.trim();
 }
 
+function readVerifyCredentialExports(): string {
+    return `
+    const verifyCredential = imported.verifyCredential;
+    const verifyCredentialFn =
+        typeof verifyCredential === 'function' ? (verifyCredential as VerifyCredentialFn) : undefined;`.trim();
+}
+
 export function readGeneratedModuleTail(product: McpHostProduct): string {
     if (product === 'db2ai') {
         return `
     const connectionEnv = imported.connectionEnv;
+    ${readVerifyCredentialExports()}
     return {
         generatedTools: generatedTools as Array<{ toolName: string; title?: string; description: string }>,
         invokeTool: invokeTool as (
@@ -108,10 +140,12 @@ export function readGeneratedModuleTail(product: McpHostProduct): string {
         mcpServerVersion: typeof mcpServerVersion === 'string' ? mcpServerVersion : undefined,
         requiresAuth: imported.requiresAuth === true,
         connectionEnv: typeof connectionEnv === 'string' ? connectionEnv : undefined,
-        databaseDialect: parseDatabaseDialect(imported.databaseDialect)
+        databaseDialect: parseDatabaseDialect(imported.databaseDialect),
+        verifyCredential: verifyCredentialFn
     };`.trim();
     }
     return `
+    ${readVerifyCredentialExports()}
     return {
         generatedTools: generatedTools as Array<{ toolName: string; title?: string; description: string }>,
         invokeTool: invokeTool as (
@@ -125,7 +159,8 @@ export function readGeneratedModuleTail(product: McpHostProduct): string {
                 : undefined,
         mcpServerName: typeof mcpServerName === 'string' ? mcpServerName : undefined,
         mcpServerVersion: typeof mcpServerVersion === 'string' ? mcpServerVersion : undefined,
-        requiresAuth: imported.requiresAuth === true
+        requiresAuth: imported.requiresAuth === true,
+        verifyCredential: verifyCredentialFn
     };`.trim();
 }
 
@@ -167,12 +202,34 @@ function dbConnectionEnvValidationBlock(): string {
 
 function dbConnectionResolveReturn(): string {
     return `${dbConnectionEnvValidationBlock()}
-        return { connectionString, databaseDialect: dialect, credential: c, jwt };`;
+        return { connectionString, databaseDialect: dialect, credential: c };`;
 }
 
-function dbConnectionResolveReturnMergeHostContext(): string {
+function dbConnectionResolveReturnForOAuth(): string {
     return `${dbConnectionEnvValidationBlock()}
-        return { ...hostContext, connectionString, databaseDialect: dialect };`;
+        return { connectionString, databaseDialect: dialect, credential: upstreamCredential, sessionClaims };`;
+}
+
+export function withDbConnectionHostContextFn(product: McpHostProduct): string {
+    if (product !== 'db2ai') {
+        return `
+function withDbConnectionHostContext(
+    _generated: GeneratedHostModule,
+    context: ApiLikeHostContext
+): ApiLikeHostContext {
+    return context;
+}`.trim();
+    }
+    return `
+function withDbConnectionHostContext(
+    generated: GeneratedHostModule,
+    context: ApiLikeHostContext
+): ApiLikeHostContext {
+    if (!generated.connectionEnv) {
+        return context;
+    }${dbConnectionEnvValidationBlock()}
+    return { ...context, connectionString, databaseDialect: dialect };
+}`.trim();
 }
 
 export function validateHostAtStartupFn(product: McpHostProduct): string {
@@ -199,14 +256,19 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
     if (generated.requiresAuth && !hostConfig.authEnvKey?.trim()) {
         throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
     }
-    validateStdioOrHttpCredentialValidationAtStartup(generated, hostConfig);
+    if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
+        throw new Error(
+            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+        );
+    }
 }`.trim();
 }
 
 export function resolveHostContextForCallFn(product: McpHostProduct): string {
     const dbBranch =
         product === 'db2ai'
-            ? `if (generated.connectionEnv) {${dbConnectionResolveReturn()}
+            ? `if (generated.connectionEnv) {
+        ${dbConnectionResolveReturn()}
     }`
             : '';
     return `
@@ -215,18 +277,18 @@ async function resolveHostContextForCall(
     ${generatedModuleParam(product)}: GeneratedHostModule
 ): Promise<ApiLikeHostContext> {
     const credential = readCredentialFromEnv(hostConfig.authEnvKey);
-    const { credential: c, jwt } = await resolveVerifiedHostCredential(credential, ${generatedModuleParam(product)}, hostConfig);
+    const { credential: c } = resolveRelayHostCredential(credential);
     ${dbBranch}
     const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
         throw new Error('Missing host base URL. Pass --base-url-env on stdio-mcp-server.js and set the variable.');
     }
-    return { baseUrl, credential: c, jwt };
+    return { baseUrl, credential: c };
 }`.trim();
 }
 
-export function validateStatelessHttpHostAtStartupFn(product: McpHostProduct): string {
+export function validateRelayHttpHostAtStartupFn(product: McpHostProduct): string {
     const dbBranch =
         product === 'db2ai'
             ? `if (generated.connectionEnv) {${dbConnectionStartupCheck()}
@@ -234,8 +296,8 @@ export function validateStatelessHttpHostAtStartupFn(product: McpHostProduct): s
             : '';
     const closeDbBranch = product === 'db2ai' ? `}` : '';
     return `
-function validateStatelessHttpHostAtStartup(
-    httpHostConfig: StatelessHttpHostRuntimeConfig,
+function validateRelayHttpHostAtStartup(
+    httpHostConfig: RelayHttpHostRuntimeConfig,
     ${generatedModuleParam(product)}: GeneratedHostModule
 ): void {
     ${dbBranch}
@@ -250,54 +312,85 @@ function validateStatelessHttpHostAtStartup(
         );
     }
     ${closeDbBranch}
-    validateStdioOrHttpCredentialValidationAtStartup(${generatedModuleParam(product)}, httpHostConfig);
+    if (${generatedModuleParam(product)}.requiresAuth && typeof ${generatedModuleParam(product)}.verifyCredential !== 'function') {
+        throw new Error(
+            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+        );
+    }
 }`.trim();
 }
 
-export function resolveHostContextForHttpCallFn(product: McpHostProduct): string {
+export function resolveHostContextForHttpCallFn(product: McpHostProduct, relayProfile: RelayHttpHostProfile): string {
+    const readCredential =
+        relayProfile === 'public'
+            ? `const credential = undefined;`
+            : `const headerName = readAuthHeaderNameFromEnv();
+    const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);`;
     const dbBranch =
         product === 'db2ai'
-            ? `if (generated.connectionEnv) {${dbConnectionResolveReturn()}
+            ? `if (generated.connectionEnv) {
+        ${dbConnectionResolveReturn()}
     }`
             : '';
     return `
 async function resolveHostContextForHttpCall(
-    httpHostConfig: StatelessHttpHostRuntimeConfig,
+    httpHostConfig: RelayHttpHostRuntimeConfig,
     ${generatedModuleParam(product)}: GeneratedHostModule,
-    incomingHeaders: Record<string, string | string[] | undefined>
+    ${relayProfile === 'public' ? '_incomingHeaders' : 'incomingHeaders'}: Record<string, string | string[] | undefined>
 ): Promise<ApiLikeHostContext> {
-    const headerName = readAuthHeaderNameFromEnv();
-    const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);
-    const { credential: c, jwt } = await resolveVerifiedHostCredential(credential, ${generatedModuleParam(product)}, httpHostConfig);
+    ${readCredential}
+    const { credential: c } = resolveRelayHostCredential(credential);
     ${dbBranch}
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
         throw new Error(
-            'Missing host base URL. Pass --base-url-env on stateless-http-mcp-server.js and set the variable.'
+            'Missing host base URL. Pass --base-url-env on relay HTTP MCP host and set the variable.'
         );
     }
-    return { baseUrl, credential: c, jwt };
+    return { baseUrl, credential: c };
 }`.trim();
 }
 
-export function validateOAuthHttpHostAtStartupDbBranch(product: McpHostProduct): string {
-    if (product === 'api2ai') {
-        return '';
-    }
-    return `if (generated.connectionEnv) {${dbConnectionStartupCheck()}
-    } else {`;
-}
+export type RelayHttpHostProfile = 'public' | 'passthrough';
 
-export function validateOAuthHttpHostAtStartupDbBranchClose(product: McpHostProduct): string {
-    return product === 'db2ai' ? `}` : '';
+export function validateOAuthHttpHostAtStartupFn(product: McpHostProduct): string {
+    const dbBranch =
+        product === 'db2ai'
+            ? `if (generated.connectionEnv) {${dbConnectionStartupCheck()}
+    } else {`
+            : '';
+    const closeDbBranch = product === 'db2ai' ? `}` : '';
+    return `
+async function validateOAuthHttpHostAtStartup(
+    httpHostConfig: OAuthHttpHostRuntimeConfig,
+    ${generatedModuleParam(product)}: GeneratedHostModule
+): Promise<void> {
+    if (${generatedModuleParam(product)}.requiresAuth && typeof ${generatedModuleParam(product)}.verifyCredential !== 'function') {
+        throw new Error(
+            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+        );
+    }
+    ${dbBranch}
+    const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
+    if (!baseUrlKey) {
+        throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
+    }
+    const baseUrl = process.env[baseUrlKey]?.trim();
+    if (!baseUrl) {
+        throw new Error(
+            'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
+        );
+    }
+    ${closeDbBranch}
+}`.trim();
 }
 
 export function resolveHostContextForOAuthSessionDbBranch(product: McpHostProduct): string {
     if (product === 'api2ai') {
         return '';
     }
-    return `if (generated.connectionEnv) {${dbConnectionResolveReturnMergeHostContext()}
+    return `if (generated.connectionEnv) {${dbConnectionResolveReturnForOAuth()}
     }`;
 }
 
@@ -336,4 +429,9 @@ export function requireBaseUrlEnvArgvCheck(product: McpHostProduct, hostConfigEx
     return `if (!${hostConfigExpr}) {
         throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
     }`;
+}
+
+/** @deprecated use validateRelayHttpHostAtStartupFn */
+export function validateStatelessHttpHostAtStartupFn(product: McpHostProduct): string {
+    return validateRelayHttpHostAtStartupFn(product);
 }

@@ -85,6 +85,68 @@ export async function ensureCheckedAuthStubsFromSource(
     return ensureCheckedAuthStubsAtProjectRoot(projectRoot, checkedToolNames, toolsModuleTsPath);
 }
 
+export function renderVerifyCredentialStubFileContent(mcpModuleName: string): string {
+    return `/**
+ * MCP credential verification (write-once — implement verifyCredential).
+ * Used by oauth-http gate and by invokeTool when sessionClaims are not yet set (stdio/relay).
+ */
+export type VerifyCredentialInput = {
+    inboundCredential: string;
+};
+
+export type VerifyCredentialResult = {
+    upstreamCredential: string;
+    sessionClaims?: Record<string, unknown>;
+};
+
+export async function verifyCredential(input: VerifyCredentialInput): Promise<VerifyCredentialResult> {
+    void input;
+    throw new Error('Implement verifyCredential in src/auth/${mcpModuleName}/verifyCredential.ts');
+}
+`;
+}
+
+export function resolveVerifyCredentialStubPath(projectRoot: string, toolsModuleTsPath: string): string {
+    const authDir = resolveAuthStubDir(projectRoot, toolsModuleTsPath);
+    return path.join(authDir, 'verifyCredential.ts');
+}
+
+/** Write-once \`src/auth/<module>/verifyCredential.ts\` when DSL \`requiresAuth\`. */
+export async function ensureVerifyCredentialStubAtProjectRoot(
+    projectRoot: string,
+    toolsModuleTsPath: string
+): Promise<string | undefined> {
+    const mcpModuleName = resolveMcpModuleNameFromToolsModule(toolsModuleTsPath);
+    const authDir = resolveAuthStubDir(projectRoot, toolsModuleTsPath);
+    if (!fs.existsSync(authDir)) {
+        fs.mkdirSync(authDir, { recursive: true });
+    }
+    const tsPath = path.join(authDir, 'verifyCredential.ts');
+    if (!fs.existsSync(tsPath)) {
+        fs.writeFileSync(tsPath, renderVerifyCredentialStubFileContent(mcpModuleName), 'utf-8');
+    }
+    return tsPath;
+}
+
+export async function ensureVerifyCredentialStubFromSource(
+    source: string,
+    toolsModuleTsPath: string
+): Promise<string | undefined> {
+    const projectRoot = resolveBootstrapProjectRootFromSource(source);
+    return ensureVerifyCredentialStubAtProjectRoot(projectRoot, toolsModuleTsPath);
+}
+
+export function renderVerifyCredentialReExport(toolsModuleTsPath: string, verifyStubTsPath: string): string {
+    const rel = relativeJsImportPath(toolsModuleTsPath, verifyStubTsPath);
+    return `export { verifyCredential } from '${rel}';
+export type { VerifyCredentialInput, VerifyCredentialResult } from '${rel}';`;
+}
+
+export function renderVerifyCredentialImport(toolsModuleTsPath: string, verifyStubTsPath: string): string {
+    const rel = relativeJsImportPath(toolsModuleTsPath, verifyStubTsPath);
+    return `import { verifyCredential } from '${rel}';`;
+}
+
 export function renderParameterCheckerImports(tsPath: string, stubPaths: Map<string, string>): string {
     const lines: string[] = [];
     for (const [toolName, absStub] of stubPaths) {

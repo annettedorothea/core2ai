@@ -1,17 +1,29 @@
 import { LOGGING_ADAPTER_IMPORT_FROM_GENERATED } from './logging-adapter-bootstrap.js';
-import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
+import { renderMcpHostSharedSource, type RelayHttpHostProfile } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
-/**
- * Static stateless MCP Streamable HTTP host for generated `cli/stateless-http-mcp-server.ts`.
- */
-export function renderStatelessHttpMcpServerSource(product: McpHostProduct = 'api2ai'): string {
-    const shared = renderMcpHostSharedSource('stateless-http', product);
+const PROFILE_LOG_LABEL: Record<RelayHttpHostProfile, string> = {
+    public: 'public HTTP',
+    passthrough: 'passthrough HTTP'
+};
+
+const PROFILE_FILE: Record<RelayHttpHostProfile, string> = {
+    public: 'public-http-mcp-server',
+    passthrough: 'passthrough-http-mcp-server'
+};
+
+function renderRelayHttpMcpServerSourceForProfile(
+    profile: RelayHttpHostProfile,
+    product: McpHostProduct = 'api2ai'
+): string {
+    const mode = profile === 'public' ? 'public-http' : 'passthrough-http';
+    const shared = renderMcpHostSharedSource(mode, product);
+    const fileBase = PROFILE_FILE[profile];
+    const logLabel = PROFILE_LOG_LABEL[profile];
     return `#!/usr/bin/env node
 /**
- * Generated stateless MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated ${logLabel} MCP Streamable HTTP host (static runtime — no @core2ai/core).
  */
-import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -23,13 +35,17 @@ import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextproto
 import * as z from 'zod/v4';
 import { loggingAdapter } from '${LOGGING_ADAPTER_IMPORT_FROM_GENERATED}';
 
+type RelayHttpHostProfile = 'public' | 'passthrough';
+
+const RELAY_HTTP_HOST_PROFILE: RelayHttpHostProfile = '${profile}';
+
 ${shared}
 
-async function handleStatelessMcpPost(
+async function handleRelayHttpMcpPost(
     req: IncomingMessage,
     res: ServerResponse,
     generated: GeneratedHostModule,
-    httpHostConfig: StatelessHttpHostRuntimeConfig
+    httpHostConfig: RelayHttpHostRuntimeConfig
 ): Promise<void> {
     const incomingHeaders = req.headers as Record<string, string | string[] | undefined>;
     const { name, version } = requireMcpServerIdentity(generated);
@@ -48,18 +64,18 @@ async function handleStatelessMcpPost(
         });
         await transport.handleRequest(req, res, parsedBody);
     } catch (err) {
-        console.error('[mcp] stateless HTTP request failed:', err);
+        console.error('[mcp] ${logLabel} request failed:', err);
         if (!res.headersSent) {
             writeJsonRpcInternalError(res);
         }
     }
 }
 
-async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
+async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
-            'Usage: node stateless-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --port N [--host HOST] [--path /mcp]'
+            'Usage: node ${fileBase}.js <path-to-*-tools.js> [--base-url-env ENV] --port N [--host HOST] [--path /mcp]'
         );
     }
     const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
@@ -69,18 +85,19 @@ async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<vo
         throw new Error(\`Generated module "\${modulePath}" did not export an object.\`);
     }
     const generated = readGeneratedModule(imported as Record<string, unknown>);
-    const httpHostConfig = parseStatelessHttpHostArgv(argv.slice(1), envDirs);
+    const httpHostConfig = parseRelayHttpHostArgv(argv.slice(1), envDirs);
     ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
-    validateStatelessHttpHostAtStartup(httpHostConfig, generated);
-    const authHeaderName = readAuthHeaderNameFromEnv();
-    loggingAdapter.info('[mcp] stateless HTTP listening', {
+    validateRelayHttpHostAtStartup(httpHostConfig, generated);
+    loggingAdapter.info('[mcp] ${logLabel} listening', {
         url:
             'http://' +
             httpHostConfig.listenHost +
             ':' +
             httpHostConfig.port +
             httpHostConfig.mcpPath,
-        credentialHeader: authHeaderName
+        profile: RELAY_HTTP_HOST_PROFILE,
+        credentialHeader:
+            RELAY_HTTP_HOST_PROFILE === 'public' ? undefined : readAuthHeaderNameFromEnv()
     });
 
     const httpServer = http.createServer(async (req, res) => {
@@ -90,7 +107,7 @@ async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<vo
             return;
         }
         if (req.method === 'POST') {
-            await handleStatelessMcpPost(req, res, generated, httpHostConfig);
+            await handleRelayHttpMcpPost(req, res, generated, httpHostConfig);
             return;
         }
         if (req.method === 'GET' || req.method === 'DELETE') {
@@ -106,6 +123,14 @@ async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<vo
     });
 }
 
-await runStatelessHttpMcpStandaloneFromArgv(process.argv.slice(2));
+await runRelayHttpMcpStandaloneFromArgv(process.argv.slice(2));
 `;
+}
+
+export function renderPublicHttpMcpServerSource(product: McpHostProduct = 'api2ai'): string {
+    return renderRelayHttpMcpServerSourceForProfile('public', product);
+}
+
+export function renderPassthroughHttpMcpServerSource(product: McpHostProduct = 'api2ai'): string {
+    return renderRelayHttpMcpServerSourceForProfile('passthrough', product);
 }
