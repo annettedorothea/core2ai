@@ -81,6 +81,12 @@ See: [Personas](04-personas.md)
 
 ---
 
+## Testing
+
+See: [Testing strategy](05-testing-strategy.md)
+
+---
+
 ## Core Principle
 
 The architecture deliberately separates three concerns:

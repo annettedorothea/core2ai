@@ -20,3 +20,4 @@ jobs:
                   HUSKY: '0'
 
             - run: npm run check
+            - run: npm run test
