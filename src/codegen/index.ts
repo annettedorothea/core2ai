@@ -16,4 +16,5 @@ export {
 } from './render-relay-http-mcp-server.js';
 export { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
 export { writeGeneratedDemosTestSupport } from './write-demos-test-support.js';
+export { writeGeneratedScripts } from '../scripts/write-generated-scripts.js';
 export * from './zod-codegen.js';

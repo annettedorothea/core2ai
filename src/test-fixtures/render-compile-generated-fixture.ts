@@ -21,7 +21,7 @@ export function renderCompileGeneratedFixtureSource(): string {
         '    while (true) {',
         '        if (',
         "            fs.existsSync(path.join(dir, 'tsconfig.base.json')) &&",
-        "            fs.existsSync(path.join(dir, 'demos-generate.config.json'))",
+        "            fs.existsSync(path.join(dir, 'project-generate.config.json'))",
         '        ) {',
         "            demosCandidate = { root: dir, extendsConfig: 'tsconfig.generated.json' };",
         '        }',

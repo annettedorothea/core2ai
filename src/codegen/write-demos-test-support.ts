@@ -7,7 +7,7 @@ import { renderMcpHttpSmokeSource } from '../test-fixtures/render-mcp-http-smoke
 import { renderMcpStdioSmokeSource } from '../test-fixtures/render-mcp-stdio-smoke.js';
 import { renderTestSupportIndexSource } from '../test-fixtures/render-test-support-index.js';
 
-const DEMOS_GENERATE_CONFIG = 'demos-generate.config.json';
+import { PROJECT_GENERATE_CONFIG } from '../scripts/write-generated-scripts.js';
 
 const OUTPUT_FILES: { fileName: string; render: () => string }[] = [
     { fileName: 'generated-module.ts', render: renderGeneratedModuleSource },
@@ -20,7 +20,7 @@ const OUTPUT_FILES: { fileName: string; render: () => string }[] = [
 
 /** Write `test/generated/*.ts` for demo workspaces (api2ai/db2ai layout). */
 export function writeGeneratedDemosTestSupport(projectRoot: string): void {
-    const configPath = path.join(projectRoot, DEMOS_GENERATE_CONFIG);
+    const configPath = path.join(projectRoot, PROJECT_GENERATE_CONFIG);
     if (!fs.existsSync(configPath)) {
         return;
     }
