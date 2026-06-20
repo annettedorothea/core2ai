@@ -48,7 +48,9 @@ npm run watch
 
 ## License
 
-BUSL-1.1
+MIT — see [LICENSE](./LICENSE).
+
+Integration, consulting, and support: open a [GitHub Discussion](https://github.com/annettedorothea/core2ai/discussions) or issue.
 
 ---
 
