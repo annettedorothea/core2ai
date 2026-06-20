@@ -79,10 +79,50 @@ export function emitZodExpression(schema: JsonSchemaDict): string {
     return 'z.unknown()';
 }
 
+function formatExampleForDescription(value: unknown): string {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+    }
+    return JSON.stringify(value);
+}
+
+function firstJsonSchemaExampleValue(schema: JsonSchemaDict): unknown | undefined {
+    if (Array.isArray(schema.examples) && schema.examples.length > 0) {
+        return schema.examples[0];
+    }
+    if (schema.example !== undefined) {
+        return schema.example;
+    }
+    return undefined;
+}
+
+/** Append `(example: …)` to a description when JSON Schema carries example(s) and text does not already. */
+export function mergeJsonSchemaExampleIntoDescription(
+    description: string | undefined,
+    schema: JsonSchemaDict
+): string | undefined {
+    const trimmed = description?.trim() ?? '';
+    if (trimmed.includes('(example:')) {
+        return trimmed.length > 0 ? trimmed : undefined;
+    }
+    const exampleValue = firstJsonSchemaExampleValue(schema);
+    if (exampleValue === undefined) {
+        return trimmed.length > 0 ? trimmed : undefined;
+    }
+    const suffix = `(example: ${formatExampleForDescription(exampleValue)})`;
+    return trimmed.length > 0 ? `${trimmed} ${suffix}` : suffix;
+}
+
 function withDescribe(expr: string, schema: JsonSchemaDict): string {
-    const desc = schema.description;
-    if (typeof desc === 'string' && desc.trim().length > 0) {
-        return `${expr}.describe(${JSON.stringify(desc.trim())})`;
+    const desc = mergeJsonSchemaExampleIntoDescription(
+        typeof schema.description === 'string' ? schema.description : undefined,
+        schema
+    );
+    if (desc && desc.length > 0) {
+        return `${expr}.describe(${JSON.stringify(desc)})`;
     }
     return expr;
 }
