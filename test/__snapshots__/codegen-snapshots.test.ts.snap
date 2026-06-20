@@ -15,7 +15,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -415,7 +415,7 @@ async function validateOAuthHttpHostAtStartup(
 ): Promise<void> {
     if (_generated.requiresAuth && typeof _generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/api2ai/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
     
@@ -790,7 +790,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -1223,7 +1223,7 @@ async function validateOAuthHttpHostAtStartup(
 ): Promise<void> {
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/db2ai/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
     if (generated.connectionEnv) {
@@ -1634,7 +1634,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 type RelayHttpHostProfile = 'public' | 'passthrough';
 
@@ -2031,7 +2031,7 @@ function validateRelayHttpHostAtStartup(
     
     if (_generated.requiresAuth && typeof _generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/api2ai/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
 }
@@ -2157,7 +2157,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 type RelayHttpHostProfile = 'public' | 'passthrough';
 
@@ -2604,7 +2604,7 @@ function validateRelayHttpHostAtStartup(
     }
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/db2ai/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
 }
@@ -2747,7 +2747,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 type RelayHttpHostProfile = 'public' | 'passthrough';
 
@@ -3134,7 +3134,7 @@ function validateRelayHttpHostAtStartup(
     
     if (_generated.requiresAuth && typeof _generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/api2ai/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
 }
@@ -3259,7 +3259,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 type RelayHttpHostProfile = 'public' | 'passthrough';
 
@@ -3696,7 +3696,7 @@ function validateRelayHttpHostAtStartup(
     }
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/db2ai/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
 }
@@ -3836,7 +3836,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -4152,7 +4152,7 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
     }
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/api2ai/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
 }
@@ -4223,7 +4223,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -4589,7 +4589,7 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
     }
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/db2ai/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
 }

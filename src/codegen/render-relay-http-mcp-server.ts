@@ -1,4 +1,3 @@
-import { LOGGING_ADAPTER_IMPORT_FROM_GENERATED } from './logging-adapter-bootstrap.js';
 import { renderMcpHostSharedSource, type RelayHttpHostProfile } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
@@ -14,7 +13,8 @@ const PROFILE_FILE: Record<RelayHttpHostProfile, string> = {
 
 function renderRelayHttpMcpServerSourceForProfile(
     profile: RelayHttpHostProfile,
-    product: McpHostProduct = 'api2ai'
+    product: McpHostProduct = 'api2ai',
+    loggingImport: string
 ): string {
     const mode = profile === 'public' ? 'public-http' : 'passthrough-http';
     const shared = renderMcpHostSharedSource(mode, product);
@@ -33,7 +33,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '${LOGGING_ADAPTER_IMPORT_FROM_GENERATED}';
+import { loggingAdapter } from '${loggingImport}';
 
 type RelayHttpHostProfile = 'public' | 'passthrough';
 
@@ -127,10 +127,13 @@ await runRelayHttpMcpStandaloneFromArgv(process.argv.slice(2));
 `;
 }
 
-export function renderPublicHttpMcpServerSource(product: McpHostProduct = 'api2ai'): string {
-    return renderRelayHttpMcpServerSourceForProfile('public', product);
+export function renderPublicHttpMcpServerSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
+    return renderRelayHttpMcpServerSourceForProfile('public', product, loggingImport);
 }
 
-export function renderPassthroughHttpMcpServerSource(product: McpHostProduct = 'api2ai'): string {
-    return renderRelayHttpMcpServerSourceForProfile('passthrough', product);
+export function renderPassthroughHttpMcpServerSource(
+    product: McpHostProduct = 'api2ai',
+    loggingImport: string
+): string {
+    return renderRelayHttpMcpServerSourceForProfile('passthrough', product, loggingImport);
 }

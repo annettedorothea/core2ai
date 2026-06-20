@@ -7,6 +7,7 @@ export * from './auth-stub-bootstrap.js';
 export * from './logging-adapter-bootstrap.js';
 export * from './document-validation.js';
 export * from './langium-cli-types.js';
+export * from './generated-layout.js';
 export * from './project-bootstrap.js';
 export { renderStdioMcpServerSource } from './render-stdio-mcp-server.js';
 export { renderOAuthHttpMcpServerSource } from './render-oauth-http-mcp-server.js';

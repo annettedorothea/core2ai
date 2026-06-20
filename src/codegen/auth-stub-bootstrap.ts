@@ -1,34 +1,31 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { parameterCheckExportName } from './access-stubs.js';
+import { relativeJsImportPath, resolveHostProductFromGeneratedToolsPath } from './generated-layout.js';
 import { resolveBootstrapProjectRootFromSource } from './project-bootstrap.js';
 
-function relativeJsImportPath(fromTsPath: string, toTsPath: string): string {
-    let rel = path
-        .relative(path.dirname(path.resolve(fromTsPath)), path.resolve(toTsPath))
-        .split(path.sep)
-        .join('/');
-    if (!rel.startsWith('.')) {
-        rel = `./${rel}`;
-    }
-    return rel.replace(/\.ts$/, '.js');
-}
-
-/** Basename of `generated/tools/<name>-tools.ts` — matches exported `mcpServerName`. */
+/** Basename of `generated/{product}/tools/<name>-tools.ts` — matches exported `mcpServerName`. */
 export function resolveMcpModuleNameFromToolsModule(toolsModuleTsPath: string): string {
     return path.parse(toolsModuleTsPath).name;
 }
 
 export function resolveAuthStubDir(projectRoot: string, toolsModuleTsPath: string): string {
+    const hostProduct = resolveHostProductFromGeneratedToolsPath(toolsModuleTsPath);
     const mcpModuleName = resolveMcpModuleNameFromToolsModule(toolsModuleTsPath);
-    return path.join(projectRoot, 'src', 'auth', mcpModuleName);
+    return path.join(projectRoot, 'src', 'auth', hostProduct, mcpModuleName);
+}
+
+function authStubRelativePath(toolsModuleTsPath: string, toolName: string): string {
+    const hostProduct = resolveHostProductFromGeneratedToolsPath(toolsModuleTsPath);
+    const mcpModuleName = resolveMcpModuleNameFromToolsModule(toolsModuleTsPath);
+    return `src/auth/${hostProduct}/${mcpModuleName}/${toolName}.ts`;
 }
 
 export function renderAuthStubFileContent(
     toolName: string,
     authStubTsPath: string,
     toolsModuleTsPath: string,
-    mcpModuleName: string
+    _mcpModuleName: string
 ): string {
     const fn = parameterCheckExportName(toolName);
     const importSpec = relativeJsImportPath(authStubTsPath, toolsModuleTsPath);
@@ -40,7 +37,7 @@ import type { InvokeOptions, CheckedHostContext } from '${importSpec}';
 export function ${fn}(options: InvokeOptions, host: CheckedHostContext): InvokeOptions {
     void options;
     void host;
-    throw new Error('Implement ${fn} in src/auth/${mcpModuleName}/${toolName}.ts');
+    throw new Error('Implement ${fn} in ${authStubRelativePath(toolsModuleTsPath, toolName)}');
 }
 `;
 }
@@ -85,7 +82,8 @@ export async function ensureCheckedAuthStubsFromSource(
     return ensureCheckedAuthStubsAtProjectRoot(projectRoot, checkedToolNames, toolsModuleTsPath);
 }
 
-export function renderVerifyCredentialStubFileContent(mcpModuleName: string): string {
+export function renderVerifyCredentialStubFileContent(toolsModuleTsPath: string): string {
+    const verifyPath = authStubRelativePath(toolsModuleTsPath, 'verifyCredential');
     return `/**
  * MCP credential verification (write-once — implement verifyCredential).
  * Used by oauth-http gate and by invokeTool when sessionClaims are not yet set (stdio/relay).
@@ -101,7 +99,7 @@ export type VerifyCredentialResult = {
 
 export async function verifyCredential(input: VerifyCredentialInput): Promise<VerifyCredentialResult> {
     void input;
-    throw new Error('Implement verifyCredential in src/auth/${mcpModuleName}/verifyCredential.ts');
+    throw new Error('Implement verifyCredential in ${verifyPath}');
 }
 `;
 }
@@ -111,19 +109,18 @@ export function resolveVerifyCredentialStubPath(projectRoot: string, toolsModule
     return path.join(authDir, 'verifyCredential.ts');
 }
 
-/** Write-once \`src/auth/<module>/verifyCredential.ts\` when DSL \`requiresAuth\`. */
+/** Write-once `src/auth/{product}/<module>/verifyCredential.ts` when DSL `requiresAuth`. */
 export async function ensureVerifyCredentialStubAtProjectRoot(
     projectRoot: string,
     toolsModuleTsPath: string
 ): Promise<string | undefined> {
-    const mcpModuleName = resolveMcpModuleNameFromToolsModule(toolsModuleTsPath);
     const authDir = resolveAuthStubDir(projectRoot, toolsModuleTsPath);
     if (!fs.existsSync(authDir)) {
         fs.mkdirSync(authDir, { recursive: true });
     }
     const tsPath = path.join(authDir, 'verifyCredential.ts');
     if (!fs.existsSync(tsPath)) {
-        fs.writeFileSync(tsPath, renderVerifyCredentialStubFileContent(mcpModuleName), 'utf-8');
+        fs.writeFileSync(tsPath, renderVerifyCredentialStubFileContent(toolsModuleTsPath), 'utf-8');
     }
     return tsPath;
 }

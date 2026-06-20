@@ -7,23 +7,24 @@ import {
 } from '../src/codegen/index.js';
 
 const products = ['api2ai', 'db2ai'] as const;
+const LOGGING_IMPORT = '../../../src/utils/logging-adapter.js';
 
 describe('codegen MCP host snapshots', () => {
     for (const product of products) {
         test(`renderStdioMcpServerSource (${product})`, () => {
-            expect(renderStdioMcpServerSource(product)).toMatchSnapshot();
+            expect(renderStdioMcpServerSource(product, LOGGING_IMPORT)).toMatchSnapshot();
         });
 
         test(`renderPublicHttpMcpServerSource (${product})`, () => {
-            expect(renderPublicHttpMcpServerSource(product)).toMatchSnapshot();
+            expect(renderPublicHttpMcpServerSource(product, LOGGING_IMPORT)).toMatchSnapshot();
         });
 
         test(`renderPassthroughHttpMcpServerSource (${product})`, () => {
-            expect(renderPassthroughHttpMcpServerSource(product)).toMatchSnapshot();
+            expect(renderPassthroughHttpMcpServerSource(product, LOGGING_IMPORT)).toMatchSnapshot();
         });
 
         test(`renderOAuthHttpMcpServerSource (${product})`, () => {
-            expect(renderOAuthHttpMcpServerSource(product)).toMatchSnapshot();
+            expect(renderOAuthHttpMcpServerSource(product, LOGGING_IMPORT)).toMatchSnapshot();
         });
     }
 });

@@ -2,8 +2,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveBootstrapProjectRootFromSource } from './project-bootstrap.js';
 
-/** Relative import from `generated/cli/` or `generated/tools/` to the logging adapter stub. */
-export const LOGGING_ADAPTER_IMPORT_FROM_GENERATED = '../../src/utils/logging-adapter.js';
+/** @deprecated Use relativeImportToLoggingAdapter — nested layout uses ../../../src/utils/logging-adapter.js */
+export const LOGGING_ADAPTER_IMPORT_FROM_GENERATED = '../../../src/utils/logging-adapter.js';
 
 export function resolveLoggingAdapterPath(projectRoot: string): string {
     return path.join(projectRoot, 'src', 'utils', 'logging-adapter.ts');

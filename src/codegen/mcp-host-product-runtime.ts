@@ -258,7 +258,7 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
     }
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/${product}/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
 }`.trim();
@@ -314,7 +314,7 @@ function validateRelayHttpHostAtStartup(
     ${closeDbBranch}
     if (${generatedModuleParam(product)}.requiresAuth && typeof ${generatedModuleParam(product)}.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/${product}/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
 }`.trim();
@@ -368,7 +368,7 @@ async function validateOAuthHttpHostAtStartup(
 ): Promise<void> {
     if (${generatedModuleParam(product)}.requiresAuth && typeof ${generatedModuleParam(product)}.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/${product}/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
     ${dbBranch}

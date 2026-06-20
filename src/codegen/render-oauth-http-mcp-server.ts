@@ -1,11 +1,10 @@
-import { LOGGING_ADAPTER_IMPORT_FROM_GENERATED } from './logging-adapter-bootstrap.js';
 import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
 /**
  * Static OAuth + stateful MCP Streamable HTTP host for generated `cli/oauth-http-mcp-server.ts`.
  */
-export function renderOAuthHttpMcpServerSource(product: McpHostProduct = 'api2ai'): string {
+export function renderOAuthHttpMcpServerSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
     const shared = renderMcpHostSharedSource('oauth-http', product);
     return `#!/usr/bin/env node
 /**
@@ -21,7 +20,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '${LOGGING_ADAPTER_IMPORT_FROM_GENERATED}';
+import { loggingAdapter } from '${loggingImport}';
 
 ${shared}
 

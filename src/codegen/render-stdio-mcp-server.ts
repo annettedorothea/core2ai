@@ -1,11 +1,10 @@
-import { LOGGING_ADAPTER_IMPORT_FROM_GENERATED } from './logging-adapter-bootstrap.js';
 import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
 /**
  * Static MCP stdio host for generated `cli/stdio-mcp-server.ts`.
  */
-export function renderStdioMcpServerSource(product: McpHostProduct = 'api2ai'): string {
+export function renderStdioMcpServerSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
     const shared = renderMcpHostSharedSource('stdio', product);
     return `#!/usr/bin/env node
 /**
@@ -18,7 +17,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '${LOGGING_ADAPTER_IMPORT_FROM_GENERATED}';
+import { loggingAdapter } from '${loggingImport}';
 
 ${shared}
 

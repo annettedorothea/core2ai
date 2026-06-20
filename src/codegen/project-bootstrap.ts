@@ -6,7 +6,14 @@ import {
     renderPassthroughHttpMcpServerSource,
     renderPublicHttpMcpServerSource
 } from './render-relay-http-mcp-server.js';
+import { loggingAdapterImportForCliFile, resolveProjectRootFromGeneratedCliDir } from './generated-layout.js';
 import type { McpHostProduct } from './mcp-host-product-runtime.js';
+
+export {
+    resolveGeneratedCliDir,
+    resolveGeneratedToolsPath,
+    resolveHostProductFromGeneratedToolsPath
+} from './generated-layout.js';
 
 export type ProjectBootstrapConfig = {
     generatorImplementationDir: string;
@@ -23,11 +30,6 @@ export type ProjectBootstrapConfig = {
 function resolveEmbedHomeDirectory(config: ProjectBootstrapConfig): string | undefined {
     const raw = config.embedHomeEnv ? process.env[config.embedHomeEnv]?.trim() : undefined;
     return raw ? path.resolve(raw) : undefined;
-}
-
-export function resolveGeneratedCliDir(destinationTsPath: string): string {
-    const dir = path.dirname(path.resolve(destinationTsPath));
-    return path.basename(dir) === 'tools' ? path.join(path.dirname(dir), 'cli') : path.join(dir, 'cli');
 }
 
 export function resolveBootstrapProjectRootFromSource(sourcePath: string): string {
@@ -49,50 +51,85 @@ function resolveCliPackageJsonPathForVersions(config: ProjectBootstrapConfig): s
     return path.join(resolveCliPackageRoot(config), 'package.json');
 }
 
-export function writeGeneratedStdioMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
+function resolveHostWriteContext(
+    cliDir: string,
+    config: ProjectBootstrapConfig | undefined,
+    projectRoot?: string
+): { product: McpHostProduct; root: string } {
+    const product = config?.hostProduct ?? 'api2ai';
+    const root = projectRoot ?? resolveProjectRootFromGeneratedCliDir(cliDir);
+    return { product, root };
+}
+
+export function writeGeneratedStdioMcpHost(
+    cliDir: string,
+    config?: ProjectBootstrapConfig,
+    projectRoot?: string
+): string {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
     const dest = path.join(cliDir, 'stdio-mcp-server.ts');
-    fs.writeFileSync(dest, renderStdioMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
+    const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
+    const loggingImport = loggingAdapterImportForCliFile(dest, root);
+    fs.writeFileSync(dest, renderStdioMcpServerSource(product, loggingImport), 'utf-8');
     return dest;
 }
 
-export function writeGeneratedPublicHttpMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
+export function writeGeneratedPublicHttpMcpHost(
+    cliDir: string,
+    config?: ProjectBootstrapConfig,
+    projectRoot?: string
+): string {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
     const dest = path.join(cliDir, 'public-http-mcp-server.ts');
-    fs.writeFileSync(dest, renderPublicHttpMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
+    const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
+    const loggingImport = loggingAdapterImportForCliFile(dest, root);
+    fs.writeFileSync(dest, renderPublicHttpMcpServerSource(product, loggingImport), 'utf-8');
     return dest;
 }
 
-export function writeGeneratedPassthroughHttpMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
+export function writeGeneratedPassthroughHttpMcpHost(
+    cliDir: string,
+    config?: ProjectBootstrapConfig,
+    projectRoot?: string
+): string {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
     const dest = path.join(cliDir, 'passthrough-http-mcp-server.ts');
-    fs.writeFileSync(dest, renderPassthroughHttpMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
+    const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
+    const loggingImport = loggingAdapterImportForCliFile(dest, root);
+    fs.writeFileSync(dest, renderPassthroughHttpMcpServerSource(product, loggingImport), 'utf-8');
     return dest;
 }
 
 /** Writes public and passthrough HTTP MCP hosts. */
 export function writeGeneratedRelayHttpMcpHosts(
     cliDir: string,
-    config?: ProjectBootstrapConfig
+    config?: ProjectBootstrapConfig,
+    projectRoot?: string
 ): { publicHttpMcpHostPath: string; passthroughHttpMcpHostPath: string } {
     return {
-        publicHttpMcpHostPath: writeGeneratedPublicHttpMcpHost(cliDir, config),
-        passthroughHttpMcpHostPath: writeGeneratedPassthroughHttpMcpHost(cliDir, config)
+        publicHttpMcpHostPath: writeGeneratedPublicHttpMcpHost(cliDir, config, projectRoot),
+        passthroughHttpMcpHostPath: writeGeneratedPassthroughHttpMcpHost(cliDir, config, projectRoot)
     };
 }
 
-export function writeGeneratedOAuthHttpMcpHost(cliDir: string, config?: ProjectBootstrapConfig): string {
+export function writeGeneratedOAuthHttpMcpHost(
+    cliDir: string,
+    config?: ProjectBootstrapConfig,
+    projectRoot?: string
+): string {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
     const dest = path.join(cliDir, 'oauth-http-mcp-server.ts');
-    fs.writeFileSync(dest, renderOAuthHttpMcpServerSource(config?.hostProduct ?? 'api2ai'), 'utf-8');
+    const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
+    const loggingImport = loggingAdapterImportForCliFile(dest, root);
+    fs.writeFileSync(dest, renderOAuthHttpMcpServerSource(product, loggingImport), 'utf-8');
     return dest;
 }
 
@@ -152,7 +189,7 @@ function warnIfPackageJsonMissingMcpDeps(packageJsonDir: string, config: Project
     if (missing.length > 0) {
         console.warn(
             config.missingDepsMessage?.(pjsonPath, missing) ??
-                `[generate] "${pjsonPath}": install runtime dependencies: ${missing.join(', ')} (npm install), then generated/cli/stdio-mcp-server.js can run.`
+                `[generate] "${pjsonPath}": install runtime dependencies: ${missing.join(', ')} (npm install), then generated/<product>/cli/stdio-mcp-server.js can run.`
         );
     }
 }
