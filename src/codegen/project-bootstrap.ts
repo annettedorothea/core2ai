@@ -2,10 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { renderStdioMcpServerSource } from './render-stdio-mcp-server.js';
 import { renderOAuthHttpMcpServerSource } from './render-oauth-http-mcp-server.js';
-import {
-    renderPassthroughHttpMcpServerSource,
-    renderPublicHttpMcpServerSource
-} from './render-relay-http-mcp-server.js';
+import { renderPassthroughHttpMcpServerSource, renderPublicHttpMcpServerSource } from './render-http-mcp-server.js';
 import { loggingAdapterImportForCliFile, resolveProjectRootFromGeneratedCliDir } from './generated-layout.js';
 import type { McpHostProduct } from './mcp-host-product-runtime.js';
 
@@ -107,7 +104,7 @@ export function writeGeneratedPassthroughHttpMcpHost(
 }
 
 /** Writes public and passthrough HTTP MCP hosts. */
-export function writeGeneratedRelayHttpMcpHosts(
+export function writeGeneratedHttpMcpHosts(
     cliDir: string,
     config?: ProjectBootstrapConfig,
     projectRoot?: string

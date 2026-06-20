@@ -288,7 +288,7 @@ async function resolveHostContextForCall(
 }`.trim();
 }
 
-export function validateRelayHttpHostAtStartupFn(product: McpHostProduct): string {
+export function validateHttpMcpHostAtStartupFn(product: McpHostProduct): string {
     const dbBranch =
         product === 'db2ai'
             ? `if (generated.connectionEnv) {${dbConnectionStartupCheck()}
@@ -296,8 +296,8 @@ export function validateRelayHttpHostAtStartupFn(product: McpHostProduct): strin
             : '';
     const closeDbBranch = product === 'db2ai' ? `}` : '';
     return `
-function validateRelayHttpHostAtStartup(
-    httpHostConfig: RelayHttpHostRuntimeConfig,
+function validateHttpMcpHostAtStartup(
+    httpHostConfig: HttpMcpHostRuntimeConfig,
     ${generatedModuleParam(product)}: GeneratedHostModule
 ): void {
     ${dbBranch}
@@ -320,9 +320,9 @@ function validateRelayHttpHostAtStartup(
 }`.trim();
 }
 
-export function resolveHostContextForHttpCallFn(product: McpHostProduct, relayProfile: RelayHttpHostProfile): string {
+export function resolveHostContextForHttpCallFn(product: McpHostProduct, httpMcpProfile: HttpMcpHostProfile): string {
     const readCredential =
-        relayProfile === 'public'
+        httpMcpProfile === 'public'
             ? `const credential = undefined;`
             : `const headerName = readAuthHeaderNameFromEnv();
     const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);`;
@@ -334,9 +334,9 @@ export function resolveHostContextForHttpCallFn(product: McpHostProduct, relayPr
             : '';
     return `
 async function resolveHostContextForHttpCall(
-    httpHostConfig: RelayHttpHostRuntimeConfig,
+    httpHostConfig: HttpMcpHostRuntimeConfig,
     ${generatedModuleParam(product)}: GeneratedHostModule,
-    ${relayProfile === 'public' ? '_incomingHeaders' : 'incomingHeaders'}: Record<string, string | string[] | undefined>
+    ${httpMcpProfile === 'public' ? '_incomingHeaders' : 'incomingHeaders'}: Record<string, string | string[] | undefined>
 ): Promise<ApiLikeHostContext> {
     ${readCredential}
     const { credential: c } = resolveRelayHostCredential(credential);
@@ -345,14 +345,14 @@ async function resolveHostContextForHttpCall(
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
         throw new Error(
-            'Missing host base URL. Pass --base-url-env on relay HTTP MCP host and set the variable.'
+            'Missing host base URL. Pass --base-url-env on HTTP MCP host and set the variable.'
         );
     }
     return { baseUrl, credential: c };
 }`.trim();
 }
 
-export type RelayHttpHostProfile = 'public' | 'passthrough';
+export type HttpMcpHostProfile = 'public' | 'passthrough';
 
 export function validateOAuthHttpHostAtStartupFn(product: McpHostProduct): string {
     const dbBranch =
@@ -431,7 +431,7 @@ export function requireBaseUrlEnvArgvCheck(product: McpHostProduct, hostConfigEx
     }`;
 }
 
-/** @deprecated use validateRelayHttpHostAtStartupFn */
+/** @deprecated use validateHttpMcpHostAtStartupFn */
 export function validateStatelessHttpHostAtStartupFn(product: McpHostProduct): string {
-    return validateRelayHttpHostAtStartupFn(product);
+    return validateHttpMcpHostAtStartupFn(product);
 }

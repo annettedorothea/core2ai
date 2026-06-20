@@ -1,18 +1,18 @@
-import { renderMcpHostSharedSource, type RelayHttpHostProfile } from './render-mcp-host-shared.js';
+import { renderMcpHostSharedSource, type HttpMcpHostProfile } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
-const PROFILE_LOG_LABEL: Record<RelayHttpHostProfile, string> = {
+const PROFILE_LOG_LABEL: Record<HttpMcpHostProfile, string> = {
     public: 'public HTTP',
     passthrough: 'passthrough HTTP'
 };
 
-const PROFILE_FILE: Record<RelayHttpHostProfile, string> = {
+const PROFILE_FILE: Record<HttpMcpHostProfile, string> = {
     public: 'public-http-mcp-server',
     passthrough: 'passthrough-http-mcp-server'
 };
 
-function renderRelayHttpMcpServerSourceForProfile(
-    profile: RelayHttpHostProfile,
+function renderHttpMcpServerSourceForProfile(
+    profile: HttpMcpHostProfile,
     product: McpHostProduct = 'api2ai',
     loggingImport: string
 ): string {
@@ -35,17 +35,17 @@ import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextproto
 import * as z from 'zod/v4';
 import { loggingAdapter } from '${loggingImport}';
 
-type RelayHttpHostProfile = 'public' | 'passthrough';
+type HttpMcpHostProfile = 'public' | 'passthrough';
 
-const RELAY_HTTP_HOST_PROFILE: RelayHttpHostProfile = '${profile}';
+const HTTP_MCP_HOST_PROFILE: HttpMcpHostProfile = '${profile}';
 
 ${shared}
 
-async function handleRelayHttpMcpPost(
+async function handleHttpMcpPost(
     req: IncomingMessage,
     res: ServerResponse,
     generated: GeneratedHostModule,
-    httpHostConfig: RelayHttpHostRuntimeConfig
+    httpHostConfig: HttpMcpHostRuntimeConfig
 ): Promise<void> {
     const incomingHeaders = req.headers as Record<string, string | string[] | undefined>;
     const { name, version } = requireMcpServerIdentity(generated);
@@ -71,7 +71,7 @@ async function handleRelayHttpMcpPost(
     }
 }
 
-async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
+async function runHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
@@ -85,9 +85,9 @@ async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
         throw new Error(\`Generated module "\${modulePath}" did not export an object.\`);
     }
     const generated = readGeneratedModule(imported as Record<string, unknown>);
-    const httpHostConfig = parseRelayHttpHostArgv(argv.slice(1), envDirs);
+    const httpHostConfig = parseHttpMcpHostArgv(argv.slice(1), envDirs);
     ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
-    validateRelayHttpHostAtStartup(httpHostConfig, generated);
+    validateHttpMcpHostAtStartup(httpHostConfig, generated);
     loggingAdapter.info('[mcp] ${logLabel} listening', {
         url:
             'http://' +
@@ -95,9 +95,9 @@ async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
             ':' +
             httpHostConfig.port +
             httpHostConfig.mcpPath,
-        profile: RELAY_HTTP_HOST_PROFILE,
+        profile: HTTP_MCP_HOST_PROFILE,
         credentialHeader:
-            RELAY_HTTP_HOST_PROFILE === 'public' ? undefined : readAuthHeaderNameFromEnv()
+            HTTP_MCP_HOST_PROFILE === 'public' ? undefined : readAuthHeaderNameFromEnv()
     });
 
     const httpServer = http.createServer(async (req, res) => {
@@ -107,7 +107,7 @@ async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
             return;
         }
         if (req.method === 'POST') {
-            await handleRelayHttpMcpPost(req, res, generated, httpHostConfig);
+            await handleHttpMcpPost(req, res, generated, httpHostConfig);
             return;
         }
         if (req.method === 'GET' || req.method === 'DELETE') {
@@ -123,17 +123,17 @@ async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     });
 }
 
-await runRelayHttpMcpStandaloneFromArgv(process.argv.slice(2));
+await runHttpMcpStandaloneFromArgv(process.argv.slice(2));
 `;
 }
 
 export function renderPublicHttpMcpServerSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
-    return renderRelayHttpMcpServerSourceForProfile('public', product, loggingImport);
+    return renderHttpMcpServerSourceForProfile('public', product, loggingImport);
 }
 
 export function renderPassthroughHttpMcpServerSource(
     product: McpHostProduct = 'api2ai',
     loggingImport: string
 ): string {
-    return renderRelayHttpMcpServerSourceForProfile('passthrough', product, loggingImport);
+    return renderHttpMcpServerSourceForProfile('passthrough', product, loggingImport);
 }

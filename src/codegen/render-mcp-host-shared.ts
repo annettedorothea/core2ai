@@ -10,16 +10,16 @@ import {
     generatedModuleParam,
     validateHostAtStartupFn,
     validateOAuthHttpHostAtStartupFn,
-    validateRelayHttpHostAtStartupFn,
+    validateHttpMcpHostAtStartupFn,
     type McpHostProduct,
-    type RelayHttpHostProfile
+    type HttpMcpHostProfile
 } from './mcp-host-product-runtime.js';
 
-export type { McpHostProduct, RelayHttpHostProfile };
+export type { McpHostProduct, HttpMcpHostProfile };
 
 export type McpHostSharedMode = 'stdio' | 'public-http' | 'passthrough-http' | 'oauth-http';
 
-function relayProfileForMode(mode: McpHostSharedMode): RelayHttpHostProfile {
+function httpMcpProfileForMode(mode: McpHostSharedMode): HttpMcpHostProfile {
     if (mode === 'public-http') {
         return 'public';
     }
@@ -280,9 +280,9 @@ ${validateHostAtStartupFn(product)}
 ${resolveHostContextForCallFn(product)}
 `.trim();
 
-    const relayProfile = relayProfileForMode(mode === 'public-http' ? mode : 'passthrough-http');
+    const httpMcpProfile = httpMcpProfileForMode(mode === 'public-http' ? mode : 'passthrough-http');
     const httpExtras = `
-type RelayHttpHostRuntimeConfig = {
+type HttpMcpHostRuntimeConfig = {
     baseUrlEnvKey?: string;
     envDirs: string[];
     listenHost: string;
@@ -290,7 +290,7 @@ type RelayHttpHostRuntimeConfig = {
     mcpPath: string;
 };
 
-function parseRelayHttpHostArgv(argv: string[], envDirs: string[]): RelayHttpHostRuntimeConfig {
+function parseHttpMcpHostArgv(argv: string[], envDirs: string[]): HttpMcpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
     let listenHost = '127.0.0.1';
     let port: number | undefined;
@@ -357,7 +357,7 @@ function readAuthHeaderNameFromEnv(): string {
 }
 
 ${
-    relayProfile === 'public'
+    httpMcpProfile === 'public'
         ? ''
         : `function readCredentialFromHttpHeaders(
     headers: Record<string, string | string[] | undefined>,
@@ -372,9 +372,9 @@ ${
 `
 }
 
-${validateRelayHttpHostAtStartupFn(product)}
+${validateHttpMcpHostAtStartupFn(product)}
 
-${resolveHostContextForHttpCallFn(product, relayProfile)}
+${resolveHostContextForHttpCallFn(product, httpMcpProfile)}
 `.trim();
 
     const oauthExtras = `
@@ -676,9 +676,9 @@ function writeJsonRpcMethodNotAllowed(res: ServerResponse): void {
 `.trim()
             : '';
 
-    const relayHttpModes: McpHostSharedMode[] = ['public-http', 'passthrough-http'];
-    const modeExtras = mode === 'stdio' ? stdioExtras : relayHttpModes.includes(mode) ? httpExtras : oauthExtras;
-    const usesHttpTransport = relayHttpModes.includes(mode) || mode === 'oauth-http';
+    const httpMcpModes: McpHostSharedMode[] = ['public-http', 'passthrough-http'];
+    const modeExtras = mode === 'stdio' ? stdioExtras : httpMcpModes.includes(mode) ? httpExtras : oauthExtras;
+    const usesHttpTransport = httpMcpModes.includes(mode) || mode === 'oauth-http';
     if (usesHttpTransport) {
         const httpBlock = httpTransportRelayOnly
             ? `${httpTransportExtras}\n\n${httpTransportRelayOnly}`
