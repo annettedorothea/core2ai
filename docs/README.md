@@ -1,6 +1,6 @@
 # Mental Model: Tool Factory for AI Systems
 
-![Tool Factory Mental Model](Tool-factory.png)
+![Tool Factory Mental Model](toolfactory.png)
 
 The architecture can be understood through a simple analogy.
 
