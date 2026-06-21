@@ -349,17 +349,17 @@ function parseHttpMcpHostArgv(argv: string[], envDirs: string[]): HttpMcpHostRun
     };
 }
 
-const DEFAULT_MCP_AUTH_HEADER = 'x-api-token';
+${
+    httpMcpProfile === 'public'
+        ? ''
+        : `const DEFAULT_MCP_AUTH_HEADER = 'x-api-token';
 
 function readAuthHeaderNameFromEnv(): string {
     const configured = process.env.MCP_AUTH_HEADER?.trim();
     return configured && configured.length > 0 ? configured : DEFAULT_MCP_AUTH_HEADER;
 }
 
-${
-    httpMcpProfile === 'public'
-        ? ''
-        : `function readCredentialFromHttpHeaders(
+function readCredentialFromHttpHeaders(
     headers: Record<string, string | string[] | undefined>,
     headerName: string
 ): string | undefined {
@@ -391,7 +391,7 @@ type OAuthHttpHostRuntimeConfig = {
 type McpOAuthSession = {
     sessionId: string;
     upstreamCredential?: string;
-    sessionClaims?: Record<string, unknown>;
+    credentials?: unknown;
     verifiedAt?: number;
     createdAt: number;
 };
@@ -490,8 +490,8 @@ function generatedHasPublicTool(generated: GeneratedHostModule): boolean {
     return generated.generatedTools.some((t) => t.access === 'public');
 }
 
-function generatedHasProtectedOrCheckedTool(generated: GeneratedHostModule): boolean {
-    return generated.generatedTools.some((t) => t.access === 'protected' || t.access === 'checked');
+function generatedHasProtectedTool(generated: GeneratedHostModule): boolean {
+    return generated.generatedTools.some((t) => t.access === 'protected');
 }
 
 ${validateOAuthHttpHostAtStartupFn(product)}
@@ -547,14 +547,12 @@ async function resolveHostContextForOAuthSession(
     }
 
     if (session?.verifiedAt && session.upstreamCredential) {
-        const sessionClaims =
-            session.sessionClaims && Object.keys(session.sessionClaims).length > 0
-                ? session.sessionClaims
-                : undefined;
+        const credentials = session.credentials;
         return withDbConnectionHostContext(${generatedModuleParam(product)}, {
             ...apiFields,
             credential: session.upstreamCredential,
-            sessionClaims
+            upstreamCredential: session.upstreamCredential,
+            credentials
         });
     }
 
@@ -565,7 +563,8 @@ async function resolveHostContextForOAuthSession(
             return withDbConnectionHostContext(${generatedModuleParam(product)}, {
                 ...apiFields,
                 credential: session.upstreamCredential,
-                sessionClaims: session.sessionClaims
+                upstreamCredential: session.upstreamCredential,
+                credentials: session.credentials
             });
         }
         return withDbConnectionHostContext(${generatedModuleParam(product)}, { ...apiFields });
@@ -580,20 +579,18 @@ async function resolveHostContextForOAuthSession(
     if (upstreamCredential.length === 0) {
         throw new Error('verifyCredential returned an empty upstream credential.');
     }
-    const sessionClaims =
-        verified.sessionClaims && typeof verified.sessionClaims === 'object'
-            ? (verified.sessionClaims as Record<string, unknown>)
-            : undefined;
+    const credentials = JSON.parse(JSON.stringify(verified.credentials));
     if (session) {
         session.upstreamCredential = upstreamCredential;
-        session.sessionClaims = sessionClaims;
+        session.credentials = credentials;
         session.verifiedAt = Date.now();
     }
 
     return withDbConnectionHostContext(${generatedModuleParam(product)}, {
         ...apiFields,
         credential: upstreamCredential,
-        sessionClaims
+        upstreamCredential,
+        credentials
     });
 }
 

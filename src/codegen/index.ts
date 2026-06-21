@@ -2,7 +2,9 @@
  * Shared codegen helpers.
  * Extracted incrementally from api2ai/db2ai CLI code.
  */
-export { parameterCheckExportName } from './access-stubs.js';
+export { authorizeExportName, validateInputExportName } from './access-stubs.js';
+export * from './auth-module-names.js';
+export * from './auth-pipeline-render.js';
 export * from './auth-stub-bootstrap.js';
 export * from './logging-adapter-bootstrap.js';
 export * from './document-validation.js';

@@ -176,9 +176,5 @@ export function emitInputZodByToolExport(schemasByTool: Record<string, JsonSchem
 }
 
 export function buildInputZodBlock(schemasByTool: Record<string, JsonSchemaDict>): string {
-    const exportBlock = emitInputZodByToolExport(schemasByTool);
-    if (Object.keys(schemasByTool).length === 0) {
-        return `${exportBlock}\n`;
-    }
-    return `${emitGeneratedZodPreamble()}\n${exportBlock}\n`;
+    return `${emitInputZodByToolExport(schemasByTool)}\n`;
 }

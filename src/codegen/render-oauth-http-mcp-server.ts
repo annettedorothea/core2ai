@@ -46,7 +46,7 @@ function isInitializeRequestBody(body: unknown): boolean {
 }
 
 function mcpRequiresBearerOnInitialize(generated: GeneratedHostModule): boolean {
-    return generated.requiresAuth && generatedHasProtectedOrCheckedTool(generated);
+    return generated.requiresAuth && generatedHasProtectedTool(generated);
 }
 
 function readSessionId(req: IncomingMessage): string | undefined {
@@ -177,7 +177,7 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
         resourceUrl,
         authorizationServer: httpHostConfig.oauthIdpUrl,
         oauthOnInitialize: mcpRequiresBearerOnInitialize(generated)
-            ? 'Bearer required (protected/checked tools — Cursor login when enabling MCP' +
+            ? 'Bearer required (protected tools — Cursor login when enabling MCP' +
               (generatedHasPublicTool(generated) ? '; public tools after login' : '') +
               ')'
             : 'no Bearer required (only public tools)'

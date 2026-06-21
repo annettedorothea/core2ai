@@ -20,6 +20,7 @@ function renderHttpMcpServerSourceForProfile(
     const shared = renderMcpHostSharedSource(mode, product);
     const fileBase = PROFILE_FILE[profile];
     const logLabel = PROFILE_LOG_LABEL[profile];
+    const credentialHeaderExpr = profile === 'public' ? 'undefined' : 'readAuthHeaderNameFromEnv()';
     return `#!/usr/bin/env node
 /**
  * Generated ${logLabel} MCP Streamable HTTP host (static runtime — no @core2ai/core).
@@ -34,10 +35,6 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
 import { loggingAdapter } from '${loggingImport}';
-
-type HttpMcpHostProfile = 'public' | 'passthrough';
-
-const HTTP_MCP_HOST_PROFILE: HttpMcpHostProfile = '${profile}';
 
 ${shared}
 
@@ -95,9 +92,8 @@ async function runHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
             ':' +
             httpHostConfig.port +
             httpHostConfig.mcpPath,
-        profile: HTTP_MCP_HOST_PROFILE,
-        credentialHeader:
-            HTTP_MCP_HOST_PROFILE === 'public' ? undefined : readAuthHeaderNameFromEnv()
+        profile: '${profile}',
+        credentialHeader: ${credentialHeaderExpr}
     });
 
     const httpServer = http.createServer(async (req, res) => {
