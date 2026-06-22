@@ -1,7 +1,7 @@
 {
     "name": "@core2ai/core",
     "description": "Shared codegen library for api2ai and db2ai",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "license": "MIT",
     "type": "module",
     "files": [
