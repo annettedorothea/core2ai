@@ -1,6 +1,9 @@
 export type AuthPipelineTier = 'none' | 'credential' | 'full';
 
-export type AuthStubMaps = { authorizers: boolean; validators: boolean };
+export type HookStubMaps = { authorizers: boolean; preparers: boolean };
+
+/** @deprecated Use HookStubMaps */
+export type AuthStubMaps = HookStubMaps;
 
 export type AuthPipelineProfile = 'api2ai' | 'db2ai';
 
@@ -67,12 +70,12 @@ function renderInvokeCredentialPipeline(profile: AuthPipelineProfile, hasVerifyC
 export function resolveAuthPipelineTier(
     hasAuthPipeline: boolean,
     authorizeToolNames: readonly string[],
-    validateToolNames: readonly string[]
+    prepareToolNames: readonly string[]
 ): AuthPipelineTier {
     if (!hasAuthPipeline) {
         return 'none';
     }
-    if (authorizeToolNames.length > 0 || validateToolNames.length > 0) {
+    if (authorizeToolNames.length > 0 || prepareToolNames.length > 0) {
         return 'full';
     }
     return 'credential';
@@ -82,7 +85,7 @@ export function renderInvokeAuthPipeline(
     profile: AuthPipelineProfile,
     tier: AuthPipelineTier,
     hasVerifyCredential: boolean,
-    stubMaps: AuthStubMaps
+    stubMaps: HookStubMaps
 ): string {
     if (tier === 'credential') {
         return renderInvokeCredentialPipeline(profile, hasVerifyCredential);
@@ -122,32 +125,37 @@ export function renderInvokeAuthPipeline(
         }`
         : '';
 
-    const publicValidateCredentialsBlock = stubMaps.validators
-        ? ` else if (${toolRef}.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
-        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
-    }`
-        : '';
+    const needsCredentials = hasVerifyCredential || stubMaps.authorizers;
 
-    const validateBlock = stubMaps.validators
-        ? `
-    if (${toolRef}.hasValidate) {
-        const validate = validators[toolName];
-        if (typeof validate !== 'function') {
-            throw new Error('No validator for tool: ' + toolName);
-        }
-        if (credentialsForStubs === undefined) {
-            if (${toolRef}.access === 'protected') {
-                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
-            }
-            credentialsForStubs = toModuleCredentials({});
-        }
-        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
-    }`
-        : '';
-
-    const api2aiPreamble =
-        profile === 'api2ai'
+    const prepareBlock = stubMaps.preparers
+        ? needsCredentials
             ? `
+    if (${toolRef}.hasPrepare) {
+        const prepare = preparers[toolName];
+        if (typeof prepare !== 'function') {
+            throw new Error('No preparer for tool: ' + toolName);
+        }
+        if (${toolRef}.access === 'protected') {
+            if (credentialsForStubs === undefined) {
+                throw new Error('Prepare requires credentials; verify credential or pass host.credentials.');
+            }
+            optionsResolved = await Promise.resolve(prepare(options, credentialsForStubs));
+        } else {
+            optionsResolved = await Promise.resolve(prepare(options));
+        }
+    }`
+            : `
+    if (${toolRef}.hasPrepare) {
+        const prepare = preparers[toolName];
+        if (typeof prepare !== 'function') {
+            throw new Error('No preparer for tool: ' + toolName);
+        }
+        optionsResolved = await Promise.resolve(prepare(options));
+    }`
+        : '';
+
+    const api2aiCredentialsPreamble = needsCredentials
+        ? `
     let upstreamCredential = host.upstreamCredential;
     const credentialsPlain = host.credentials;
     let credentialsForStubs: ModuleCredentials | undefined =
@@ -162,8 +170,13 @@ export function renderInvokeAuthPipeline(
         if (!inbound || !String(inbound).trim()) {${MISSING_CREDENTIAL_ERROR}
         }${verifyBlock}
         authCredential = upstreamCredential ?? String(inbound).trim();${authorizeBlock}
-    }${publicValidateCredentialsBlock}${validateBlock}${renderUrlAndHeadersPreamble()}`
-            : `
+    }${prepareBlock}${renderUrlAndHeadersPreamble()}`
+        : `
+    let optionsResolved = options;
+${prepareBlock}${renderUrlAndHeadersPreamble()}`;
+
+    const db2aiCredentialsPreamble = needsCredentials
+        ? `
     const credentialsPlain = host.credentials;
     let credentialsForStubs: ModuleCredentials | undefined =
         credentialsPlain != null
@@ -175,7 +188,12 @@ export function renderInvokeAuthPipeline(
         const inbound = host.credential;
         if (!inbound || !String(inbound).trim()) {${MISSING_CREDENTIAL_ERROR}
         }${verifyBlock}${authorizeBlock}
-    }${publicValidateCredentialsBlock}${validateBlock}`;
+    }${prepareBlock}`
+        : `
+    let optionsResolved = options;
+${prepareBlock}`;
+
+    const api2aiPreamble = profile === 'api2ai' ? api2aiCredentialsPreamble : db2aiCredentialsPreamble;
 
     return api2aiPreamble;
 }

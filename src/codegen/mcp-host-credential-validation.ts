@@ -1,6 +1,6 @@
 /**
  * Minimal relay credential helpers for generated MCP hosts.
- * Cryptographic validation belongs in src/auth (checked tools, verifyCredential).
+ * Cryptographic validation belongs in src/hooks (checked tools, verifyCredential).
  */
 
 export function hostCredentialValidationRelaySource(): string {

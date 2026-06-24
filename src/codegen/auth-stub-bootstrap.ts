@@ -1,39 +1,46 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveModuleCredentialNames } from './auth-module-names.js';
-import { authorizeExportName, validateInputExportName } from './access-stubs.js';
+import { authorizeExportName, prepareInputExportName } from './access-stubs.js';
 import { relativeJsImportPath, resolveHostProductFromGeneratedToolsPath } from './generated-layout.js';
 import { resolveBootstrapProjectRootFromSource } from './project-bootstrap.js';
 
-export type ToolAuthStubSpec = {
+export type ToolHookStubSpec = {
     toolName: string;
     authorize: boolean;
-    validate: boolean;
+    prepare: boolean;
+    access: 'public' | 'protected';
 };
+
+/** @deprecated Use ToolHookStubSpec */
+export type ToolAuthStubSpec = ToolHookStubSpec;
 
 /** Basename of `generated/{product}/tools/<name>-tools.ts` — matches exported `mcpServerName`. */
 export function resolveMcpModuleNameFromToolsModule(toolsModuleTsPath: string): string {
     return path.parse(toolsModuleTsPath).name;
 }
 
-export function resolveAuthStubDir(projectRoot: string, toolsModuleTsPath: string): string {
+export function resolveHookStubDir(projectRoot: string, toolsModuleTsPath: string): string {
     const hostProduct = resolveHostProductFromGeneratedToolsPath(toolsModuleTsPath);
     const mcpModuleName = resolveMcpModuleNameFromToolsModule(toolsModuleTsPath);
-    return path.join(projectRoot, 'src', 'auth', hostProduct, mcpModuleName);
+    return path.join(projectRoot, 'src', 'hooks', hostProduct, mcpModuleName);
 }
 
-function authStubRelativePath(toolsModuleTsPath: string, fileBase: string): string {
+/** @deprecated Use resolveHookStubDir */
+export const resolveAuthStubDir = resolveHookStubDir;
+
+function hookStubRelativePath(toolsModuleTsPath: string, fileBase: string): string {
     const hostProduct = resolveHostProductFromGeneratedToolsPath(toolsModuleTsPath);
     const mcpModuleName = resolveMcpModuleNameFromToolsModule(toolsModuleTsPath);
-    return `src/auth/${hostProduct}/${mcpModuleName}/${fileBase}.ts`;
+    return `src/hooks/${hostProduct}/${mcpModuleName}/${fileBase}.ts`;
 }
 
 function resolveVerifyStubRelPath(toolsModuleTsPath: string): string {
     const names = resolveModuleCredentialNames(toolsModuleTsPath);
-    return authStubRelativePath(toolsModuleTsPath, names.fileBase);
+    return hookStubRelativePath(toolsModuleTsPath, names.fileBase);
 }
 
-function renderToolAuthStubBody(toolName: string, spec: ToolAuthStubSpec, toolsModuleTsPath: string): string {
+function renderToolHookStubBody(toolName: string, spec: ToolHookStubSpec, toolsModuleTsPath: string): string {
     const lines: string[] = [];
     if (spec.authorize) {
         const fn = authorizeExportName(toolName);
@@ -41,67 +48,80 @@ function renderToolAuthStubBody(toolName: string, spec: ToolAuthStubSpec, toolsM
     void credentials;
 }`);
     }
-    if (spec.validate) {
-        const fn = validateInputExportName(toolName);
-        lines.push(`export function ${fn}(options: InvokeOptions, credentials: ModuleCredentials): InvokeOptions {
+    if (spec.prepare) {
+        const fn = prepareInputExportName(toolName);
+        if (spec.access === 'public') {
+            lines.push(`export function ${fn}(options: InvokeOptions): InvokeOptions {
+    void options;
+    throw new Error('Implement ${fn} in ${hookStubRelativePath(toolsModuleTsPath, toolName)}');
+}`);
+        } else {
+            lines.push(`export function ${fn}(options: InvokeOptions, credentials?: ModuleCredentials): InvokeOptions {
     void options;
     void credentials;
-    throw new Error('Implement ${fn} in ${authStubRelativePath(toolsModuleTsPath, toolName)}');
+    throw new Error('Implement ${fn} in ${hookStubRelativePath(toolsModuleTsPath, toolName)}');
 }`);
+        }
     }
     return lines.join('\n\n');
 }
 
-export function renderToolAuthStubFileContent(
+export function renderToolHookStubFileContent(
     toolName: string,
-    spec: ToolAuthStubSpec,
-    authStubTsPath: string,
+    spec: ToolHookStubSpec,
+    hookStubTsPath: string,
     toolsModuleTsPath: string
 ): string {
-    const importSpec = relativeJsImportPath(authStubTsPath, toolsModuleTsPath);
-    const authDir = path.dirname(authStubTsPath);
-    const verifyStubPath = path.join(authDir, `${resolveModuleCredentialNames(toolsModuleTsPath).fileBase}.ts`);
-    const verifyImportSpec = relativeJsImportPath(authStubTsPath, verifyStubPath);
+    const importSpec = relativeJsImportPath(hookStubTsPath, toolsModuleTsPath);
+    const hookDir = path.dirname(hookStubTsPath);
+    const verifyStubPath = path.join(hookDir, `${resolveModuleCredentialNames(toolsModuleTsPath).fileBase}.ts`);
+    const verifyImportSpec = relativeJsImportPath(hookStubTsPath, verifyStubPath);
     const header =
-        spec.authorize && spec.validate
+        spec.authorize && spec.prepare
             ? `/**
- * Authorize + validate stubs for "${toolName}" (write-once — implement authorize / validateInput).
+ * Authorize + prepare hooks for "${toolName}" (write-once — implement authorize / prepareInput).
  */`
             : spec.authorize
               ? `/**
- * Authorize stub for "${toolName}" (write-once — override ${authorizeExportName(toolName)} for role gates).
+ * Authorize hook for "${toolName}" (write-once — override ${authorizeExportName(toolName)} for role gates).
  */`
               : `/**
- * Validate stub for "${toolName}" (write-once — implement ${validateInputExportName(toolName)}).
+ * Prepare hook for "${toolName}" (write-once — implement ${prepareInputExportName(toolName)}).
  */`;
+    const needsModuleCredentials = spec.authorize || (spec.prepare && spec.access === 'protected');
+    const credentialsImport = needsModuleCredentials
+        ? `import type { ModuleCredentials } from '${verifyImportSpec}';\n`
+        : '';
     return `${header}
-import type { ModuleCredentials } from '${verifyImportSpec}';
-import type { InvokeOptions } from '${importSpec}';
+${credentialsImport}import type { InvokeOptions } from '${importSpec}';
 
-${renderToolAuthStubBody(toolName, spec, toolsModuleTsPath)}
+${renderToolHookStubBody(toolName, spec, toolsModuleTsPath)}
 `;
 }
 
-export async function ensureToolAuthStubsAtProjectRoot(
+/** @deprecated Use renderToolHookStubFileContent */
+export const renderToolAuthStubFileContent = renderToolHookStubFileContent;
+
+export async function ensureToolHookStubsAtProjectRoot(
     projectRoot: string,
-    toolSpecs: readonly ToolAuthStubSpec[],
+    toolSpecs: readonly ToolHookStubSpec[],
     toolsModuleTsPath: string
 ): Promise<Map<string, string>> {
-    const authDir = resolveAuthStubDir(projectRoot, toolsModuleTsPath);
-    if (!fs.existsSync(authDir)) {
-        fs.mkdirSync(authDir, { recursive: true });
+    const hookDir = resolveHookStubDir(projectRoot, toolsModuleTsPath);
+    if (!fs.existsSync(hookDir)) {
+        fs.mkdirSync(hookDir, { recursive: true });
     }
 
     const importPaths = new Map<string, string>();
     for (const spec of toolSpecs) {
-        if (!spec.authorize && !spec.validate) {
+        if (!spec.authorize && !spec.prepare) {
             continue;
         }
-        const tsPath = path.join(authDir, `${spec.toolName}.ts`);
+        const tsPath = path.join(hookDir, `${spec.toolName}.ts`);
         if (!fs.existsSync(tsPath)) {
             fs.writeFileSync(
                 tsPath,
-                renderToolAuthStubFileContent(spec.toolName, spec, tsPath, toolsModuleTsPath),
+                renderToolHookStubFileContent(spec.toolName, spec, tsPath, toolsModuleTsPath),
                 'utf-8'
             );
         }
@@ -111,14 +131,20 @@ export async function ensureToolAuthStubsAtProjectRoot(
     return importPaths;
 }
 
-export async function ensureToolAuthStubsFromSource(
+/** @deprecated Use ensureToolHookStubsAtProjectRoot */
+export const ensureToolAuthStubsAtProjectRoot = ensureToolHookStubsAtProjectRoot;
+
+export async function ensureToolHookStubsFromSource(
     source: string,
-    toolSpecs: readonly ToolAuthStubSpec[],
+    toolSpecs: readonly ToolHookStubSpec[],
     toolsModuleTsPath: string
 ): Promise<Map<string, string>> {
     const projectRoot = resolveBootstrapProjectRootFromSource(source);
-    return ensureToolAuthStubsAtProjectRoot(projectRoot, toolSpecs, toolsModuleTsPath);
+    return ensureToolHookStubsAtProjectRoot(projectRoot, toolSpecs, toolsModuleTsPath);
 }
+
+/** @deprecated Use ensureToolHookStubsFromSource */
+export const ensureToolAuthStubsFromSource = ensureToolHookStubsFromSource;
 
 export function renderVerifyCredentialsStubFileContent(toolsModuleTsPath: string): string {
     const names = resolveModuleCredentialNames(toolsModuleTsPath);
@@ -164,19 +190,19 @@ export { ${names.verifyFunctionName} as verifyCredential, ${names.toFunctionName
 }
 
 export function resolveVerifyCredentialStubPath(projectRoot: string, toolsModuleTsPath: string): string {
-    const authDir = resolveAuthStubDir(projectRoot, toolsModuleTsPath);
+    const hookDir = resolveHookStubDir(projectRoot, toolsModuleTsPath);
     const names = resolveModuleCredentialNames(toolsModuleTsPath);
-    return path.join(authDir, `${names.fileBase}.ts`);
+    return path.join(hookDir, `${names.fileBase}.ts`);
 }
 
-/** Write-once \`src/auth/{product}/<module>/verify*Credentials.ts\` when DSL has auth. */
+/** Write-once \`src/hooks/{product}/<module>/verify*Credentials.ts\` when DSL has auth. */
 export async function ensureVerifyCredentialStubAtProjectRoot(
     projectRoot: string,
     toolsModuleTsPath: string
 ): Promise<string | undefined> {
-    const authDir = resolveAuthStubDir(projectRoot, toolsModuleTsPath);
-    if (!fs.existsSync(authDir)) {
-        fs.mkdirSync(authDir, { recursive: true });
+    const hookDir = resolveHookStubDir(projectRoot, toolsModuleTsPath);
+    if (!fs.existsSync(hookDir)) {
+        fs.mkdirSync(hookDir, { recursive: true });
     }
     const tsPath = resolveVerifyCredentialStubPath(projectRoot, toolsModuleTsPath);
     if (!fs.existsSync(tsPath)) {
@@ -237,18 +263,23 @@ export function renderAuthorizersMap(toolNames: readonly string[]): string {
     return `const authorizers${typeAnnotation} = {\n${entries.join(',\n')}\n};`;
 }
 
-export function renderValidatorsMap(toolNames: readonly string[]): string {
-    const typeAnnotation =
-        ': Record<string, (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>>';
+export function renderPreparersMap(toolNames: readonly string[], options?: { includeCredentials?: boolean }): string {
+    const includeCredentials = options?.includeCredentials !== false;
+    const typeAnnotation = includeCredentials
+        ? ': Record<string, (options: InvokeOptions, credentials?: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>>'
+        : ': Record<string, (options: InvokeOptions) => InvokeOptions | Promise<InvokeOptions>>';
     if (toolNames.length === 0) {
-        return `const validators${typeAnnotation} = {};`;
+        return `const preparers${typeAnnotation} = {};`;
     }
     const entries = toolNames.map((toolName) => {
-        const fn = validateInputExportName(toolName);
+        const fn = prepareInputExportName(toolName);
         return `    ${JSON.stringify(toolName)}: ${fn}`;
     });
-    return `const validators${typeAnnotation} = {\n${entries.join(',\n')}\n};`;
+    return `const preparers${typeAnnotation} = {\n${entries.join(',\n')}\n};`;
 }
+
+/** @deprecated Use renderPreparersMap */
+export const renderValidatorsMap = renderPreparersMap;
 
 export function renderAuthorizerImports(
     tsPath: string,
@@ -271,11 +302,11 @@ export function renderAuthorizerImports(
     return lines.join('\n');
 }
 
-export function renderValidatorImports(tsPath: string, stubPaths: Map<string, string>): string {
+export function renderPreparerImports(tsPath: string, stubPaths: Map<string, string>): string {
     const lines: string[] = [];
     for (const [toolName, absStub] of stubPaths) {
         const rel = relativeJsImportPath(tsPath, absStub);
-        const fn = validateInputExportName(toolName);
+        const fn = prepareInputExportName(toolName);
         const stubContent = fs.existsSync(absStub) ? fs.readFileSync(absStub, 'utf-8') : '';
         if (stubContent.includes(`export function ${fn}`)) {
             lines.push(`import { ${fn} } from '${rel}';`);
@@ -283,3 +314,6 @@ export function renderValidatorImports(tsPath: string, stubPaths: Map<string, st
     }
     return lines.join('\n');
 }
+
+/** @deprecated Use renderPreparerImports */
+export const renderValidatorImports = renderPreparerImports;

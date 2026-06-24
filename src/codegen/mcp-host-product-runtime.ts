@@ -262,7 +262,7 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
     }
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verify*Credentials in src/auth/${product}/<module>/ and re-export from generated tools.'
+            'Generated tools require auth; implement verify*Credentials in src/hooks/${product}/<module>/ and re-export from generated tools.'
         );
     }
 }`.trim();
@@ -318,7 +318,7 @@ function validateHttpMcpHostAtStartup(
     ${closeDbBranch}
     if (${generatedModuleParam(product)}.requiresAuth && typeof ${generatedModuleParam(product)}.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verify*Credentials in src/auth/${product}/<module>/ and re-export from generated tools.'
+            'Generated tools require auth; implement verify*Credentials in src/hooks/${product}/<module>/ and re-export from generated tools.'
         );
     }
 }`.trim();
@@ -372,7 +372,7 @@ async function validateOAuthHttpHostAtStartup(
 ): Promise<void> {
     if (${generatedModuleParam(product)}.requiresAuth && typeof ${generatedModuleParam(product)}.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verify*Credentials in src/auth/${product}/<module>/ and re-export from generated tools.'
+            'Generated tools require auth; implement verify*Credentials in src/hooks/${product}/<module>/ and re-export from generated tools.'
         );
     }
     ${dbBranch}
