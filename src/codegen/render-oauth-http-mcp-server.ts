@@ -85,7 +85,7 @@ async function createMcpServerForSession(
         sessionEntries.delete(sessionId);
         sessionStore.delete(sessionId);
         sessionHeaders.delete(sessionId);
-        void server.close();
+        // Transport already closed — see public/passthrough HTTP host (avoid server.close loop).
     };
     await server.connect(transport);
     return { transport, server, session };
@@ -130,7 +130,7 @@ async function handleOAuthMcpRequest(
         writeJsonRpcError(res, 400, -32_000, 'Bad Request: Session ID required');
         return;
     } else {
-        res.writeHead(400).end('Missing session ID');
+        writeJsonRpcMethodNotAllowed(res);
         return;
     }
 

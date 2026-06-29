@@ -662,25 +662,18 @@ function writeJsonRpcError(res: ServerResponse, status: number, code: number, me
 function writeJsonRpcInternalError(res: ServerResponse): void {
     writeJsonRpcError(res, 500, -32_603, 'Internal server error');
 }
-`.trim();
 
-    const httpTransportRelayOnly =
-        mode === 'public-http' || mode === 'passthrough-http'
-            ? `
+/** GET/DELETE without an established session — spec-allowed probe response (Open WebUI Verify Connection). */
 function writeJsonRpcMethodNotAllowed(res: ServerResponse): void {
     writeJsonRpcError(res, 405, -32_000, 'Method not allowed.');
 }
-`.trim()
-            : '';
+`.trim();
 
     const httpMcpModes: McpHostSharedMode[] = ['public-http', 'passthrough-http'];
     const modeExtras = mode === 'stdio' ? stdioExtras : httpMcpModes.includes(mode) ? httpExtras : oauthExtras;
     const usesHttpTransport = httpMcpModes.includes(mode) || mode === 'oauth-http';
     if (usesHttpTransport) {
-        const httpBlock = httpTransportRelayOnly
-            ? `${httpTransportExtras}\n\n${httpTransportRelayOnly}`
-            : httpTransportExtras;
-        return `${core}\n\n${httpBlock}\n\n${modeExtras}`;
+        return `${core}\n\n${httpTransportExtras}\n\n${modeExtras}`;
     }
     return `${core}\n\n${modeExtras}`;
 }
