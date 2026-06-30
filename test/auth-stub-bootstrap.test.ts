@@ -57,22 +57,22 @@ describe('renderPreparersMap', () => {
 });
 
 describe('renderInvokeAuthPipeline', () => {
-    test('public prepare calls prepare(options) without credentials preamble', () => {
+    test('public prepare calls prepare(optionsResolved) without credentials preamble', () => {
         const pipeline = renderInvokeAuthPipeline('api2ai', 'full', false, {
             authorizers: false,
             preparers: true
         });
-        expect(pipeline).toContain('optionsResolved = await Promise.resolve(prepare(options));');
+        expect(pipeline).toContain('optionsResolved = await Promise.resolve(prepare(optionsResolved));');
         expect(pipeline).not.toContain('ModuleCredentials');
         expect(pipeline).not.toContain('toModuleCredentials');
     });
 
-    test('protected prepare calls prepare(options, credentialsForStubs)', () => {
+    test('protected prepare calls prepare(optionsResolved, credentialsForStubs)', () => {
         const pipeline = renderInvokeAuthPipeline('api2ai', 'full', true, {
             authorizers: false,
             preparers: true
         });
-        expect(pipeline).toContain('prepare(options, credentialsForStubs)');
+        expect(pipeline).toContain('prepare(optionsResolved, credentialsForStubs)');
         expect(pipeline).toContain('Prepare requires credentials');
     });
 });

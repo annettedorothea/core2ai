@@ -41,7 +41,6 @@ function renderInvokeCredentialPipeline(profile: AuthPipelineProfile, hasVerifyC
 
         return `
     let upstreamCredential = host.upstreamCredential;
-    const optionsResolved = options;
     let authCredential = host.credential;
 
     if (tool.access === 'protected') {
@@ -58,8 +57,6 @@ function renderInvokeCredentialPipeline(profile: AuthPipelineProfile, hasVerifyC
         : '';
 
     return `
-    const optionsResolved = options;
-
     if (toolMeta.access === 'protected') {
         const inbound = host.credential;
         if (!inbound || !String(inbound).trim()) {${MISSING_CREDENTIAL_ERROR}
@@ -139,9 +136,9 @@ export function renderInvokeAuthPipeline(
             if (credentialsForStubs === undefined) {
                 throw new Error('Prepare requires credentials; verify credential or pass host.credentials.');
             }
-            optionsResolved = await Promise.resolve(prepare(options, credentialsForStubs));
+            optionsResolved = await Promise.resolve(prepare(optionsResolved, credentialsForStubs));
         } else {
-            optionsResolved = await Promise.resolve(prepare(options));
+            optionsResolved = await Promise.resolve(prepare(optionsResolved));
         }
     }`
             : `
@@ -150,7 +147,7 @@ export function renderInvokeAuthPipeline(
         if (typeof prepare !== 'function') {
             throw new Error('No preparer for tool: ' + toolName);
         }
-        optionsResolved = await Promise.resolve(prepare(options));
+        optionsResolved = await Promise.resolve(prepare(optionsResolved));
     }`
         : '';
 
@@ -162,7 +159,6 @@ export function renderInvokeAuthPipeline(
         credentialsPlain != null
             ? toModuleCredentials(credentialsPlain as Record<string, unknown>)
             : undefined;
-    let optionsResolved = options;
     let authCredential = host.credential;
 
     if (tool.access === 'protected') {
@@ -172,7 +168,6 @@ export function renderInvokeAuthPipeline(
         authCredential = upstreamCredential ?? String(inbound).trim();${authorizeBlock}
     }${prepareBlock}${renderUrlAndHeadersPreamble()}`
         : `
-    let optionsResolved = options;
 ${prepareBlock}${renderUrlAndHeadersPreamble()}`;
 
     const db2aiCredentialsPreamble = needsCredentials
@@ -182,7 +177,6 @@ ${prepareBlock}${renderUrlAndHeadersPreamble()}`;
         credentialsPlain != null
             ? toModuleCredentials(credentialsPlain as Record<string, unknown>)
             : undefined;
-    let optionsResolved = options;
 
     if (toolMeta.access === 'protected') {
         const inbound = host.credential;
@@ -190,7 +184,6 @@ ${prepareBlock}${renderUrlAndHeadersPreamble()}`;
         }${verifyBlock}${authorizeBlock}
     }${prepareBlock}`
         : `
-    let optionsResolved = options;
 ${prepareBlock}`;
 
     const api2aiPreamble = profile === 'api2ai' ? api2aiCredentialsPreamble : db2aiCredentialsPreamble;

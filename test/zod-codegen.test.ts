@@ -43,4 +43,24 @@ describe('emitZodExpression', () => {
         });
         expect(source).toContain('.describe("max rows per page (example: 100)")');
     });
+
+    test('emits number fields as union with string for LLM tool callers', () => {
+        expect(emitZodExpression({ type: 'number' })).toBe('z.union([z.number(), z.string()])');
+        expect(emitZodExpression({ type: 'integer' })).toBe('z.union([z.number().int(), z.string()])');
+    });
+
+    test('emits numeric enums with string literal counterparts', () => {
+        expect(emitZodExpression({ type: 'integer', enum: [1, 2] })).toBe(
+            'z.union([z.literal(1), z.literal("1"), z.literal(2), z.literal("2")])'
+        );
+    });
+
+    test('emits array fields as union with string for LLM tool callers', () => {
+        expect(
+            emitZodExpression({
+                type: 'array',
+                items: { type: 'string', enum: ['temperature_2m'] }
+            })
+        ).toBe('z.union([z.array(z.literal("temperature_2m")), z.string()])');
+    });
 });

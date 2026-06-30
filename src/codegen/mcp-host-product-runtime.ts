@@ -329,7 +329,10 @@ export function resolveHostContextForHttpCallFn(product: McpHostProduct, httpMcp
         httpMcpProfile === 'public'
             ? `const credential = undefined;`
             : `const headerName = readAuthHeaderNameFromEnv();
-    const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);`;
+    let credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);
+    if (!credential?.trim()) {
+        credential = readCredentialFromEnv(httpHostConfig.authEnvKey);
+    }`;
     const dbBranch =
         product === 'db2ai'
             ? `if (generated.connectionEnv) {

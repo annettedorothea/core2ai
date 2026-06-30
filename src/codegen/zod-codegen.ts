@@ -41,7 +41,7 @@ export function emitZodExpression(schema: JsonSchemaDict): string {
 
     if (schema.type === 'array') {
         const items = emitZodExpression((schema.items ?? {}) as JsonSchemaDict);
-        return withDescribe(`z.array(${items})`, schema);
+        return withDescribe(`z.union([z.array(${items}), z.string()])`, schema);
     }
 
     if (schema.type === 'string') {
@@ -52,14 +52,11 @@ export function emitZodExpression(schema: JsonSchemaDict): string {
     }
 
     if (schema.type === 'number' || schema.type === 'integer') {
-        if (Array.isArray(schema.enum) && schema.enum.length >= 1 && schema.enum.every(isFiniteNumber)) {
-            return withDescribe(emitNumberPicklist(schema.enum as number[]), schema);
-        }
-        return withDescribe('z.number()', schema);
+        return emitLlmTolerantNumber(schema, schema.type === 'integer');
     }
 
     if (schema.type === 'boolean') {
-        return withDescribe('z.boolean()', schema);
+        return withDescribe('z.union([z.boolean(), z.literal("true"), z.literal("false")])', schema);
     }
 
     if (schema.type === 'object' && schema.additionalProperties === true) {
@@ -148,14 +145,20 @@ function emitStringPicklist(strings: readonly string[]): string {
     return `z.union([${strings.map((v) => `z.literal(${JSON.stringify(v)})`).join(', ')}])`;
 }
 
-function emitNumberPicklist(values: readonly number[]): string {
-    if (values.length === 0) {
-        return 'z.never()';
+/** MCP tool args: models often pass OpenAPI numbers/booleans as JSON strings. */
+function emitLlmTolerantNumber(schema: JsonSchemaDict, integer: boolean): string {
+    if (Array.isArray(schema.enum) && schema.enum.length >= 1 && schema.enum.every(isFiniteNumber)) {
+        const literals = (schema.enum as number[]).flatMap((v) => [
+            `z.literal(${v})`,
+            `z.literal(${JSON.stringify(String(v))})`
+        ]);
+        if (literals.length === 1) {
+            return withDescribe(literals[0]!, schema);
+        }
+        return withDescribe(`z.union([${literals.join(', ')}])`, schema);
     }
-    if (values.length === 1) {
-        return `z.literal(${values[0]})`;
-    }
-    return `z.union([${values.map((v) => `z.literal(${v})`).join(', ')}])`;
+    const numberBranch = integer ? 'z.number().int()' : 'z.number()';
+    return withDescribe(`z.union([${numberBranch}, z.string()])`, schema);
 }
 
 function isFiniteNumber(value: unknown): value is number {
