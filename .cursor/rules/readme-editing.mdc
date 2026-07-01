@@ -1,0 +1,22 @@
+---
+description: Do not edit README.md without user approval; preserve existing structure
+alwaysApply: true
+---
+
+# README editing
+
+## Before any change
+
+- **Do not** create, edit, or substantially rewrite any **`README.md`** unless the user has **explicitly asked** for that file or change in the current task.
+- If documentation work would touch a README and the user did not name it, **stop and ask** which README to update (or whether to skip README changes).
+
+## When the user did ask for README changes
+
+- **Preserve the existing structure** (section order, headings, tone, level of detail). Do not add sections, tables, or prose the file did not already use unless the user requested them.
+- **Do not clutter**: no drive-by fixes, no extra “helpful” appendices, no duplicating content that belongs in `core2ai/docs/`.
+- **Minimal diff**: change only what the task requires; match formatting and conventions already in that file.
+- Follow the Markdown section in [prettier-formatting.mdc](./prettier-formatting.mdc) for layout and Prettier.
+
+## Footer
+
+README footers vary by file (e.g. Colossians block vs `#Col3:23`). **Do not** add, remove, or standardize footers unless the user asks.

@@ -87,6 +87,14 @@ See: [Testing strategy](05-testing-strategy.md)
 
 ---
 
+## Integrations and runtime
+
+- [Cursor](integrations/cursor.md)
+- [Open WebUI](integrations/open-webui.md)
+- [MCP hosts](runtime/mcp-hosts.md)
+
+---
+
 ## Core Principle
 
 The architecture deliberately separates three concerns:
