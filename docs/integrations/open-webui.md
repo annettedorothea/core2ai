@@ -302,10 +302,10 @@ For Open WebUI deployments, HTTP hosts are generally recommended.
 
 ## See Also
 
-- Open WebUI MCP documentation
-- Layer 3 — AI Runtime
-- Cursor Integration
-- MCP Hosts
+- [Open WebUI MCP Documentation](https://docs.openwebui.com/features/extensibility/mcp/)
+- [MCP Hosts](../runtime/mcp-hosts.md)
+- [Cursor Integration](cursor.md)
+- [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)
 
 ---
 

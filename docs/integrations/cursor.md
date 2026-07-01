@@ -472,11 +472,12 @@ api2ai /test:all
 
 ## See Also
 
-- Cursor MCP documentation
-- MCP Hosts
-- Open WebUI Integration
-- Layer 3 — AI Runtime
-- api2ai and db2ai demo workspaces
+- [Cursor MCP Documentation](https://cursor.com/docs/mcp)
+- [MCP Hosts](../runtime/mcp-hosts.md)
+- [Open WebUI Integration](open-webui.md)
+- [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)
+- [api2ai Demo Workspace](https://github.com/annettedorothea/api2ai/tree/main/packages/extension/demos)
+- [db2ai Demo Workspace](https://github.com/annettedorothea/db2ai/tree/main/packages/extension/demos)
 
 ---
 

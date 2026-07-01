@@ -29,7 +29,7 @@ It includes:
 
 The output of this layer is the infrastructure that enables tool creation.
 
-See: [Layer 1 – Tool Factory](01-layer-1-tool-factory.md)
+See: [Layer 1 – Tool Factory](architecture/01-layer-1-tool-factory.md)
 
 ---
 
@@ -46,7 +46,7 @@ The Tool Factory validates these definitions and generates executable MCP tools.
 
 The output of this layer is a set of AI-ready tools.
 
-See: [Layer 2 – Tool Authoring](02-layer-2-tool-authoring.md)
+See: [Layer 2 – Tool Authoring](architecture/02-layer-2-tool-authoring.md)
 
 ---
 
@@ -63,7 +63,7 @@ The agent:
 
 The agent does not need to understand how the tool was generated. It simply uses the capabilities made available by the previous layers.
 
-See: [Layer 3 – AI Runtime](03-layer-3-ai-runtime.md)
+See: [Layer 3 – AI Runtime](architecture/03-layer-3-ai-runtime.md)
 
 ---
 
@@ -77,13 +77,13 @@ Different roles interact with different layers of the system:
 | Tool Author / Engineer             | Layer 2       |
 | End User / Customer                | Layer 3       |
 
-See: [Personas](04-personas.md)
+See: [Personas](architecture/04-personas.md)
 
 ---
 
 ## Testing
 
-See: [Testing strategy](05-testing-strategy.md)
+See: [Testing strategy](architecture/05-testing-strategy.md)
 
 ---
 

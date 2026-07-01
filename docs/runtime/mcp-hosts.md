@@ -522,11 +522,12 @@ After changing host templates:
 
 ## See Also
 
-- Layer 2 — Tool Authoring
-- Layer 3 — AI Runtime
-- Open WebUI Integration
-- Cursor Integration
-- MCP Specification
+- [Cursor Integration](../integrations/cursor.md)
+- [Open WebUI Integration](../integrations/open-webui.md)
+- [MCP Inspector](../testing/mcp-inspector.md)
+- [Layer 2 — Tool Authoring](../architecture/02-layer-2-tool-authoring.md)
+- [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)
+- [Model Context Protocol Specification](https://modelcontextprotocol.io)
 
 ---
 
