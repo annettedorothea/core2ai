@@ -3,6 +3,10 @@
     "description": "Shared codegen library for api2ai and db2ai",
     "version": "1.0.0-rc",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/annettedorothea/core2ai.git"
+    },
     "publishConfig": {
         "access": "public"
     },
