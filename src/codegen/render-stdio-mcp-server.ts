@@ -8,7 +8,7 @@ export function renderStdioMcpServerSource(product: McpHostProduct = 'api2ai', l
     const shared = renderMcpHostSharedSource('stdio', product);
     return `#!/usr/bin/env node
 /**
- * Generated MCP stdio host (static runtime — no @core2ai/core).
+ * Generated MCP stdio host (static runtime — no @toolfactory.dev/core).
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';

@@ -49,7 +49,7 @@ Public tools (`access: public`) skip credential requirements unless a hook is mi
 
 ## Generated pipeline tiers
 
-`@core2ai/core` emits one of three invoke shapes:
+`@toolfactory.dev/core` emits one of three invoke shapes:
 
 | Tier         | When                                           | What runs                                  |
 | ------------ | ---------------------------------------------- | ------------------------------------------ |

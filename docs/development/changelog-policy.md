@@ -17,20 +17,20 @@ How version history and upgrade notes are maintained across **core2ai**, **api2a
 ## Format
 
 - [Keep a Changelog](https://keepachangelog.com) — newest release at the top
-- [Semantic Versioning](https://semver.org) for `@core2ai/core` npm tags and api2ai/db2ai **VSIX / workspace** versions
+- [Semantic Versioning](https://semver.org) for `@toolfactory.dev/core` npm tags and api2ai/db2ai **VSIX / workspace** versions
 - **No** automated changelog bot in 1.0 — entries are written manually at release time
 
 ---
 
 ## Per repository
 
-| Repo    | Version source                                   | CHANGELOG covers                                              |
-| ------- | ------------------------------------------------ | ------------------------------------------------------------- |
-| core2ai | `@core2ai/core` in `package.json`, git tags `v*` | Shared codegen templates, MCP host renderers, runtime helpers |
-| api2ai  | Workspace / VSIX `package.json`                  | `.api2ai` DSL, OpenAPI loader, generator, extension, demos    |
-| db2ai   | Workspace / VSIX `package.json`                  | `.db2ai` DSL, SQL validation, generator, extension, demos     |
+| Repo    | Version source                                           | CHANGELOG covers                                              |
+| ------- | -------------------------------------------------------- | ------------------------------------------------------------- |
+| core2ai | `@toolfactory.dev/core` in `package.json`, git tags `v*` | Shared codegen templates, MCP host renderers, runtime helpers |
+| api2ai  | Workspace / VSIX `package.json`                          | `.api2ai` DSL, OpenAPI loader, generator, extension, demos    |
+| db2ai   | Workspace / VSIX `package.json`                          | `.db2ai` DSL, SQL validation, generator, extension, demos     |
 
-Each consumer repo pins `@core2ai/core` (sibling checkout or npm). When core2ai codegen changes behavior, note the pin refresh in **both** consumer CHANGELOGs under **Changed** or **Upgrade notes**.
+Each consumer repo pins `@toolfactory.dev/core` (sibling checkout or npm). When core2ai codegen changes behavior, note the pin refresh in **both** consumer CHANGELOGs under **Changed** or **Upgrade notes**.
 
 ---
 
@@ -62,7 +62,7 @@ Each consumer repo pins `@core2ai/core` (sibling checkout or npm). When core2ai 
 ### Upgrade notes
 
 - After VSIX upgrade: run `generate:all` and `build:generated` in each project workspace; review `generated/**` diff.
-- When upgrading `@core2ai/core`: run `sync-core2ai-pin` (or equivalent) in api2ai/db2ai, then regenerate.
+- When upgrading `@toolfactory.dev/core`: run `sync-core2ai-pin` (or equivalent) in api2ai/db2ai, then regenerate.
 ```
 
 **Omit:**

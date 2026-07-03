@@ -7,7 +7,7 @@ alwaysApply: false
 
 # core2ai Build
 
-`@core2ai/core` exports **`out/`** (compiled JS), not `src/`. Consumers resolve it via **`npm link`** — the symlink stays valid; only **`out/`** must stay current.
+`@toolfactory.dev/core` exports **`out/`** (compiled JS), not `src/`. Consumers resolve it via **`npm link`** — the symlink stays valid; only **`out/`** must stay current.
 
 ## One-time link setup
 
@@ -16,12 +16,12 @@ alwaysApply: false
 npm run build && npm link
 
 # api2ai or db2ai (from repo root)
-cd packages/cli && npm link @core2ai/core && cd ../..
+cd packages/cli && npm link @toolfactory.dev/core && cd ../..
 npm install
-cd packages/extension/demos && npm link @core2ai/core && npm install
+cd packages/extension/demos && npm link @toolfactory.dev/core && npm install
 ```
 
-Verify: `ls -l node_modules/@core2ai/core` → symlink to sibling `../core2ai`.
+Verify: `ls -l node_modules/@toolfactory.dev/core` → symlink to sibling `../core2ai`.
 
 ## After every change under `src/codegen/**`
 
@@ -48,5 +48,14 @@ See [generated-output-do-not-edit.mdc](./generated-output-do-not-edit.mdc).
 ## Do not
 
 - Edit `out/` by hand — always `src/` → `npm run build` or `npm run watch`
-- `cp` into `node_modules/@core2ai/core`
-- Rely on GitHub pin / registry (local dev uses **npm link** only)
+- `cp` into `node_modules/@toolfactory.dev/core`
+
+## Pin sync vs npm link
+
+| Workflow | Command (consumer root) | Resolves from |
+|----------|-------------------------|---------------|
+| **Active core2ai hacking** | `npm link` in core2ai + `packages/cli` (see above) | Sibling `../core2ai/out/` |
+| **Refresh sibling lockfile** | `npm run sync:core2ai-pin` | `../core2ai` link in lockfile |
+| **After npm publish / CI** | `npm run sync:core2ai-pin:npm` | `registry.npmjs.org` |
+
+CI consumers use the **registry** lockfile (no sibling checkout) once `@toolfactory.dev/core` is published and lockfiles are synced. Until then, CI may still checkout sibling `../core2ai` — see [1.0-core2ai-npmjs.plan.md](../plans/1.0-core2ai-npmjs.plan.md).

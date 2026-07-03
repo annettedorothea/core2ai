@@ -23,7 +23,7 @@ function renderHttpMcpServerSourceForProfile(
     const credentialHeaderExpr = profile === 'public' ? 'undefined' : 'readAuthHeaderNameFromEnv()';
     return `#!/usr/bin/env node
 /**
- * Generated ${logLabel} MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated ${logLabel} MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';

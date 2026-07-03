@@ -1,5 +1,5 @@
 /**
- * Set @core2ai/core package version (library tag / release prelude).
+ * Set @toolfactory.dev/core package version (library tag / release prelude).
  *
  * Usage: node scripts/bump-version.mjs <X.Y.Z>
  */

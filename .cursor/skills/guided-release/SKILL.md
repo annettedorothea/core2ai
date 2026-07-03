@@ -25,7 +25,9 @@ description: >-
 5. **Version before VSIX** — bump and **push** consumer version **before** `vsix:build` (VSIX filename = committed version).
 6. **`.vsix` is local** — not committed; GitHub upload only via `vsix:release` after manual preview.
 7. **Verify once after bump** — `npm run vsix:prepare` after `vsix:version` replaces a separate `generate:all` / `check` / `npm test` pass (those steps are already inside `vsix:prepare`).
-8. **core2ai pin sync** — after any **core2ai** version bump, run `npm run sync:core2ai-pin` in **api2ai** and **db2ai** (updates `packages/cli` + `package-lock.json`). CI needs pin === sibling `../core2ai` version; mismatch → `npm ci` 404 on registry.
+8. **core2ai pin sync** — after any **core2ai** version bump:
+   - **Local dev (sibling):** `npm run sync:core2ai-pin` in **api2ai** and **db2ai** (lockfile `../core2ai` link).
+   - **After npm publish / CI registry:** `npm run sync:core2ai-pin:npm` in both consumers; commit lockfiles before removing sibling checkout from CI.
 
 ## Checkpoint map
 
@@ -72,22 +74,29 @@ User commit + push (or tag) **core2ai** separately.
 
 ### 2. Sync pin in both consumers
 
-`@core2ai/core` is **not** on npm. Local dev uses **npm link**; CI checks out sibling `../core2ai` and `package-lock.json` links there. The semver in `packages/cli/package.json` **must match** `core2ai/package.json` exactly.
+`@toolfactory.dev/core` is published to **npmjs** for CI; local dev still uses **npm link** to sibling `../core2ai`.
 
-From **api2ai** root, then **db2ai** root:
+| Goal | Command (api2ai + db2ai root) | Lockfile |
+|------|-------------------------------|----------|
+| Sibling dev | `npm run sync:core2ai-pin` | `"../core2ai"`, `"link": true` |
+| Registry / post-publish | `npm run sync:core2ai-pin:npm` | `registry.npmjs.org` |
 
-```bash
-npm run sync:core2ai-pin
-```
+Semver in `packages/cli/package.json` **must match** the published (or sibling) `core2ai/package.json` version.
 
-This runs `scripts/sync-core2ai-pin.mjs` (reads `../core2ai/package.json`) and `npm install` (refreshes lockfile `../core2ai` link entry).
+**Sibling** (`sync:core2ai-pin`): runs `scripts/sync-core2ai-pin.mjs` + `npm install`.
 
-Confirm:
+**Registry** (`sync:core2ai-pin:npm`): `scripts/sync-core2ai-pin.mjs --npm` installs from npmjs (optional explicit version arg).
 
-- `packages/cli/package.json` → `"@core2ai/core": "X.Y.Z"`
+Confirm after **registry** sync:
+
+- `packages/cli/package.json` → `"@toolfactory.dev/core": "X.Y.Z"`
+- `package-lock.json` → **no** `"link": true` for `@toolfactory.dev/core`
+
+Confirm after **sibling** sync:
+
 - `package-lock.json` → `"../core2ai"` version `X.Y.Z`, `"link": true`
 
-**Do not** use `file:../../../core2ai` in `package.json` — keep semver pin + lockfile link.
+**Do not** use `file:../../../core2ai` in `package.json` — keep semver pin + lockfile link or registry resolution.
 
 Include pin + lockfile in the **next consumer commit** (CP3), even when only core2ai changed and no VSIX ships yet — otherwise CI breaks on the other consumer too.
 
@@ -105,7 +114,7 @@ From the **releasing consumer** root:
 npm run vsix:version -- X.Y.Z
 ```
 
-Updates root + `packages/cli`, `packages/language`, `packages/extension` `package.json` (workspace semver only — **not** `@core2ai/core` pin; use **CP C** for that).
+Updates root + `packages/cli`, `packages/language`, `packages/extension` `package.json` (workspace semver only — **not** `@toolfactory.dev/core` pin; use **CP C** for that).
 
 Do **not** use `npm version` or single-file edits — misaligns VSIX filename vs package versions.
 
@@ -155,7 +164,7 @@ npm run test --prefix packages/extension/demos
 | `api2ai`  | `Release v0.1.0: <one line why>`               |
 | `db2ai`   | `Release v0.1.0: <one line why>`               |
 
-Pin-only follow-up (no VSIX): `Sync @core2ai/core pin to v0.1.0 for CI`
+Pin-only follow-up (no VSIX): `Sync @toolfactory.dev/core pin to v0.1.0 for CI`
 
 **End CP3:** repos clean and pushed → **CP4**.
 
@@ -223,11 +232,11 @@ Repeat **CP0–CP6** for the other consumer if both extensions ship.
 | Prepare fails after bump        | Fix code/generator; version in package.json may stay — re-run CP2 |
 | MCP broken after core2ai change | Rebuild core2ai (`watch`/`build`), **CP2** again, restart MCP    |
 | Check fails on generated output | Fix generator or DSL — never hand-edit `generated/**` (see rules) |
-| CI `npm ci` 404 `@core2ai/core` | Pin stale vs `../core2ai` — **CP C** `sync:core2ai-pin` in both consumers, commit lockfiles |
+| CI `npm ci` 404 `@toolfactory.dev/core` | Pin stale or lockfile still sibling-linked — **CP C** `sync:core2ai-pin:npm` after publish, or `sync:core2ai-pin` for sibling CI |
 
 ## Reference
 
 - Build/link: [`.cursor/rules/core2ai-build.mdc`](../../.cursor/rules/core2ai-build.mdc)
 - core2ai library version: `npm run version -- X.Y.Z` → `scripts/bump-version.mjs`
-- Consumer pin sync: `npm run sync:core2ai-pin` → `scripts/sync-core2ai-pin.mjs`
+- Consumer pin sync: `sync:core2ai-pin` (sibling) / `sync:core2ai-pin:npm` (registry) → `scripts/sync-core2ai-pin.mjs`
 - Consumers: `vsix:version`, `vsix:prepare`, `vsix:build`, `vsix:release` in sibling api2ai/db2ai

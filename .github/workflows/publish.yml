@@ -1,0 +1,30 @@
+name: publish
+
+on:
+    push:
+        tags: ['v*']
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: actions/setup-node@v5
+              with:
+                  node-version: 22
+                  registry-url: https://registry.npmjs.org
+
+            - run: npm ci
+              env:
+                  HUSKY: '0'
+
+            - run: npm test
+
+            - run: npm publish --provenance
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

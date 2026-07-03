@@ -79,7 +79,7 @@ Finally, an AI Agent uses those generated tools to solve user problems. In the a
 
 ### Layer 1: Tool Factory (Build-Time Infrastructure)
 
-Langium grammars, validation, codegen, VSIX extensions, shared `@core2ai/core` templates.
+Langium grammars, validation, codegen, VSIX extensions, shared `@toolfactory.dev/core` templates.
 
 See: [Layer 1 – Tool Factory](architecture/01-layer-1-tool-factory.md)
 

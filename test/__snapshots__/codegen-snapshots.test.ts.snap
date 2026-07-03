@@ -3,7 +3,7 @@
 exports[`codegen MCP host snapshots > renderOAuthHttpMcpServerSource (api2ai) 1`] = `
 "#!/usr/bin/env node
 /**
- * Generated OAuth + stateful MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated OAuth + stateful MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -782,7 +782,7 @@ await runOAuthHttpMcpStandaloneFromArgv(process.argv.slice(2));
 exports[`codegen MCP host snapshots > renderOAuthHttpMcpServerSource (db2ai) 1`] = `
 "#!/usr/bin/env node
 /**
- * Generated OAuth + stateful MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated OAuth + stateful MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -1631,7 +1631,7 @@ await runOAuthHttpMcpStandaloneFromArgv(process.argv.slice(2));
 exports[`codegen MCP host snapshots > renderPassthroughHttpMcpServerSource (api2ai) 1`] = `
 "#!/usr/bin/env node
 /**
- * Generated passthrough HTTP MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated passthrough HTTP MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -2245,7 +2245,7 @@ await runHttpMcpStandaloneFromArgv(process.argv.slice(2));
 exports[`codegen MCP host snapshots > renderPassthroughHttpMcpServerSource (db2ai) 1`] = `
 "#!/usr/bin/env node
 /**
- * Generated passthrough HTTP MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated passthrough HTTP MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -2926,7 +2926,7 @@ await runHttpMcpStandaloneFromArgv(process.argv.slice(2));
 exports[`codegen MCP host snapshots > renderPublicHttpMcpServerSource (api2ai) 1`] = `
 "#!/usr/bin/env node
 /**
- * Generated public HTTP MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated public HTTP MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -3510,7 +3510,7 @@ await runHttpMcpStandaloneFromArgv(process.argv.slice(2));
 exports[`codegen MCP host snapshots > renderPublicHttpMcpServerSource (db2ai) 1`] = `
 "#!/usr/bin/env node
 /**
- * Generated public HTTP MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated public HTTP MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -4161,7 +4161,7 @@ await runHttpMcpStandaloneFromArgv(process.argv.slice(2));
 exports[`codegen MCP host snapshots > renderStdioMcpServerSource (api2ai) 1`] = `
 "#!/usr/bin/env node
 /**
- * Generated MCP stdio host (static runtime — no @core2ai/core).
+ * Generated MCP stdio host (static runtime — no @toolfactory.dev/core).
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -4550,7 +4550,7 @@ await runStdioMcpStandaloneFromArgv(process.argv.slice(2));
 exports[`codegen MCP host snapshots > renderStdioMcpServerSource (db2ai) 1`] = `
 "#!/usr/bin/env node
 /**
- * Generated MCP stdio host (static runtime — no @core2ai/core).
+ * Generated MCP stdio host (static runtime — no @toolfactory.dev/core).
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';

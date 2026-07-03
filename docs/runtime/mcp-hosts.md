@@ -75,7 +75,7 @@ Generated tool modules contain:
 - input validation
 - `verifyCredential()` when authentication is enabled
 
-The generated host files are static runtime templates emitted by `@core2ai/core/codegen`.
+The generated host files are static runtime templates emitted by `@toolfactory.dev/core/codegen`.
 
 Compile TypeScript output before running:
 
