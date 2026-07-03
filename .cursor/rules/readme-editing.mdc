@@ -19,4 +19,18 @@ alwaysApply: true
 
 ## Footer
 
-README footers vary by file (e.g. Colossians block vs `#Col3:23`). **Do not** add, remove, or standardize footers unless the user asks.
+Ecosystem Markdown (`README.md`, `CHANGELOG.md`, `docs/**/*.md` in core2ai/api2ai/db2ai) ends with this block after a horizontal rule (`---`):
+
+```markdown
+---
+
+> _Whatever you do, work heartily, as for the Lord and not for men._
+>
+> **— Colossians 3:23**
+>
+> _Created by Annette Pohl_
+```
+
+- Use this footer exactly — **not** `#Col3:23` or other variants.
+- **Do not** add, remove, or change the footer unless the user asks.
+- Exempt: `.cursor/**` (plans, skills, rules), generated output, third-party templates.

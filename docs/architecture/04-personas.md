@@ -217,4 +217,8 @@ Solve business problems and obtain useful results.
 
 ---
 
-#Col3:23
+> _Whatever you do, work heartily, as for the Lord and not for men._
+>
+> **— Colossians 3:23**
+>
+> _Created by Annette Pohl_
