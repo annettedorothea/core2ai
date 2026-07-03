@@ -31,6 +31,9 @@ Ecosystem Markdown (`README.md`, `CHANGELOG.md`, `docs/**/*.md` in core2ai/api2a
 > _Created by Annette Pohl_
 ```
 
+- Use `_italic_` in the footer block (not `*italic*`).
+
 - Use this footer exactly — **not** `#Col3:23` or other variants.
 - **Do not** add, remove, or change the footer unless the user asks.
-- Exempt: `.cursor/**` (plans, skills, rules), generated output, third-party templates.
+- **No footer:** `core2ai/.cursor/plans/**` (plan files never get the Colossians footer).
+- **No footer:** other `.cursor/**` (skills, rules), generated output, third-party templates.

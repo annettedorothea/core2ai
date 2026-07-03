@@ -1,8 +1,15 @@
 # Personas
 
+[← Documentation index](../README.md)
+
 The system is structured around three human personas aligned with the three-layer architecture.
 
-The personas correspond to the people interacting with the platform.
+## Contents
+
+- [The Factory Metaphor](#the-factory-metaphor)
+- [Layer 1: Platform / Tool Factory Maintainer](#layer-1-platform--tool-factory-maintainer)
+- [Layer 2: Tool Author / Engineer](#layer-2-tool-author--engineer)
+- [Layer 3: End User / Customer](#layer-3-end-user--customer)
 
 ---
 
@@ -214,6 +221,15 @@ Any user of the system.
 ### Goal
 
 Solve business problems and obtain useful results.
+
+---
+
+## See also
+
+- [Layer 1 – Tool Factory](01-layer-1-tool-factory.md)
+- [Layer 2 – Tool Authoring](02-layer-2-tool-authoring.md)
+- [Layer 3 – AI Runtime](03-layer-3-ai-runtime.md)
+- [Documentation index](../README.md)
 
 ---
 

@@ -1,5 +1,7 @@
 # MCP Hosts
 
+[← Documentation index](../README.md)
+
 MCP hosts are the runtime processes that expose generated tools to AI clients over the Model Context Protocol (MCP).
 
 Within the `core2ai` architecture they sit between **Layer 2 (Tool Authoring)** and **Layer 3 (AI Runtime)**:
@@ -106,6 +108,10 @@ path: /mcp
 endpoint: http://127.0.0.1:<port>/mcp
 ```
 
+Each project generates four host binaries; start only the one your client needs (`stdio` for Cursor, HTTP for Open WebUI, etc.).
+
+The remaining host binaries can stay unused.
+
 ---
 
 ## Choosing a Host
@@ -126,6 +132,19 @@ The application decides which host binary to start and how clients connect to it
 
 ## Shared Runtime Behavior
 
+Generated hosts are MCP **tool servers** and currently implement:
+
+- `tools/list`
+- `tools/call`
+
+The following MCP capabilities are intentionally not implemented:
+
+- Resources
+- Prompts
+- Sampling
+
+The generated runtimes focus exclusively on exposing curated tools.
+
 All four hosts share the same runtime pipeline.
 
 At startup they:
@@ -142,8 +161,6 @@ On each tool invocation the host creates a host context and forwards it to:
 invokeTool(toolName, args, hostContext)
 ```
 
----
-
 ### api2ai Host Context
 
 Typical fields include:
@@ -158,8 +175,6 @@ Typical fields include:
 ```text
 --base-url-env API_BASE_URL
 ```
-
----
 
 ### db2ai Host Context
 
@@ -177,8 +192,6 @@ connectionEnv
 ```
 
 inside the `.db2ai` file.
-
----
 
 ### Authentication
 
@@ -450,6 +463,10 @@ Typical db2ai demo mappings:
 - `plants-oracle` → public
 - `orders-postgresql` → OAuth
 
+Credential validation, authorization, and request preparation are implemented using runtime hooks.
+
+See [Auth and Hooks](../authoring/auth-and-hooks.md) for details.
+
 ---
 
 ## Client Configuration Summary
@@ -522,11 +539,13 @@ After changing host templates:
 
 ## See Also
 
+- [Documentation index](../README.md)
 - [Cursor Integration](../integrations/cursor.md)
 - [Open WebUI Integration](../integrations/open-webui.md)
 - [MCP Inspector](../testing/mcp-inspector.md)
 - [Layer 2 — Tool Authoring](../architecture/02-layer-2-tool-authoring.md)
 - [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)
+- [Auth and Hooks](../authoring/auth-and-hooks.md)
 - [Model Context Protocol Specification](https://modelcontextprotocol.io)
 
 ---

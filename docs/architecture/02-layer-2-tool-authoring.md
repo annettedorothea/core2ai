@@ -1,8 +1,17 @@
 # Layer 2: Tool Authoring
 
+[← Documentation index](../README.md)
+
 This layer is where concrete AI tools are defined using DSLs.
 
 Tool authors translate APIs and databases into structured, AI-consumable tools.
+
+## Contents
+
+- [DSLs](#dsls)
+- [Access Control](#access-control-important-concept)
+- [Code Generation Output](#code-generation-output)
+- [Key Idea](#key-idea)
 
 ---
 
@@ -19,6 +28,8 @@ It allows selection and enrichment of API operations with AI-facing metadata suc
 - usage examples
 - optional authentication configuration
 
+Authoring reference: [api2ai DSL](../authoring/api2ai-dsl.md) · [Supported OpenAPI patterns](../authoring/supported-openapi.md)
+
 ---
 
 ### Database-based tools
@@ -27,10 +38,12 @@ It allows selection and enrichment of API operations with AI-facing metadata suc
 
 Developers write SQL queries that are:
 
-- validated against a real database using `EXPLAIN` (dry-run, no data changes)
-- supported for PostgreSQL and MySQL
+- validated against a real database using `EXPLAIN` (dry-run where supported)
+- supported dialects: PostgreSQL, MySQL, MariaDB, SQL Server, Oracle
 - enriched with AI-facing metadata (intent, examples, tool names, optional column documentation)
 - optional authentication configuration
+
+Authoring reference: [db2ai DSL](../authoring/db2ai-dsl.md) · [Supported SQL patterns](../authoring/supported-sql.md)
 
 ---
 
@@ -42,20 +55,21 @@ Access rules are **not defined in the DSL**, because they are not expressive eno
 
 Instead, authorization is implemented in code.
 
-### Runtime behavior:
+### Runtime behavior
 
 - Each request arrives with an authentication token
 - The token is evaluated programmatically before execution
-- The tool call is either:
-    - allowed
-    - denied
-    - or modified with injected parameters
+- The tool call is either allowed, denied, or modified with injected parameters
 
-### Example patterns:
+### Example patterns
 
 - userId is extracted from token and injected into tool parameters
 - data access is restricted to user-scoped resources (e.g. "only my orders")
 - requests can be fully rejected based on custom logic
+
+The DSL does not restrict read vs. write SQL. Tool authors choose SELECT-only or DML deliberately and secure write tools with `access: protected` and hooks — the factory does not enforce a mutation policy in the grammar.
+
+See [Auth and hooks](../authoring/auth-and-hooks.md) for the runtime pipeline (`verifyCredential`, `authorize`, `prepare`).
 
 ---
 
@@ -64,14 +78,25 @@ Instead, authorization is implemented in code.
 The DSL is compiled into:
 
 - MCP tool modules
-- stdio MCP host integration
-- executable tool definitions
+- stdio and HTTP MCP host binaries
+- executable tool definitions with Zod input schemas
+
+See [MCP hosts](../runtime/mcp-hosts.md) for runtime host variants.
 
 ---
 
 ## Key Idea
 
 Tool Authoring turns structured API/DB definitions into AI-ready tools, while keeping security and access logic fully programmable.
+
+---
+
+## See also
+
+- [Layer 1 – Tool Factory](01-layer-1-tool-factory.md)
+- [Layer 3 – AI Runtime](03-layer-3-ai-runtime.md)
+- [Personas](04-personas.md)
+- [Documentation index](../README.md)
 
 ---
 

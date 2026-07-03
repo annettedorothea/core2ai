@@ -1,6 +1,16 @@
 # CHANGELOG policy
 
+[← Documentation index](../README.md)
+
 How version history and upgrade notes are maintained across **core2ai**, **api2ai**, and **db2ai**.
+
+## Contents
+
+- [Format](#format)
+- [Per repository](#per-repository)
+- [Categories](#categories)
+- [What belongs in the CHANGELOG](#what-belongs-in-the-changelog)
+- [Release workflow](#release-workflow)
 
 ---
 
@@ -80,6 +90,13 @@ Add near the pre-release banner (when removing banner at 1.0):
 ```markdown
 See [CHANGELOG.md](CHANGELOG.md) for version history and upgrade notes.
 ```
+
+---
+
+## See also
+
+- [Testing strategy](../architecture/05-testing-strategy.md)
+- [Documentation index](../README.md)
 
 ---
 

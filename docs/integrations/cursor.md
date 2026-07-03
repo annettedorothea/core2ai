@@ -1,5 +1,7 @@
 # Cursor Integration
 
+[← Documentation index](../README.md)
+
 Cursor is an AI-native IDE and a common **Layer 3 (AI Runtime)** client for `core2ai` generated MCP tools.
 
 Official Cursor MCP documentation:
@@ -472,6 +474,7 @@ api2ai /test:all
 
 ## See Also
 
+- [Documentation index](../README.md)
 - [Cursor MCP Documentation](https://cursor.com/docs/mcp)
 - [MCP Hosts](../runtime/mcp-hosts.md)
 - [Open WebUI Integration](open-webui.md)

@@ -1,6 +1,17 @@
 # Testing strategy
 
+[← Documentation index](../README.md)
+
 How **api2ai**, **db2ai**, and **core2ai** are tested — and what is intentionally manual.
+
+## Contents
+
+- [Three gates](#three-gates)
+- [What `npm test` covers](#what-npm-test-covers)
+- [What `/test-all` covers (manual)](#what-test-all-covers-manual)
+- [Setup after clone](#setup-after-clone)
+- [Not in automated tests](#not-in-automated-tests)
+- [Release checklist](#release-checklist)
 
 ---
 
@@ -71,6 +82,14 @@ npm run build
 ```text
 vsix:prepare → vsix:build → VSIX install → Create demo workspace → npm install && npm run start → /test-all
 ```
+
+---
+
+## See also
+
+- [MCP Inspector](../testing/mcp-inspector.md)
+- [CHANGELOG policy](../development/changelog-policy.md)
+- [Documentation index](../README.md)
 
 ---
 

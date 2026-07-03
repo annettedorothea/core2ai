@@ -1,5 +1,17 @@
 # Open WebUI Integration
 
+[← Documentation index](../README.md)
+
+## Contents
+
+- [What is Open WebUI?](#what-is-open-webui)
+- [Requirements](#requirements)
+- [Supported MCP Hosts](#supported-mcp-hosts)
+- [Adding an MCP Server](#adding-an-mcp-server)
+- [Authentication Profiles](#authentication-profiles)
+- [Using the Demo Workspaces](#using-the-demo-workspaces)
+- [Troubleshooting](#troubleshooting)
+
 ## What is Open WebUI?
 
 Open WebUI is a self-hosted chat interface for large language models.
@@ -302,6 +314,7 @@ For Open WebUI deployments, HTTP hosts are generally recommended.
 
 ## See Also
 
+- [Documentation index](../README.md)
 - [Open WebUI MCP Documentation](https://docs.openwebui.com/features/extensibility/mcp/)
 - [MCP Hosts](../runtime/mcp-hosts.md)
 - [Cursor Integration](cursor.md)

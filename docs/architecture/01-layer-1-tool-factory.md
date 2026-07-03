@@ -1,6 +1,14 @@
 # Layer 1: Tool Factory (Build-Time Infrastructure)
 
+[← Documentation index](../README.md)
+
 The Tool Factory is the foundation of the system. It provides everything needed to define, validate, and generate AI tools from structured specifications.
+
+## Contents
+
+- [Responsibilities](#responsibilities)
+- [Output Artifacts](#output-artifacts)
+- [Key Idea](#key-idea)
 
 ---
 
@@ -48,6 +56,13 @@ The Tool Factory produces:
 ## Key Idea
 
 This layer enables Tool Authoring, but does not define any business logic or domain tools itself.
+
+---
+
+## See also
+
+- [Layer 2 – Tool Authoring](02-layer-2-tool-authoring.md)
+- [Documentation index](../README.md)
 
 ---
 

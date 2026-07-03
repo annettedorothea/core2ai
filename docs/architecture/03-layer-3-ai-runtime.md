@@ -1,6 +1,14 @@
 # Layer 3: AI Runtime (Execution Layer)
 
+[← Documentation index](../README.md)
+
 This is the runtime layer where AI agents use generated tools.
+
+## Contents
+
+- [Execution Flow](#execution-flow)
+- [Characteristics](#characteristics)
+- [Key Idea](#key-idea)
 
 At this level, there is no awareness of DSLs, schemas, or generation logic.
 
@@ -30,6 +38,15 @@ At this level, there is no awareness of DSLs, schemas, or generation logic.
 The AI agent does not “know” tools are generated.
 
 It only sees capabilities it can execute.
+
+---
+
+## See also
+
+- [MCP hosts](../runtime/mcp-hosts.md)
+- [Cursor integration](../integrations/cursor.md)
+- [Layer 2 – Tool Authoring](02-layer-2-tool-authoring.md)
+- [Documentation index](../README.md)
 
 ---
 

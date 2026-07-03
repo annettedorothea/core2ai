@@ -1,4 +1,67 @@
-# Mental Model: Tool Factory for AI Systems
+# Documentation — Tool Factory for AI Systems
+
+[← Repository root](../README.md)
+
+## Documentation index
+
+### Architecture (`architecture/`)
+
+| Document                                                              | Summary                                      |
+| --------------------------------------------------------------------- | -------------------------------------------- |
+| [Layer 1 – Tool Factory](architecture/01-layer-1-tool-factory.md)     | Langium DSLs, validation, codegen, VSIX      |
+| [Layer 2 – Tool Authoring](architecture/02-layer-2-tool-authoring.md) | `.api2ai` / `.db2ai`, access control, output |
+| [Layer 3 – AI Runtime](architecture/03-layer-3-ai-runtime.md)         | How agents execute MCP tools                 |
+| [Personas](architecture/04-personas.md)                               | Maintainer, tool author, end user            |
+| [Testing strategy](architecture/05-testing-strategy.md)               | `npm test`, CI, `/test-all` release gate     |
+
+### Authoring (`authoring/`)
+
+| Document                                                     | Product | Summary                                           |
+| ------------------------------------------------------------ | ------- | ------------------------------------------------- |
+| [api2ai DSL](authoring/api2ai-dsl.md)                        | api2ai  | OpenAPI operations, auth block, flat MCP args     |
+| [db2ai DSL](authoring/db2ai-dsl.md)                          | db2ai   | `SQL { }`, database env, params                   |
+| [Auth and hooks](authoring/auth-and-hooks.md)                | both    | MCP auth, upstream auth, verify/authorize/prepare |
+| [Supported OpenAPI patterns](authoring/supported-openapi.md) | api2ai  | Dereference, Zod limits, rejected params          |
+| [Supported SQL patterns](authoring/supported-sql.md)         | db2ai   | Five dialects, `:name` binds, EXPLAIN probes      |
+
+### Runtime (`runtime/`)
+
+| Document                          | Summary                                    |
+| --------------------------------- | ------------------------------------------ |
+| [MCP hosts](runtime/mcp-hosts.md) | stdio, public/passthrough/OAuth HTTP hosts |
+
+### Integrations (`integrations/`)
+
+| Document                                 | Summary                           |
+| ---------------------------------------- | --------------------------------- |
+| [Cursor](integrations/cursor.md)         | VSIX, `mcp.json`, stdio and OAuth |
+| [Open WebUI](integrations/open-webui.md) | HTTP MCP, auth profiles, demos    |
+
+### Testing (`testing/`)
+
+| Document                                  | Summary                      |
+| ----------------------------------------- | ---------------------------- |
+| [MCP Inspector](testing/mcp-inspector.md) | Local MCP protocol debugging |
+
+### Development (`development/`)
+
+| Document                                            | Summary                            |
+| --------------------------------------------------- | ---------------------------------- |
+| [CHANGELOG policy](development/changelog-policy.md) | Version history rules across repos |
+
+### Release
+
+- [CHANGELOG](../CHANGELOG.md) — version history and upgrade notes (core2ai)
+- Consumer repos: [api2ai CHANGELOG](https://github.com/annettedorothea/api2ai/blob/main/CHANGELOG.md) · [db2ai CHANGELOG](https://github.com/annettedorothea/db2ai/blob/main/CHANGELOG.md)
+
+### Consumer repositories
+
+- [api2ai](https://github.com/annettedorothea/api2ai) — VSIX and `.api2ai` generator
+- [db2ai](https://github.com/annettedorothea/db2ai) — VSIX and `.db2ai` generator
+
+---
+
+## Mental model
 
 ![Tool Factory Mental Model](toolfactory.png)
 
@@ -10,92 +73,31 @@ Once the factory exists, Tool Authors use it to produce tools. They describe API
 
 Finally, an AI Agent uses those generated tools to solve user problems. In the analogy, the AI Agent is the carpenter. The generated MCP tools are the carpenter's tools, and the resulting furniture represents the value delivered to the end user.
 
-## Architectural Layers
+---
 
-The Tool Factory analogy maps directly to the system architecture.
+## Architectural layers
 
 ### Layer 1: Tool Factory (Build-Time Infrastructure)
 
-This layer is responsible for building the factory itself.
-
-It includes:
-
-- Langium-based DSL definitions
-- grammar and validation rules
-- autocomplete and language services
-- code generators
-- VSIX extensions
-- shared runtime components
-
-The output of this layer is the infrastructure that enables tool creation.
+Langium grammars, validation, codegen, VSIX extensions, shared `@core2ai/core` templates.
 
 See: [Layer 1 – Tool Factory](architecture/01-layer-1-tool-factory.md)
 
----
-
 ### Layer 2: Tool Authoring (Design-Time)
 
-This layer is where Tool Authors create actual tools using the factory.
+`.api2ai` and `.db2ai` definitions → generated MCP tool modules and hosts.
 
-Developers define:
-
-- API-based tools using `.api2ai`
-- Database-based tools using `.db2ai`
-
-The Tool Factory validates these definitions and generates executable MCP tools.
-
-The output of this layer is a set of AI-ready tools.
-
-See: [Layer 2 – Tool Authoring](architecture/02-layer-2-tool-authoring.md)
-
----
+See: [Layer 2 – Tool Authoring](architecture/02-layer-2-tool-authoring.md) · [Authoring guides](#authoring-authoring)
 
 ### Layer 3: AI Runtime (Execution-Time)
 
-This layer is where AI Agents use the generated tools.
+Agents select and call tools over MCP; no DSL awareness at runtime.
 
-The agent:
-
-1. receives a user request
-2. selects the appropriate tool
-3. executes the tool
-4. returns the result to the user
-
-The agent does not need to understand how the tool was generated. It simply uses the capabilities made available by the previous layers.
-
-See: [Layer 3 – AI Runtime](architecture/03-layer-3-ai-runtime.md)
+See: [Layer 3 – AI Runtime](architecture/03-layer-3-ai-runtime.md) · [Integrations](#integrations-integrations) · [MCP hosts](runtime/mcp-hosts.md)
 
 ---
 
-## Personas
-
-Different roles interact with different layers of the system:
-
-| Role                               | Primary Layer |
-| ---------------------------------- | ------------- |
-| Platform / Tool Factory Maintainer | Layer 1       |
-| Tool Author / Engineer             | Layer 2       |
-| End User / Customer                | Layer 3       |
-
-See: [Personas](architecture/04-personas.md)
-
----
-
-## Testing
-
-See: [Testing strategy](architecture/05-testing-strategy.md)
-
----
-
-## Integrations and runtime
-
-- [Cursor](integrations/cursor.md)
-- [Open WebUI](integrations/open-webui.md)
-- [MCP hosts](runtime/mcp-hosts.md)
-
----
-
-## Core Principle
+## Core principle
 
 The architecture deliberately separates three concerns:
 
