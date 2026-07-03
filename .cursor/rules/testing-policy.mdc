@@ -1,0 +1,45 @@
+---
+description: E2E via /test-all before release; no MCP-CI or invoke smoke unless asked
+alwaysApply: true
+---
+
+# Testing policy (core2ai / api2ai / db2ai)
+
+## E2E and MCP integration
+
+End-to-end coverage (invoke, auth, stdio/HTTP MCP hosts) is validated **manually before release** via **`/test-all`**:
+
+- api2ai: skill `api2ai-test-all-mcp` in `packages/extension/demos/.cursor/skills/`
+- db2ai: skill `db2ai-test-all-mcp` in `packages/extension/demos/.cursor/skills/`
+
+Prerequisites: `npm run start` in the demos workspace, MCP servers enabled in Cursor, entries in `.cursor/mcp.json`.
+
+**Do not** propose replacing or duplicating this with automated integration tests unless the user explicitly asks.
+
+## Do not propose (default)
+
+Unless the user explicitly requests it, **do not** suggest or implement:
+
+- Vitest (or other) tests that call generated `invokeTool` against live/mock APIs as a CI gate
+- MCP protocol smoke in CI (`tools/list`, `tools/call` via subprocess or HTTP)
+- `mcp-inspect` or similar as a required CI step
+- “MCP-CI-Smoke” plans or workflows
+
+Roadmap decision: [1.0-klaerungen-roadmap.plan.md](../plans/1.0-klaerungen-roadmap.plan.md) §11 — gestrichen; `/test-all` reicht.
+
+## Keep (normal unit / compile tests)
+
+These remain appropriate and should not be removed to “avoid duplication”:
+
+- Language validator tests (`validating.test.ts`, `access-validating.test.ts`, fixtures for rejected cases: cookie params, unsupported query styles)
+- CLI codegen unit tests (`openapi-tool-codegen.test.ts`)
+- Demos `compile-generated.test.ts` after `generate:all`
+- `npm run check` (format, typecheck, lint, test) in each repo
+
+## Release gate
+
+Before tagging **1.0** or **1.0.0-rc**: `npm run check` in affected repos + full **`/test-all`** over all servers in `mcp.json`.
+
+## Naming
+
+`/test-all` **is** the intentional smoke test (documented in skills and `docs/testing/`). Do not add a second parallel smoke layer without user request.
