@@ -181,7 +181,6 @@ Examples:
 
 - bookings
 - cakes
-- banking
 - orders-postgresql
 
 Required values:

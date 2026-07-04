@@ -16,13 +16,13 @@
 
 ### Authoring (`authoring/`)
 
-| Document                                                     | Product | Summary                                           |
-| ------------------------------------------------------------ | ------- | ------------------------------------------------- |
-| [api2ai DSL](authoring/api2ai-dsl.md)                        | api2ai  | OpenAPI operations, auth block, flat MCP args     |
-| [db2ai DSL](authoring/db2ai-dsl.md)                          | db2ai   | `SQL { }`, database env, params                   |
-| [Auth and hooks](authoring/auth-and-hooks.md)                | both    | MCP auth, upstream auth, verify/authorize/prepare |
-| [Supported OpenAPI patterns](authoring/supported-openapi.md) | api2ai  | Dereference, Zod limits, rejected params          |
-| [Supported SQL patterns](authoring/supported-sql.md)         | db2ai   | Five dialects, `:name` binds, EXPLAIN probes      |
+| Document                                                     | Product | Summary                                          |
+| ------------------------------------------------------------ | ------- | ------------------------------------------------ |
+| [api2ai DSL](authoring/api2ai-dsl.md)                        | api2ai  | OpenAPI operations, auth block, flat MCP args    |
+| [db2ai DSL](authoring/db2ai-dsl.md)                          | db2ai   | `SQL { }`, database env, params                  |
+| [Auth and hooks](authoring/auth-and-hooks.md)                | both    | MCP auth, upstream auth, verifyCredential, hooks |
+| [Supported OpenAPI patterns](authoring/supported-openapi.md) | api2ai  | Dereference, Zod limits, rejected params         |
+| [Supported SQL patterns](authoring/supported-sql.md)         | db2ai   | Five dialects, `:name` binds, EXPLAIN probes     |
 
 ### Runtime (`runtime/`)
 

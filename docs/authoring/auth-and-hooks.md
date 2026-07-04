@@ -10,6 +10,7 @@ How credentials, upstream API auth, and programmatic authorization fit together 
 - [Runtime sequence](#runtime-sequence-protected-tool)
 - [Generated pipeline tiers](#generated-pipeline-tiers)
 - [Hook file layout](#hook-file-layout)
+- [DSL hooks block](#dsl-hooks-block)
 - [Validator rules](#validator-rules-editor)
 - [Demo references](#demo-references)
 
@@ -34,16 +35,16 @@ See also: [api2ai DSL](./api2ai-dsl.md), [db2ai DSL](./db2ai-dsl.md), [MCP hosts
 ```text
 MCP tools/call (credential from client)
         ↓
-verifyCredential   ← optional module hook; map MCP token → upstream secret / DB context
+verifyCredential   ← optional module hook; validate raw credential string (void)
         ↓
-authorize          ← per-tool hook; throw to deny (403)
+checkToolAccess    ← optional per-tool hook; throw to deny (403)
         ↓
-prepare            ← per-tool hook; reshape optionsResolved (query, path, body, bind params)
+prepareToolCall    ← optional per-tool hook; reshape options (query, path, body, bind params)
         ↓
 HTTP request or SQL execute
 ```
 
-Public tools (`access: public`) skip credential requirements unless a hook is mistakenly declared without protection.
+Public tools (`access: public`) skip credential requirements. `prepareToolCall` may still run on public tools (for example SQL limit capping) without a credential parameter.
 
 ---
 
@@ -51,11 +52,11 @@ Public tools (`access: public`) skip credential requirements unless a hook is mi
 
 `@toolfactory.dev/core` emits one of three invoke shapes:
 
-| Tier         | When                                           | What runs                                  |
-| ------------ | ---------------------------------------------- | ------------------------------------------ |
-| `none`       | No `auth`, all public                          | Direct HTTP/SQL                            |
-| `credential` | `auth` + protected tools, no authorize/prepare | `verifyCredential` + upstream header/query |
-| `full`       | Any tool with `authorize` or `prepare`         | Full chain above                           |
+| Tier         | When                                                 | What runs                                  |
+| ------------ | ---------------------------------------------------- | ------------------------------------------ |
+| `none`       | No `auth`, all public                                | Direct HTTP/SQL                            |
+| `credential` | `auth` + protected tools, no per-tool hooks          | `verifyCredential` + upstream header/query |
+| `full`       | Any tool with `checkToolAccess` or `prepareToolCall` | Full chain above                           |
 
 ---
 
@@ -65,35 +66,82 @@ After generation, hand-written hooks live beside the demo/project workspace:
 
 ```text
 src/hooks/api2ai/<module>-tools/
-    verify<Module>Credential.ts
-    listSomething.ts          ← authorize + prepare exports when declared
+    verifyGithubCredential.ts     ← when auth.hooks.verifyCredential (api2ai)
+    listBookings.ts               ← checkToolAccess + prepareToolCall exports when declared
 
 src/hooks/db2ai/<module>-tools/
-    verify<Module>Credential.ts
-    ...
+    verifyPagilaPostgresqlCredential.ts   ← when auth keyword present (db2ai)
+    listCustomerOrders.ts                 ← per-tool hook exports
 ```
 
-| DSL declaration             | Generated import        | Typical export                                          |
-| --------------------------- | ----------------------- | ------------------------------------------------------- |
-| `auth` + protected (api2ai) | `verifyCredential`      | `verifyXCredential` (re-exported as `verifyCredential`) |
-| `authorize` on tool         | `authorizers[toolName]` | `authorizeToolName`                                     |
-| `prepare` on tool           | `preparers[toolName]`   | `prepareToolNameInput`                                  |
+| DSL declaration                        | Generated import / map           | Typical export                                                   |
+| -------------------------------------- | -------------------------------- | ---------------------------------------------------------------- |
+| `auth { hooks: { verifyCredential } }` | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)          |
+| `auth` keyword (db2ai)                 | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)          |
+| `hooks: { checkToolAccess: true }`     | `checkToolAccessHooks[toolName]` | `checkToolAccessForToolName(credential)`                         |
+| `hooks: { prepareToolCall: true }`     | `prepareToolCallHooks[toolName]` | `prepareToolCallForToolName(options)` or `(options, credential)` |
 
 Stub files are created on first generate; implement logic, then regenerate (imports are wired automatically).
 
+### verifyCredential contract
+
+- **Input:** raw `credential: string` from the MCP host (no `ModuleCredentials` wrapper).
+- **Output:** `Promise<void>` — throw to reject; no return value.
+- **Optional:** modules may omit a verify stub when JWT or token checks live entirely in `checkToolAccess` / `prepareToolCall` (demos `bookings`, `cakes`).
+
 ---
 
-## api2ai upstream `auth { }`
+## DSL hooks block
+
+Per operation (api2ai) or SQL block (db2ai):
+
+```text
+hooks: {
+    checkToolAccess: true
+    prepareToolCall: true
+}
+```
+
+Or enable only one hook:
+
+```text
+hooks: {
+    prepareToolCall: true
+}
+```
+
+### prepareToolCall and clientMayOmit
+
+Mark MCP parameters the client may omit; the hook fills defaults (often from the credential):
+
+```text
+hooks: {
+    prepareToolCall: {
+        clientMayOmit: [customerId]
+    }
+}
+```
+
+Omitted keys are **optional in the generated MCP JSON Schema** but may still be required at SQL/HTTP execution time after `prepareToolCall` runs.
+
+**db2ai:** `clientMayOmit` entries must match names in the block’s `params: { … }` map.
+
+**api2ai:** `clientMayOmit` entries refer to OpenAPI parameter names for that operation.
+
+### api2ai upstream `auth { }`
 
 ```text
 auth {
     in: header
     name: "Authorization"
     prefix: "Bearer "
+    hooks: {
+        verifyCredential: true
+    }
 }
 ```
 
-On protected tools, `invokeTool` sets `requestHeaders[name]` or `url.searchParams` from the resolved credential after `verifyCredential`.
+On protected tools, `invokeTool` sets `requestHeaders[name]` or `url.searchParams` from the resolved credential after `verifyCredential` (when declared).
 
 **Query auth example** (demo `test.api2ai`):
 
@@ -102,6 +150,9 @@ auth {
     in: query
     name: "api_key"
     prefix: ""
+    hooks: {
+        verifyCredential: true
+    }
 }
 ```
 
@@ -109,8 +160,20 @@ auth {
 
 ## db2ai `auth` keyword
 
+Bare keyword (typical):
+
 ```text
 auth
+```
+
+Or with explicit verify stub generation:
+
+```text
+auth {
+    hooks: {
+        verifyCredential: true
+    }
+}
 ```
 
 Enables credential checks for `access: protected` SQL tools. Connection strings are **not** passed through MCP — they remain in `database … env "VAR"`.
@@ -125,6 +188,7 @@ Enables credential checks for `access: protected` SQL tools. Connection strings 
 | `database` env var not set                 | warning       | db2ai          |
 | SQL `:placeholders` without `params` block | error         | db2ai          |
 | Cookie / unsupported param styles          | error/warning | api2ai         |
+| `clientMayOmit` references unknown param   | error         | api2ai + db2ai |
 
 ---
 
@@ -141,13 +205,15 @@ Enables credential checks for `access: protected` SQL tools. Connection strings 
 
 ## Demo references
 
-| Demo                      | Pattern                                          |
-| ------------------------- | ------------------------------------------------ |
-| `todo.api2ai`             | passthrough header + `verifyCredential`          |
-| `test.api2ai`             | query `api_key` + protected route                |
-| `banking.api2ai`          | `authorize` + `prepare` on financial reads       |
-| `bookings.api2ai`         | OAuth MCP + role-based `authorize`               |
-| `orders-postgresql.db2ai` | protected SQL + `prepare` injecting tenant scope |
+| Demo                      | Pattern                                               |
+| ------------------------- | ----------------------------------------------------- |
+| `todo.api2ai`             | passthrough header + `verifyCredential`               |
+| `test.api2ai`             | query `api_key` + protected route                     |
+| `bookings.api2ai`         | OAuth MCP + `checkToolAccess` + `prepareToolCall`     |
+| `cakes.api2ai`            | OAuth MCP + JWT in hooks (no module verify stub)      |
+| `spaceflight-news.api2ai` | public `prepareToolCall` + `clientMayOmit` on `limit` |
+| `orders-postgresql.db2ai` | protected SQL + `checkToolAccess` + `clientMayOmit`   |
+| `pagila-postgresql.db2ai` | public `prepareToolCall` (SQL limit cap)              |
 
 ---
 

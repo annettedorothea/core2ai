@@ -28,7 +28,9 @@ auth
 SQL {
     toolName: listFilms
     access: protected
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: "List films with pagination"
     query: "SELECT * FROM film LIMIT LEAST(:limit, 100) OFFSET :offset"
     params: {
@@ -74,8 +76,7 @@ The env var must be set in the workspace `.env` (value on the same line as the k
 | `summary`     | no                             | Short title                                                     |
 | `description` | no                             | Longer prose                                                    |
 | `example`     | no                             | Example user question                                           |
-| `authorize`   | no                             | Declares `authorize` hook                                       |
-| `prepare`     | no                             | Declares `prepare` hook (inject or reshape bind params)         |
+| `hooks`       | no                             | Per-tool `checkToolAccess` and/or `prepareToolCall`             |
 
 **Validator error:** if `query` contains `:name` placeholders but no `params: { … }` block, validation fails.
 
@@ -105,23 +106,47 @@ SQL bind parameters appear as **top-level** MCP tool fields matching `params` ke
 
 ## Auth keyword
 
+Bare keyword (typical):
+
 ```text
 auth
 ```
 
-A single keyword — no `in` / `name` block. Database credentials stay in environment variables; `auth` enables MCP credential checks and hooks. Protected tools require a credential from the MCP host.
+Or with explicit verify stub:
+
+```text
+auth {
+    hooks: {
+        verifyCredential: true
+    }
+}
+```
+
+Database credentials stay in environment variables; `auth` enables MCP credential checks and hooks. Protected tools require a credential from the MCP host. Codegen emits a `verify<Module>Credential.ts` stub when `auth` is present.
 
 ---
 
 ## Hooks
 
-Implement in `src/hooks/db2ai/<module>-tools/`:
+Per SQL block:
 
-- `verifyCredential` — validate MCP token, optionally map to DB role or session context
-- `authorize` — allow or deny before execution
-- `prepare` — inject or modify bind parameters (e.g. scope to `userId` from token)
+```text
+hooks: {
+    checkToolAccess: true
+    prepareToolCall: {
+        clientMayOmit: [customerId]
+    }
+}
+```
 
-See [Auth and hooks](./auth-and-hooks.md) for the full pipeline.
+| Hook flag         | Purpose                                                             |
+| ----------------- | ------------------------------------------------------------------- |
+| `checkToolAccess` | Allow or deny before SQL (`checkToolAccessForToolName(credential)`) |
+| `prepareToolCall` | Inject or reshape bind params (`prepareToolCallForToolName(…)`)     |
+
+`clientMayOmit` marks bind params optional in the MCP schema; `prepareToolCall` fills defaults (for example `customerId` from JWT).
+
+Implement in `src/hooks/db2ai/<module>-tools/`. See [Auth and hooks](./auth-and-hooks.md) for the full pipeline.
 
 ---
 
@@ -133,11 +158,11 @@ Same layout as api2ai under `generated/db2ai/tools/` and `generated/db2ai/cli/`.
 
 ## Learning examples
 
-| Demo                      | Focus                                 |
-| ------------------------- | ------------------------------------- |
-| `pagila-postgresql.db2ai` | PostgreSQL, public read tools         |
-| `sakila-mysql.db2ai`      | MySQL                                 |
-| `orders-postgresql.db2ai` | Protected tools, OAuth MCP, `prepare` |
+| Demo                      | Focus                                            |
+| ------------------------- | ------------------------------------------------ |
+| `pagila-postgresql.db2ai` | PostgreSQL, public `prepareToolCall` (limit cap) |
+| `sakila-mysql.db2ai`      | MySQL + passthrough MCP auth                     |
+| `orders-postgresql.db2ai` | OAuth MCP, `checkToolAccess`, `clientMayOmit`    |
 
 ---
 

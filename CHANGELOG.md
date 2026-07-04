@@ -12,6 +12,22 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.0.0-rc.1] - 2026-07-04
+
+### Changed
+
+- **Hooks DSL:** per-tool `authorize` / `prepare` replaced by `hooks: { checkToolAccess, prepareToolCall }`; optional `clientMayOmit` on `prepareToolCall`
+- **verifyCredential:** raw `credential: string`, void return; stub files named `verify*Credential.ts` (singular)
+- **Removed:** `ModuleCredentials`, `toModuleCredentials`, and banking demo references from docs
+
+### Upgrade notes
+
+- Replace `authorize: true` / `prepare: true` with the `hooks` block in every `.api2ai` / `.db2ai` file
+- Rename hook exports to `checkToolAccessFor*` / `prepareToolCallFor*`; regenerate with `generate:all` + `build:generated`
+- Sync `@toolfactory.dev/core` pin and rebuild consumers after upgrading core2ai
+
+---
+
 ## [1.0.0-rc] - 2026-07-03
 
 First release-candidate of the shared Tool Factory runtime used by **api2ai** and **db2ai**.

@@ -69,7 +69,7 @@ Instead, authorization is implemented in code.
 
 The DSL does not restrict read vs. write SQL. Tool authors choose SELECT-only or DML deliberately and secure write tools with `access: protected` and hooks — the factory does not enforce a mutation policy in the grammar.
 
-See [Auth and hooks](../authoring/auth-and-hooks.md) for the runtime pipeline (`verifyCredential`, `authorize`, `prepare`).
+See [Auth and hooks](../authoring/auth-and-hooks.md) for the runtime pipeline (`verifyCredential`, `checkToolAccess`, `prepareToolCall`).
 
 ---
 

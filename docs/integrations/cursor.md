@@ -457,7 +457,8 @@ api2ai /test:all
 - `todo`
 - `bookings`
 - `cakes`
-- `banking`
+- `test`
+- `xquik`
 
 ---
 

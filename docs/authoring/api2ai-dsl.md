@@ -10,6 +10,7 @@ The `.api2ai` file selects OpenAPI 3.x operations and enriches them for AI agent
 - [Operation block keywords](#operation-block-keywords)
 - [MCP tool arguments](#mcp-tool-arguments-flat-shape)
 - [Auth block](#auth-block-upstream-api)
+- [Hooks block](#hooks-block)
 - [DSL overrides](#dsl-overrides-when-openapi-is-weak)
 - [Code generation output](#code-generation-output)
 - [Learning examples](#learning-examples)
@@ -57,8 +58,7 @@ GET "/items/{itemId}" {
 | `params`      | no       | Per-parameter overrides (`description`, `example`, `type`) |
 | `body`        | no       | Prose or hints when request body schema is weak            |
 | `response`    | no       | Prose describing success response for agents               |
-| `authorize`   | no       | Declares `authorize` hook for this tool                    |
-| `prepare`     | no       | Declares `prepare` hook (input shaping before HTTP)        |
+| `hooks`       | no       | Per-tool `checkToolAccess` and/or `prepareToolCall`        |
 
 Protected tools require a credential from the MCP host (stdio `--auth-env`, HTTP header, or OAuth Bearer). Hooks are implemented in `src/hooks/api2ai/<module>-tools/`.
 
@@ -90,7 +90,63 @@ auth {
 
 This is **not** MCP login. It configures how the generated `invokeTool` attaches the verified credential to the upstream HTTP call.
 
+Optional module verify stub:
+
+```text
+auth {
+    in: header
+    name: "Authorization"
+    prefix: "Bearer "
+    hooks: {
+        verifyCredential: true
+    }
+}
+```
+
 **Validator warning:** if `auth { }` is present but every operation uses `access: public`, the editor shows a warning that auth has no effect.
+
+---
+
+## Hooks block
+
+Declare per-operation hooks under `hooks: { … }`:
+
+```text
+GET "/bookings/{customerId}" {
+    toolName: listBookings
+    access: protected
+    hooks: {
+        checkToolAccess: true
+        prepareToolCall: true
+    }
+    intent: "List bookings for one customer"
+}
+```
+
+| Hook flag         | Purpose                                                              |
+| ----------------- | -------------------------------------------------------------------- |
+| `checkToolAccess` | Allow or deny before HTTP (`checkToolAccessForToolName(credential)`) |
+| `prepareToolCall` | Reshape invoke options before HTTP (`prepareToolCallForToolName(…)`) |
+
+Enable only what you need:
+
+```text
+hooks: {
+    prepareToolCall: true
+}
+```
+
+Optional MCP parameters (filled in the hook, often from the credential):
+
+```text
+hooks: {
+    prepareToolCall: {
+        clientMayOmit: [customerId]
+    }
+}
+```
+
+Implement stubs in `src/hooks/api2ai/<module>-tools/<toolName>.ts`. See [Auth and hooks](./auth-and-hooks.md).
 
 ---
 
@@ -154,7 +210,7 @@ All listed HTTP verbs are supported in the DSL. Node `fetch` does not support `T
 | ------------------- | --------------------------------------------------- |
 | `open-meteo.api2ai` | Public tools, no auth                               |
 | `todo.api2ai`       | `auth` + `verifyCredential`                         |
-| `banking.api2ai`    | `authorize` + `prepare`                             |
+| `bookings.api2ai`   | OAuth MCP + `checkToolAccess` + `prepareToolCall`   |
 | `test.api2ai`       | Coverage harness (all methods, `$ref`, combinators) |
 
 ---
