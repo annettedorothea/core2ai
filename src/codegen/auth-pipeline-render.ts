@@ -1,9 +1,6 @@
 export type AuthPipelineTier = 'none' | 'credential' | 'full';
 
-export type HookStubMaps = { authorizers: boolean; preparers: boolean };
-
-/** @deprecated Use HookStubMaps */
-export type AuthStubMaps = HookStubMaps;
+export type HookStubMaps = { checkToolAccess: boolean; prepareToolCall: boolean };
 
 export type AuthPipelineProfile = 'api2ai' | 'db2ai';
 
@@ -33,27 +30,26 @@ function renderInvokeCredentialPipeline(profile: AuthPipelineProfile, hasVerifyC
     if (profile === 'api2ai') {
         const verifyBlock = hasVerifyCredential
             ? `
-        if (upstreamCredential === undefined) {
-            const verified = await verifyCredential({ inboundCredential: String(inbound).trim() });
-            upstreamCredential = verified.upstreamCredential;
-        }`
+        await verifyCredential(credential);`
             : '';
 
         return `
-    let upstreamCredential = host.upstreamCredential;
-    let authCredential = host.credential;
+    let authCredential: string | undefined = host.credential?.trim()
+        ? String(host.credential).trim()
+        : undefined;
 
     if (tool.access === 'protected') {
         const inbound = host.credential;
         if (!inbound || !String(inbound).trim()) {${MISSING_CREDENTIAL_ERROR}
-        }${verifyBlock}
-        authCredential = upstreamCredential ?? String(inbound).trim();
+        }
+        const credential = String(inbound).trim();${verifyBlock}
+        authCredential = credential;
     }${renderUrlAndHeadersPreamble()}`;
     }
 
     const verifyBlock = hasVerifyCredential
         ? `
-        await verifyCredential({ inboundCredential: String(inbound).trim() });`
+        await verifyCredential(String(inbound).trim());`
         : '';
 
     return `
@@ -66,13 +62,13 @@ function renderInvokeCredentialPipeline(profile: AuthPipelineProfile, hasVerifyC
 
 export function resolveAuthPipelineTier(
     hasAuthPipeline: boolean,
-    authorizeToolNames: readonly string[],
-    prepareToolNames: readonly string[]
+    checkToolAccessToolNames: readonly string[],
+    prepareToolCallToolNames: readonly string[]
 ): AuthPipelineTier {
     if (!hasAuthPipeline) {
         return 'none';
     }
-    if (authorizeToolNames.length > 0 || prepareToolNames.length > 0) {
+    if (checkToolAccessToolNames.length > 0 || prepareToolCallToolNames.length > 0) {
         return 'full';
     }
     return 'credential';
@@ -82,7 +78,8 @@ export function renderInvokeAuthPipeline(
     profile: AuthPipelineProfile,
     tier: AuthPipelineTier,
     hasVerifyCredential: boolean,
-    stubMaps: HookStubMaps
+    stubMaps: HookStubMaps,
+    includeAuthCredential = true
 ): string {
     if (tier === 'credential') {
         return renderInvokeCredentialPipeline(profile, hasVerifyCredential);
@@ -92,101 +89,77 @@ export function renderInvokeAuthPipeline(
     }
 
     const toolRef = profile === 'api2ai' ? 'tool' : 'toolMeta';
+    const flagCheckToolAccess = profile === 'api2ai' ? 'hasCheckToolAccess' : 'hasCheckToolAccess';
+    const flagPrepareToolCall = profile === 'api2ai' ? 'hasPrepareToolCall' : 'hasPrepareToolCall';
 
     const verifyBlock =
         profile === 'api2ai'
             ? hasVerifyCredential
                 ? `
-        if (credentialsForStubs === undefined || upstreamCredential === undefined) {
-            const verified = await verifyCredential({ inboundCredential: String(inbound).trim() });
-            upstreamCredential = verified.upstreamCredential;
-            credentialsForStubs = verified.credentials;
-        }`
+        await verifyCredential(credential);`
                 : ''
             : hasVerifyCredential
               ? `
-        if (credentialsForStubs === undefined) {
-            const verified = await verifyCredential({ inboundCredential: String(inbound).trim() });
-            credentialsForStubs = verified.credentials;
-        }`
+        await verifyCredential(credential);`
               : '';
 
-    const authorizeBlock = stubMaps.authorizers
+    const checkToolAccessBlock = stubMaps.checkToolAccess
         ? `
-        if (${toolRef}.hasAuthorize) {
-            const authorize = authorizers[toolName];
-            if (typeof authorize !== 'function') {
-                throw new Error('No authorizer for tool: ' + toolName);
+        if (${toolRef}.${flagCheckToolAccess}) {
+            const checkToolAccess = checkToolAccessHooks[toolName];
+            if (typeof checkToolAccess !== 'function') {
+                throw new Error('No checkToolAccess hook for tool: ' + toolName);
             }
-            await Promise.resolve(authorize(credentialsForStubs!));
+            await Promise.resolve(checkToolAccess(credential));
         }`
         : '';
 
-    const needsCredentials = hasVerifyCredential || stubMaps.authorizers;
-
-    const prepareBlock = stubMaps.preparers
-        ? needsCredentials
-            ? `
-    if (${toolRef}.hasPrepare) {
-        const prepare = preparers[toolName];
-        if (typeof prepare !== 'function') {
-            throw new Error('No preparer for tool: ' + toolName);
+    const prepareBlock = stubMaps.prepareToolCall
+        ? `
+    if (${toolRef}.${flagPrepareToolCall}) {
+        const prepareToolCall = prepareToolCallHooks[toolName];
+        if (typeof prepareToolCall !== 'function') {
+            throw new Error('No prepareToolCall hook for tool: ' + toolName);
         }
         if (${toolRef}.access === 'protected') {
-            if (credentialsForStubs === undefined) {
-                throw new Error('Prepare requires credentials; verify credential or pass host.credentials.');
+            if (credential === undefined) {
+                throw new Error('prepareToolCall requires credential for protected tools.');
             }
-            optionsResolved = await Promise.resolve(prepare(optionsResolved, credentialsForStubs));
+            optionsResolved = await Promise.resolve(prepareToolCall(optionsResolved, credential));
         } else {
-            optionsResolved = await Promise.resolve(prepare(optionsResolved));
+            optionsResolved = await Promise.resolve(prepareToolCall(optionsResolved));
         }
-    }`
-            : `
-    if (${toolRef}.hasPrepare) {
-        const prepare = preparers[toolName];
-        if (typeof prepare !== 'function') {
-            throw new Error('No preparer for tool: ' + toolName);
-        }
-        optionsResolved = await Promise.resolve(prepare(optionsResolved));
     }`
         : '';
 
-    const api2aiCredentialsPreamble = needsCredentials
-        ? `
-    let upstreamCredential = host.upstreamCredential;
-    const credentialsPlain = host.credentials;
-    let credentialsForStubs: ModuleCredentials | undefined =
-        credentialsPlain != null
-            ? toModuleCredentials(credentialsPlain as Record<string, unknown>)
-            : undefined;
-    let authCredential = host.credential;
+    const authCredentialDecl = includeAuthCredential
+        ? `\n    let authCredential: string | undefined = credential;`
+        : '';
+    const authCredentialAssign = includeAuthCredential ? `\n        authCredential = credential;` : '';
+
+    const api2aiPreamble = `
+    let credential: string | undefined = host.credential?.trim()
+        ? String(host.credential).trim()
+        : undefined;${authCredentialDecl}
 
     if (tool.access === 'protected') {
         const inbound = host.credential;
         if (!inbound || !String(inbound).trim()) {${MISSING_CREDENTIAL_ERROR}
-        }${verifyBlock}
-        authCredential = upstreamCredential ?? String(inbound).trim();${authorizeBlock}
-    }${prepareBlock}${renderUrlAndHeadersPreamble()}`
-        : `
-${prepareBlock}${renderUrlAndHeadersPreamble()}`;
+        }
+        credential = String(inbound).trim();${verifyBlock}${checkToolAccessBlock}${authCredentialAssign}
+    }${prepareBlock}${renderUrlAndHeadersPreamble()}`;
 
-    const db2aiCredentialsPreamble = needsCredentials
-        ? `
-    const credentialsPlain = host.credentials;
-    let credentialsForStubs: ModuleCredentials | undefined =
-        credentialsPlain != null
-            ? toModuleCredentials(credentialsPlain as Record<string, unknown>)
-            : undefined;
+    const db2aiPreamble = `
+    let credential: string | undefined = host.credential?.trim()
+        ? String(host.credential).trim()
+        : undefined;
 
     if (toolMeta.access === 'protected') {
         const inbound = host.credential;
         if (!inbound || !String(inbound).trim()) {${MISSING_CREDENTIAL_ERROR}
-        }${verifyBlock}${authorizeBlock}
-    }${prepareBlock}`
-        : `
-${prepareBlock}`;
+        }
+        credential = String(inbound).trim();${verifyBlock}${checkToolAccessBlock}
+    }${prepareBlock}`;
 
-    const api2aiPreamble = profile === 'api2ai' ? api2aiCredentialsPreamble : db2aiCredentialsPreamble;
-
-    return api2aiPreamble;
+    return profile === 'api2ai' ? api2aiPreamble : db2aiPreamble;
 }

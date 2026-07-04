@@ -1,7 +1,7 @@
-export function authorizeExportName(toolName: string): string {
-    return `authorize${toolName.charAt(0).toUpperCase()}${toolName.slice(1)}`;
+export function checkToolAccessExportName(toolName: string): string {
+    return `checkToolAccessFor${toolName.charAt(0).toUpperCase()}${toolName.slice(1)}`;
 }
 
-export function prepareInputExportName(toolName: string): string {
-    return `prepare${toolName.charAt(0).toUpperCase()}${toolName.slice(1)}Input`;
+export function prepareToolCallExportName(toolName: string): string {
+    return `prepareToolCallFor${toolName.charAt(0).toUpperCase()}${toolName.slice(1)}`;
 }

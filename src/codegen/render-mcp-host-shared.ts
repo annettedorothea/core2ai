@@ -409,8 +409,7 @@ type OAuthHttpHostRuntimeConfig = {
 
 type McpOAuthSession = {
     sessionId: string;
-    upstreamCredential?: string;
-    credentials?: unknown;
+    credential?: string;
     verifiedAt?: number;
     createdAt: number;
 };
@@ -541,10 +540,10 @@ async function verifyCredentialForGate(
     }
     const verify = generated.verifyCredential;
     if (typeof verify !== 'function') {
-        return false;
+        return true;
     }
     try {
-        await verify({ inboundCredential: token });
+        await verify(token);
         return true;
     } catch {
         return false;
@@ -565,51 +564,37 @@ async function resolveHostContextForOAuthSession(
         sessionStore.set(sessionId, session);
     }
 
-    if (session?.verifiedAt && session.upstreamCredential) {
-        const credentials = session.credentials;
+    if (session?.verifiedAt && session.credential) {
         return withDbConnectionHostContext(${generatedModuleParam(product)}, {
             ...apiFields,
-            credential: session.upstreamCredential,
-            upstreamCredential: session.upstreamCredential,
-            credentials
+            credential: session.credential
         });
     }
 
     const bearer = readBearerFromHeaders(headers);
     const inbound = bearer?.trim();
     if (!inbound) {
-        if (session?.upstreamCredential) {
+        if (session?.credential) {
             return withDbConnectionHostContext(${generatedModuleParam(product)}, {
                 ...apiFields,
-                credential: session.upstreamCredential,
-                upstreamCredential: session.upstreamCredential,
-                credentials: session.credentials
+                credential: session.credential
             });
         }
         return withDbConnectionHostContext(${generatedModuleParam(product)}, { ...apiFields });
     }
 
     const verify = ${generatedModuleParam(product)}.verifyCredential;
-    if (typeof verify !== 'function') {
-        throw new Error('verifyCredential is not exported from generated tools.');
+    if (typeof verify === 'function') {
+        await verify(inbound);
     }
-    const verified = await verify({ inboundCredential: inbound });
-    const upstreamCredential = verified.upstreamCredential.trim();
-    if (upstreamCredential.length === 0) {
-        throw new Error('verifyCredential returned an empty upstream credential.');
-    }
-    const credentials = JSON.parse(JSON.stringify(verified.credentials));
     if (session) {
-        session.upstreamCredential = upstreamCredential;
-        session.credentials = credentials;
+        session.credential = inbound;
         session.verifiedAt = Date.now();
     }
 
     return withDbConnectionHostContext(${generatedModuleParam(product)}, {
         ...apiFields,
-        credential: upstreamCredential,
-        upstreamCredential,
-        credentials
+        credential: inbound
     });
 }
 

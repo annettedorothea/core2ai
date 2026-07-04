@@ -19,20 +19,9 @@ type ApiLikeHostContext = {
     connectionString?: string;
     databaseDialect?: DatabaseDialect;
     credential?: string;
-    upstreamCredential?: string;
-    credentials?: unknown;
 };
 
-type VerifyCredentialInput = {
-    inboundCredential: string;
-};
-
-type VerifyCredentialResult = {
-    upstreamCredential: string;
-    credentials: unknown;
-};
-
-type VerifyCredentialFn = (input: VerifyCredentialInput) => Promise<VerifyCredentialResult>;
+type VerifyCredentialFn = (credential: string) => void | Promise<void>;
 
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
@@ -55,20 +44,9 @@ type GeneratedHostModule = {
 type ApiLikeHostContext = {
     baseUrl?: string;
     credential?: string;
-    upstreamCredential?: string;
-    credentials?: unknown;
 };
 
-type VerifyCredentialInput = {
-    inboundCredential: string;
-};
-
-type VerifyCredentialResult = {
-    upstreamCredential: string;
-    credentials: unknown;
-};
-
-type VerifyCredentialFn = (input: VerifyCredentialInput) => Promise<VerifyCredentialResult>;
+type VerifyCredentialFn = (credential: string) => void | Promise<void>;
 
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
@@ -211,7 +189,7 @@ function dbConnectionResolveReturn(): string {
 
 function dbConnectionResolveReturnForOAuth(): string {
     return `${dbConnectionEnvValidationBlock()}
-        return { connectionString, databaseDialect: dialect, credential: upstreamCredential, upstreamCredential, credentials };`;
+        return { connectionString, databaseDialect: dialect, credential };`;
 }
 
 export function withDbConnectionHostContextFn(product: McpHostProduct): string {
@@ -259,11 +237,6 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
     ${closeDbBranch}
     if (generated.requiresAuth && !hostConfig.authEnvKey?.trim()) {
         throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
-    }
-    if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
-        throw new Error(
-            'Generated tools require auth; implement verify*Credentials in src/hooks/${product}/<module>/ and re-export from generated tools.'
-        );
     }
 }`.trim();
 }
@@ -316,11 +289,6 @@ function validateHttpMcpHostAtStartup(
         );
     }
     ${closeDbBranch}
-    if (${generatedModuleParam(product)}.requiresAuth && typeof ${generatedModuleParam(product)}.verifyCredential !== 'function') {
-        throw new Error(
-            'Generated tools require auth; implement verify*Credentials in src/hooks/${product}/<module>/ and re-export from generated tools.'
-        );
-    }
 }`.trim();
 }
 
@@ -373,11 +341,6 @@ async function validateOAuthHttpHostAtStartup(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     ${generatedModuleParam(product)}: GeneratedHostModule
 ): Promise<void> {
-    if (${generatedModuleParam(product)}.requiresAuth && typeof ${generatedModuleParam(product)}.verifyCredential !== 'function') {
-        throw new Error(
-            'Generated tools require auth; implement verify*Credentials in src/hooks/${product}/<module>/ and re-export from generated tools.'
-        );
-    }
     ${dbBranch}
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     if (!baseUrlKey) {

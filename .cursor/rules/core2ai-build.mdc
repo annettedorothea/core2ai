@@ -7,6 +7,8 @@ alwaysApply: false
 
 # core2ai Build
 
+**Link vs registry:** see [core2ai-link-vs-registry/SKILL.md](../skills/core2ai-link-vs-registry/SKILL.md). During active codegen work, use **link mode** until `@toolfactory.dev/core` is republished and consumers run `sync:core2ai-pin:npm`.
+
 `@toolfactory.dev/core` exports **`out/`** (compiled JS), not `src/`. Consumers resolve it via **`npm link`** — the symlink stays valid; only **`out/`** must stay current.
 
 ## One-time link setup

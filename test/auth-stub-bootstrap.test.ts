@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { renderInvokeAuthPipeline } from '../src/codegen/auth-pipeline-render.js';
 import {
-    renderPreparersMap,
+    renderPrepareToolCallHooksMap,
     renderToolHookStubFileContent,
     type ToolHookStubSpec
 } from '../src/codegen/auth-stub-bootstrap.js';
@@ -10,15 +10,15 @@ const toolsModuleTsPath = '/project/generated/api2ai/tools/demo-tools.ts';
 const hookStubTsPath = '/project/src/hooks/api2ai/demo-tools/listItems.ts';
 
 function publicPrepareSpec(): ToolHookStubSpec {
-    return { toolName: 'listItems', authorize: false, prepare: true, access: 'public' };
+    return { toolName: 'listItems', checkToolAccess: false, prepareToolCall: true, access: 'public' };
 }
 
 function protectedPrepareSpec(): ToolHookStubSpec {
-    return { toolName: 'listItems', authorize: false, prepare: true, access: 'protected' };
+    return { toolName: 'listItems', checkToolAccess: false, prepareToolCall: true, access: 'protected' };
 }
 
 describe('renderToolHookStubFileContent', () => {
-    test('public prepare stub has no ModuleCredentials import or credentials param', () => {
+    test('public prepare stub has no credential param', () => {
         const content = renderToolHookStubFileContent(
             'listItems',
             publicPrepareSpec(),
@@ -26,53 +26,65 @@ describe('renderToolHookStubFileContent', () => {
             toolsModuleTsPath
         );
         expect(content).not.toContain('ModuleCredentials');
-        expect(content).toContain('export function prepareListItemsInput(options: InvokeOptions): InvokeOptions');
+        expect(content).toContain('export function prepareToolCallForListItems(options: InvokeOptions): InvokeOptions');
     });
 
-    test('protected prepare stub imports ModuleCredentials and requires credentials param', () => {
+    test('protected prepare stub requires credential param', () => {
         const content = renderToolHookStubFileContent(
             'listItems',
             protectedPrepareSpec(),
             hookStubTsPath,
             toolsModuleTsPath
         );
-        expect(content).toContain("import type { ModuleCredentials } from './verifyDemoCredentials.js'");
+        expect(content).not.toContain('ModuleCredentials');
         expect(content).toContain(
-            'export function prepareListItemsInput(options: InvokeOptions, credentials?: ModuleCredentials): InvokeOptions'
+            'export function prepareToolCallForListItems(options: InvokeOptions, credential: string): InvokeOptions'
         );
     });
 });
 
-describe('renderPreparersMap', () => {
-    test('without credentials omits ModuleCredentials from type annotation', () => {
-        const map = renderPreparersMap(['listItems'], { includeCredentials: false });
-        expect(map).not.toContain('ModuleCredentials');
-        expect(map).toContain('(options: InvokeOptions) => InvokeOptions');
+describe('renderPrepareToolCallHooksMap', () => {
+    test('uses optional credential in type annotation', () => {
+        const map = renderPrepareToolCallHooksMap([{ toolName: 'listItems', access: 'public' }]);
+        expect(map).toContain('credential?: string');
     });
 
-    test('with credentials includes ModuleCredentials in type annotation', () => {
-        const map = renderPreparersMap(['listItems'], { includeCredentials: true });
-        expect(map).toContain('credentials?: ModuleCredentials');
+    test('wraps protected hooks so required credential params type-check', () => {
+        const map = renderPrepareToolCallHooksMap([{ toolName: 'listItems', access: 'protected' }]);
+        expect(map).toContain(
+            '"listItems": (options, credential) => prepareToolCallForListItems(options, credential!)'
+        );
     });
 });
 
 describe('renderInvokeAuthPipeline', () => {
-    test('public prepare calls prepare(optionsResolved) without credentials preamble', () => {
+    test('public prepare calls prepareToolCall(optionsResolved) without credential preamble', () => {
         const pipeline = renderInvokeAuthPipeline('api2ai', 'full', false, {
-            authorizers: false,
-            preparers: true
+            checkToolAccess: false,
+            prepareToolCall: true
         });
-        expect(pipeline).toContain('optionsResolved = await Promise.resolve(prepare(optionsResolved));');
+        expect(pipeline).toContain('prepareToolCall(optionsResolved));');
         expect(pipeline).not.toContain('ModuleCredentials');
         expect(pipeline).not.toContain('toModuleCredentials');
     });
 
-    test('protected prepare calls prepare(optionsResolved, credentialsForStubs)', () => {
+    test('protected prepare calls prepareToolCall(optionsResolved, credential)', () => {
         const pipeline = renderInvokeAuthPipeline('api2ai', 'full', true, {
-            authorizers: false,
-            preparers: true
+            checkToolAccess: false,
+            prepareToolCall: true
         });
-        expect(pipeline).toContain('prepare(optionsResolved, credentialsForStubs)');
-        expect(pipeline).toContain('Prepare requires credentials');
+        expect(pipeline).toContain('prepareToolCall(optionsResolved, credential)');
+        expect(pipeline).toContain('prepareToolCall requires credential');
+    });
+
+    test('hooks-only module omits authCredential when auth is disabled', () => {
+        const pipeline = renderInvokeAuthPipeline(
+            'api2ai',
+            'full',
+            false,
+            { checkToolAccess: false, prepareToolCall: true },
+            false
+        );
+        expect(pipeline).not.toContain('authCredential');
     });
 });

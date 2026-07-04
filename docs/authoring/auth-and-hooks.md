@@ -65,19 +65,19 @@ After generation, hand-written hooks live beside the demo/project workspace:
 
 ```text
 src/hooks/api2ai/<module>-tools/
-    verify<Module>Credentials.ts
+    verify<Module>Credential.ts
     listSomething.ts          ← authorize + prepare exports when declared
 
 src/hooks/db2ai/<module>-tools/
-    verify<Module>Credentials.ts
+    verify<Module>Credential.ts
     ...
 ```
 
-| DSL declaration             | Generated import        | Typical export                              |
-| --------------------------- | ----------------------- | ------------------------------------------- |
-| `auth` + protected (api2ai) | `verifyCredential`      | `verifyXCredentials`, `toModuleCredentials` |
-| `authorize` on tool         | `authorizers[toolName]` | `authorizeToolName`                         |
-| `prepare` on tool           | `preparers[toolName]`   | `prepareToolNameInput`                      |
+| DSL declaration             | Generated import        | Typical export                                          |
+| --------------------------- | ----------------------- | ------------------------------------------------------- |
+| `auth` + protected (api2ai) | `verifyCredential`      | `verifyXCredential` (re-exported as `verifyCredential`) |
+| `authorize` on tool         | `authorizers[toolName]` | `authorizeToolName`                                     |
+| `prepare` on tool           | `preparers[toolName]`   | `prepareToolNameInput`                                  |
 
 Stub files are created on first generate; implement logic, then regenerate (imports are wired automatically).
 

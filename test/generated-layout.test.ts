@@ -41,10 +41,8 @@ describe('generated-layout', () => {
 
     it('relativeJsImportPath emits posix .js spec', () => {
         const from = path.join(projectRoot, 'generated', 'api2ai', 'tools', 'github-tools.ts');
-        const to = path.join(projectRoot, 'src', 'hooks', 'api2ai', 'github-tools', 'verifyGithubCredentials.ts');
-        expect(relativeJsImportPath(from, to)).toBe(
-            '../../../src/hooks/api2ai/github-tools/verifyGithubCredentials.js'
-        );
+        const to = path.join(projectRoot, 'src', 'hooks', 'api2ai', 'github-tools', 'verifyGithubCredential.ts');
+        expect(relativeJsImportPath(from, to)).toBe('../../../src/hooks/api2ai/github-tools/verifyGithubCredential.js');
     });
 
     it('relativeImportToLoggingAdapter from nested tools module', () => {
