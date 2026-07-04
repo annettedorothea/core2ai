@@ -92,14 +92,15 @@ See [core2ai-build.mdc](../../rules/core2ai-build.mdc).
 
 ## Release coordination
 
-During a **core2ai** breaking codegen release:
+During a **core2ai** release (see [guided-release/SKILL.md](../guided-release/SKILL.md) **C1–C6**):
 
 1. Finish work in **link mode**
-2. Publish `@toolfactory.dev/core` (tag → `publish.yml`)
-3. Both consumers: `npm run sync:core2ai-pin:npm` → commit lockfiles
-4. Then VSIX / CI use registry
+2. **C2** commit core2ai → **C3** `git tag vX.Y.Z` + `git push origin vX.Y.Z` → [publish.yml](../../.github/workflows/publish.yml) → npmjs
+3. **C4** confirm `npm view @toolfactory.dev/core version`
+4. **C5** both consumers: `npm run sync:core2ai-pin:npm` → **C6** commit lockfiles
+5. Then VSIX / CI use registry
 
-Until step 3, keep **link mode** locally.
+Until step 4, keep **link mode** locally if still hacking core2ai.
 
 ## Related
 
