@@ -14,7 +14,7 @@ generated *-tools.ts
 MCP host
         ↓
 AI client
-(Cursor, Open WebUI, Claude, ...)
+(Cursor, MCP Inspector, Claude, ...)
 ```
 
 Code generation produces:
@@ -108,7 +108,7 @@ path: /mcp
 endpoint: http://127.0.0.1:<port>/mcp
 ```
 
-Each project generates four host binaries; start only the one your client needs (`stdio` for Cursor, HTTP for Open WebUI, etc.).
+Each project generates four host binaries; start only the one your client needs (`stdio` for Cursor, HTTP for Inspector or other HTTP clients, etc.).
 
 The remaining host binaries can stay unused.
 
@@ -122,7 +122,7 @@ The remaining host binaries can stay unused.
 | Public HTTP access       | `public-http-mcp-server`      |
 | Shared API keys          | `passthrough-http-mcp-server` |
 | Per-user authentication  | `oauth-http-mcp-server`       |
-| Open WebUI               | HTTP hosts only               |
+| MCP Inspector (browser)  | HTTP hosts only               |
 
 A project always generates all four host runtimes.
 
@@ -307,7 +307,7 @@ mcp-session-id
 ### Best for
 
 - shared API keys
-- Open WebUI custom headers
+- MCP Inspector custom headers
 - team environments
 
 ### Transport
@@ -372,7 +372,7 @@ Fallback credentials may come from:
 ### Best for
 
 - user login
-- Open WebUI
+- MCP Inspector OAuth tab
 - enterprise deployments
 - shared MCP environments
 
@@ -434,8 +434,10 @@ Example:
 
 ```text
 cursor://anysphere.cursor-mcp/oauth/callback
-http://localhost:3000/oauth/clients/mcp:*
-http://127.0.0.1:3000/oauth/clients/mcp:*
+http://localhost:6274/oauth/callback
+http://localhost:6274/oauth/callback/debug
+http://127.0.0.1:6274/oauth/callback
+http://127.0.0.1:6274/oauth/callback/debug
 ```
 
 Configured using:
@@ -443,6 +445,20 @@ Configured using:
 ```text
 OAUTH_IDP_REDIRECT_URIS
 ```
+
+### Browser CORS
+
+Browser clients (MCP Inspector OAuth tab) call the MCP host and IdP cross-origin. CORS is controlled by:
+
+```text
+MCP_HTTP_CORS_ORIGIN
+```
+
+- **Set:** fixed `Access-Control-Allow-Origin` (e.g. `http://localhost:6274` for Inspector).
+- **Unset:** reflect the request `Origin` header when present (typical for local demos).
+- No `*` fallback — curl and same-origin clients do not need CORS headers.
+
+Applies to the oauth HTTP host (codegen) and demo IdPs (`oauth-idp/server.mjs`).
 
 ---
 
@@ -474,7 +490,7 @@ See [Auth and Hooks](../authoring/auth-and-hooks.md) for details.
 | Client         | stdio          | public  | passthrough   | OAuth       |
 | -------------- | -------------- | ------- | ------------- | ----------- |
 | Cursor         | command + args | URL     | URL + headers | URL + OAuth |
-| Open WebUI     | MCPO only      | native  | native        | native      |
+| MCP Inspector  | —              | URL     | URL + headers | URL + OAuth |
 | Claude Desktop | native         | limited | limited       | limited     |
 
 ---
@@ -541,7 +557,6 @@ After changing host templates:
 
 - [Documentation index](../README.md)
 - [Cursor Integration](../integrations/cursor.md)
-- [Open WebUI Integration](../integrations/open-webui.md)
 - [MCP Inspector](../testing/mcp-inspector.md)
 - [Layer 2 — Tool Authoring](../architecture/02-layer-2-tool-authoring.md)
 - [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)

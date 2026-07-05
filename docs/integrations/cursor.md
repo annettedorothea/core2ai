@@ -478,7 +478,7 @@ api2ai /test:all
 - [Documentation index](../README.md)
 - [Cursor MCP Documentation](https://cursor.com/docs/mcp)
 - [MCP Hosts](../runtime/mcp-hosts.md)
-- [Open WebUI Integration](open-webui.md)
+- [MCP Inspector](../testing/mcp-inspector.md)
 - [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)
 - [api2ai Demo Workspace](https://github.com/annettedorothea/api2ai/tree/main/packages/extension/demos)
 - [db2ai Demo Workspace](https://github.com/annettedorothea/db2ai/tree/main/packages/extension/demos)

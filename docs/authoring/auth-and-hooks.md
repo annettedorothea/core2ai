@@ -198,7 +198,7 @@ Enables credential checks for `access: protected` SQL tools. Connection strings 
 | ---------------- | --------------------------------------------------------------------------------- |
 | stdio            | `--auth-env VAR` (reads from process env)                                         |
 | passthrough HTTP | Client header (e.g. `x-api-token`) forwarded as MCP credential                    |
-| OAuth HTTP       | Bearer token after MCP OAuth login in Cursor / Open WebUI                         |
+| OAuth HTTP       | Bearer token after MCP OAuth login in Cursor                                      |
 | public HTTP      | No MCP credential; upstream may still use API keys from env on the server process |
 
 ---

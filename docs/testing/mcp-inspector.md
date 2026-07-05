@@ -192,15 +192,21 @@ Required values:
 The Inspector requires additional redirect URIs:
 
 ```text
+http://localhost:6274/oauth/callback
+http://localhost:6274/oauth/callback/debug
 http://127.0.0.1:6274/oauth/callback
 http://127.0.0.1:6274/oauth/callback/debug
 ```
+
+The Inspector **fixes** the redirect URL to `http://localhost:6274/oauth/callback` — you cannot change it in the UI. Both `localhost` and `127.0.0.1` must be in `OAUTH_IDP_REDIRECT_URIS` if you use other tools too.
 
 If custom redirect allowlists are configured, Cursor callbacks must remain present.
 
 ---
 
 ## OAuth Notes
+
+MCP Inspector runs OAuth discovery in the **browser** (`localhost:6274`). Demo IdPs and oauth-http hosts send CORS headers for local Inspector use. If you still see `TypeError: Failed to fetch`, use a Bearer token instead (below).
 
 For quick debugging it is often easier to use a manually generated bearer token.
 
@@ -299,7 +305,6 @@ The `mcp:inspect` script is merely a convenience wrapper around the Inspector CL
 - [Testing strategy](../architecture/05-testing-strategy.md)
 - [MCP Hosts](../runtime/mcp-hosts.md)
 - [Cursor Integration](../integrations/cursor.md)
-- [Open WebUI Integration](../integrations/open-webui.md)
 - [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)
 
 ---

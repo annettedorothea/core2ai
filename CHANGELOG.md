@@ -39,7 +39,7 @@ First release-candidate of the shared Tool Factory runtime used by **api2ai** an
 - **Auth pipeline render tiers:** `none`, `credential`, `full` — generated invoke path runs `verifyCredential` → `authorize` → `prepare` when hooks are declared
 - **Flat MCP tool arguments:** path, query, header, and body fields at the top level of tool input; nested `pathParams` / `query` buckets are not part of the MCP schema
 - **LLM-tolerant Zod coercion** in generated `normalizeInvokeOptions` (string booleans/numbers, query array splitting)
-- **Architecture docs** under `docs/`: three-layer model, personas, testing strategy, Cursor and Open WebUI integration guides, MCP hosts reference
+- **Architecture docs** under `docs/`: three-layer model, personas, testing strategy, Cursor and MCP Inspector guides, MCP hosts reference
 - **MCP Inspector** how-to: `docs/testing/mcp-inspector.md`
 - **Testing policy** for agents: E2E only via manual `/test-all` before release; no default MCP-/invoke-CI proposals (`.cursor/rules/testing-policy.mdc`)
 - **CHANGELOG policy:** `docs/development/changelog-policy.md`

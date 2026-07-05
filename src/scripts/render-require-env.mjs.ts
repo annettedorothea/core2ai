@@ -33,5 +33,19 @@ export function requireEnvInt(name, env = process.env) {
     }
     return port;
 }
+
+/**
+ * @param {string} name
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {string | undefined}
+ */
+export function warnEnvIfMissing(name, env = process.env) {
+    const value = env[name]?.trim();
+    if (!value) {
+        console.warn(\`[env] Warning: \${name} is missing or empty — tool calls needing this value may fail.\`);
+        return undefined;
+    }
+    return value;
+}
 `;
 }

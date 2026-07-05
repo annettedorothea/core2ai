@@ -184,7 +184,23 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     });
 
     const httpServer = http.createServer(async (req, res) => {
+        applyMcpHttpCors(req, res);
+        if (req.method === 'OPTIONS') {
+            res.writeHead(204);
+            res.end();
+            return;
+        }
+
         const url = new URL(req.url ?? '/', 'http://' + (req.headers.host ?? 'localhost'));
+        if (
+            (url.pathname === '/.well-known/oauth-authorization-server' ||
+                url.pathname === '/.well-known/openid-configuration') &&
+            req.method === 'GET'
+        ) {
+            res.writeHead(200, { 'content-type': 'application/json' });
+            res.end(JSON.stringify(oauthAuthorizationServerMetadataDocument(httpHostConfig)));
+            return;
+        }
         if (url.pathname === '/.well-known/oauth-protected-resource') {
             res.writeHead(200, { 'content-type': 'application/json' });
             res.end(JSON.stringify(oauthResourceMetadataDocument(httpHostConfig)));

@@ -32,10 +32,9 @@
 
 ### Integrations (`integrations/`)
 
-| Document                                 | Summary                           |
-| ---------------------------------------- | --------------------------------- |
-| [Cursor](integrations/cursor.md)         | VSIX, `mcp.json`, stdio and OAuth |
-| [Open WebUI](integrations/open-webui.md) | HTTP MCP, auth profiles, demos    |
+| Document                         | Summary                           |
+| -------------------------------- | --------------------------------- |
+| [Cursor](integrations/cursor.md) | VSIX, `mcp.json`, stdio and OAuth |
 
 ### Testing (`testing/`)
 
