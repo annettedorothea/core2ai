@@ -2,20 +2,19 @@ import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
 /**
- * Static OAuth + stateful MCP Streamable HTTP host for generated `cli/oauth-http-mcp-server.ts`.
+ * Generated `cli/oauth-http-runtime.ts` — import tools module, call `runOAuthHttpMcp(tools, argv)`.
  */
-export function renderOAuthHttpMcpServerSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
+export function renderOAuthHttpMcpRuntimeSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
     const shared = renderMcpHostSharedSource('oauth-http', product);
-    return `#!/usr/bin/env node
-/**
- * Generated OAuth + stateful MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
+    return `/**
+ * Generated OAuth + stateful MCP Streamable HTTP runtime (static tools import).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
@@ -33,6 +32,11 @@ type SessionEntry = {
 const sessionEntries = new Map<string, SessionEntry>();
 const sessionStore = new Map<string, McpOAuthSession>();
 const sessionHeaders = new Map<string, Record<string, string | string[] | undefined>>();
+
+function defaultMcpEnvDirs(): string[] {
+    const runtimeDir = path.dirname(fileURLToPath(import.meta.url));
+    return [process.cwd(), path.join(runtimeDir, '..', 'tools')];
+}
 
 function isInitializeRequestBody(body: unknown): boolean {
     if (Array.isArray(body)) {
@@ -85,7 +89,6 @@ async function createMcpServerForSession(
         sessionEntries.delete(sessionId);
         sessionStore.delete(sessionId);
         sessionHeaders.delete(sessionId);
-        // Transport already closed — see public/passthrough HTTP host (avoid server.close loop).
     };
     await server.connect(transport);
     return { transport, server, session };
@@ -154,23 +157,10 @@ async function handleOAuthMcpRequest(
     }
 }
 
-async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
-    const modulePath = argv[0];
-    if (!modulePath) {
-        throw new Error(
-            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-scope SCOPE] [--host HOST] [--path /mcp]'
-        );
-    }
-    const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
-    loadLocalEnvFiles(envDirs);
-    const imported = await import(pathToFileURL(path.resolve(modulePath)).href);
-    if (!imported || typeof imported !== 'object') {
-        throw new Error(\`Generated module "\${modulePath}" did not export an object.\`);
-    }
-    const generated = readGeneratedModule(imported as Record<string, unknown>);
-    const httpHostConfig = parseOAuthHttpHostArgv(argv.slice(1), envDirs);
-    ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
-    await validateOAuthHttpHostAtStartup(httpHostConfig, generated);
+async function listenOAuthHttpMcp(
+    generated: GeneratedHostModule,
+    httpHostConfig: OAuthHttpHostRuntimeConfig
+): Promise<void> {
     const resourceUrl =
         'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
     loggingAdapter.info('[mcp] oauth HTTP listening', {
@@ -232,6 +222,17 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     });
 }
 
-await runOAuthHttpMcpStandaloneFromArgv(process.argv.slice(2));
+export async function runOAuthHttpMcp(
+    toolsModule: Record<string, unknown>,
+    argv: string[],
+    envDirs: string[] = defaultMcpEnvDirs()
+): Promise<void> {
+    loadLocalEnvFiles(envDirs);
+    const generated = readGeneratedModule(toolsModule);
+    const httpHostConfig = parseOAuthHttpHostArgv(argv, envDirs);
+    ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
+    await validateOAuthHttpHostAtStartup(httpHostConfig, generated);
+    await listenOAuthHttpMcp(generated, httpHostConfig);
+}
 `;
 }

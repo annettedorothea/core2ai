@@ -6,31 +6,30 @@ const PROFILE_LOG_LABEL: Record<HttpMcpHostProfile, string> = {
     passthrough: 'passthrough HTTP'
 };
 
-const PROFILE_FILE: Record<HttpMcpHostProfile, string> = {
-    public: 'public-http-mcp-server',
-    passthrough: 'passthrough-http-mcp-server'
+const PROFILE_RUN_EXPORT: Record<HttpMcpHostProfile, string> = {
+    public: 'runPublicHttpMcp',
+    passthrough: 'runPassthroughHttpMcp'
 };
 
-function renderHttpMcpServerSourceForProfile(
+function renderHttpMcpRuntimeSourceForProfile(
     profile: HttpMcpHostProfile,
     product: McpHostProduct = 'api2ai',
     loggingImport: string
 ): string {
     const mode = profile === 'public' ? 'public-http' : 'passthrough-http';
     const shared = renderMcpHostSharedSource(mode, product);
-    const fileBase = PROFILE_FILE[profile];
     const logLabel = PROFILE_LOG_LABEL[profile];
+    const runExport = PROFILE_RUN_EXPORT[profile];
     const credentialHeaderExpr = profile === 'public' ? 'undefined' : 'readAuthHeaderNameFromEnv()';
-    return `#!/usr/bin/env node
-/**
- * Generated ${logLabel} MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
+    return `/**
+ * Generated ${logLabel} MCP Streamable HTTP runtime (static tools import).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
@@ -47,6 +46,11 @@ type SessionEntry = {
 
 const sessionEntries = new Map<string, SessionEntry>();
 const sessionHeaders = new Map<string, Record<string, string | string[] | undefined>>();
+
+function defaultMcpEnvDirs(): string[] {
+    const runtimeDir = path.dirname(fileURLToPath(import.meta.url));
+    return [process.cwd(), path.join(runtimeDir, '..', 'tools')];
+}
 
 function isInitializeRequestBody(body: unknown): boolean {
     if (Array.isArray(body)) {
@@ -89,8 +93,6 @@ async function createMcpServerForSession(
     transport.onclose = () => {
         sessionEntries.delete(sessionId);
         sessionHeaders.delete(sessionId);
-        // Transport already closed (onclose runs from transport.close). Do not call server.close()
-        // here — that re-enters transport.close() and overflows the stack.
     };
     await server.connect(transport);
     return { transport, server, sessionId };
@@ -143,23 +145,10 @@ async function handleHttpMcpRequest(
     }
 }
 
-async function runHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
-    const modulePath = argv[0];
-    if (!modulePath) {
-        throw new Error(
-            'Usage: node ${fileBase}.js <path-to-*-tools.js> [--base-url-env ENV] --port N [--host HOST] [--path /mcp]'
-        );
-    }
-    const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
-    loadLocalEnvFiles(envDirs);
-    const imported = await import(pathToFileURL(path.resolve(modulePath)).href);
-    if (!imported || typeof imported !== 'object') {
-        throw new Error(\`Generated module "\${modulePath}" did not export an object.\`);
-    }
-    const generated = readGeneratedModule(imported as Record<string, unknown>);
-    const httpHostConfig = parseHttpMcpHostArgv(argv.slice(1), envDirs);
-    ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
-    validateHttpMcpHostAtStartup(httpHostConfig, generated);
+async function listenHttpMcp(
+    generated: GeneratedHostModule,
+    httpHostConfig: HttpMcpHostRuntimeConfig
+): Promise<void> {
     loggingAdapter.info('[mcp] ${logLabel} listening', {
         url:
             'http://' +
@@ -190,17 +179,28 @@ async function runHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     });
 }
 
-await runHttpMcpStandaloneFromArgv(process.argv.slice(2));
+export async function ${runExport}(
+    toolsModule: Record<string, unknown>,
+    argv: string[],
+    envDirs: string[] = defaultMcpEnvDirs()
+): Promise<void> {
+    loadLocalEnvFiles(envDirs);
+    const generated = readGeneratedModule(toolsModule);
+    const httpHostConfig = parseHttpMcpHostArgv(argv, envDirs);
+    ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
+    validateHttpMcpHostAtStartup(httpHostConfig, generated);
+    await listenHttpMcp(generated, httpHostConfig);
+}
 `;
 }
 
-export function renderPublicHttpMcpServerSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
-    return renderHttpMcpServerSourceForProfile('public', product, loggingImport);
+export function renderPublicHttpMcpRuntimeSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
+    return renderHttpMcpRuntimeSourceForProfile('public', product, loggingImport);
 }
 
-export function renderPassthroughHttpMcpServerSource(
+export function renderPassthroughHttpMcpRuntimeSource(
     product: McpHostProduct = 'api2ai',
     loggingImport: string
 ): string {
-    return renderHttpMcpServerSourceForProfile('passthrough', product, loggingImport);
+    return renderHttpMcpRuntimeSourceForProfile('passthrough', product, loggingImport);
 }

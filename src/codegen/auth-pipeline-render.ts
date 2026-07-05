@@ -6,7 +6,7 @@ export type AuthPipelineProfile = 'api2ai' | 'db2ai';
 
 const MISSING_CREDENTIAL_ERROR = `
             throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+                'Missing host credential. stdio: set env for --auth-env on the MCP host; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );`;
 
 function renderUrlAndHeadersPreamble(): string {

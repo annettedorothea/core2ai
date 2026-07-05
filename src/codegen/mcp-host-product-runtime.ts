@@ -259,7 +259,7 @@ async function resolveHostContextForCall(
     const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
-        throw new Error('Missing host base URL. Pass --base-url-env on stdio-mcp-server.js and set the variable.');
+        throw new Error('Missing host base URL. Pass --base-url-env on the MCP host and set the variable.');
     }
     return { baseUrl, credential: c };
 }`.trim();

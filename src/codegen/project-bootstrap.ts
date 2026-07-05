@@ -1,9 +1,16 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { renderStdioMcpServerSource } from './render-stdio-mcp-server.js';
-import { renderOAuthHttpMcpServerSource } from './render-oauth-http-mcp-server.js';
-import { renderPassthroughHttpMcpServerSource, renderPublicHttpMcpServerSource } from './render-http-mcp-server.js';
+import { renderStdioMcpRuntimeSource } from './render-stdio-runtime.js';
+import { renderOAuthHttpMcpRuntimeSource } from './render-oauth-http-mcp-server.js';
+import { renderPassthroughHttpMcpRuntimeSource, renderPublicHttpMcpRuntimeSource } from './render-http-mcp-server.js';
 import { loggingAdapterImportForCliFile, resolveProjectRootFromGeneratedCliDir } from './generated-layout.js';
+import {
+    MCP_MODULE_HOST_KINDS,
+    moduleBasenameFromToolsPath,
+    moduleMcpServerFileName,
+    renderModuleMcpServerSource,
+    resolveGeneratedServersDir
+} from './mcp-module-host.js';
 import type { McpHostProduct } from './mcp-host-product-runtime.js';
 
 export {
@@ -58,76 +65,88 @@ function resolveHostWriteContext(
     return { product, root };
 }
 
-export function writeGeneratedStdioMcpHost(
+const LEGACY_GENERIC_MCP_HOST_FILES = [
+    'stdio-mcp-server.ts',
+    'public-http-mcp-server.ts',
+    'passthrough-http-mcp-server.ts',
+    'oauth-http-mcp-server.ts'
+] as const;
+
+/** Remove pre–Option-B generic hosts (`cli/*-mcp-server.ts` with tools path in argv). */
+export function removeLegacyGenericMcpHostFiles(cliDir: string): void {
+    for (const fileName of LEGACY_GENERIC_MCP_HOST_FILES) {
+        const filePath = path.join(cliDir, fileName);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+    }
+}
+
+/** Writes four MCP runtime modules under `generated/<product>/cli/` (overwrite on each generate). */
+export function writeGeneratedMcpRuntimes(
     cliDir: string,
     config?: ProjectBootstrapConfig,
     projectRoot?: string
-): string {
+): {
+    stdioRuntimePath: string;
+    publicHttpRuntimePath: string;
+    passthroughHttpRuntimePath: string;
+    oauthHttpRuntimePath: string;
+} {
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
-    const dest = path.join(cliDir, 'stdio-mcp-server.ts');
+    removeLegacyGenericMcpHostFiles(cliDir);
     const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
-    const loggingImport = loggingAdapterImportForCliFile(dest, root);
-    fs.writeFileSync(dest, renderStdioMcpServerSource(product, loggingImport), 'utf-8');
-    return dest;
+
+    const stdioRuntimePath = path.join(cliDir, 'stdio-runtime.ts');
+    fs.writeFileSync(
+        stdioRuntimePath,
+        renderStdioMcpRuntimeSource(product, loggingAdapterImportForCliFile(stdioRuntimePath, root)),
+        'utf-8'
+    );
+
+    const publicHttpRuntimePath = path.join(cliDir, 'public-http-runtime.ts');
+    fs.writeFileSync(
+        publicHttpRuntimePath,
+        renderPublicHttpMcpRuntimeSource(product, loggingAdapterImportForCliFile(publicHttpRuntimePath, root)),
+        'utf-8'
+    );
+
+    const passthroughHttpRuntimePath = path.join(cliDir, 'passthrough-http-runtime.ts');
+    fs.writeFileSync(
+        passthroughHttpRuntimePath,
+        renderPassthroughHttpMcpRuntimeSource(
+            product,
+            loggingAdapterImportForCliFile(passthroughHttpRuntimePath, root)
+        ),
+        'utf-8'
+    );
+
+    const oauthHttpRuntimePath = path.join(cliDir, 'oauth-http-runtime.ts');
+    fs.writeFileSync(
+        oauthHttpRuntimePath,
+        renderOAuthHttpMcpRuntimeSource(product, loggingAdapterImportForCliFile(oauthHttpRuntimePath, root)),
+        'utf-8'
+    );
+
+    return { stdioRuntimePath, publicHttpRuntimePath, passthroughHttpRuntimePath, oauthHttpRuntimePath };
 }
 
-export function writeGeneratedPublicHttpMcpHost(
-    cliDir: string,
-    config?: ProjectBootstrapConfig,
-    projectRoot?: string
-): string {
-    if (!fs.existsSync(cliDir)) {
-        fs.mkdirSync(cliDir, { recursive: true });
+/** Writes four per-module MCP servers under `generated/<product>/servers/`. */
+export function writeGeneratedModuleMcpServers(toolsModuleTsPath: string): string[] {
+    const serversDir = resolveGeneratedServersDir(toolsModuleTsPath);
+    if (!fs.existsSync(serversDir)) {
+        fs.mkdirSync(serversDir, { recursive: true });
     }
-    const dest = path.join(cliDir, 'public-http-mcp-server.ts');
-    const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
-    const loggingImport = loggingAdapterImportForCliFile(dest, root);
-    fs.writeFileSync(dest, renderPublicHttpMcpServerSource(product, loggingImport), 'utf-8');
-    return dest;
-}
-
-export function writeGeneratedPassthroughHttpMcpHost(
-    cliDir: string,
-    config?: ProjectBootstrapConfig,
-    projectRoot?: string
-): string {
-    if (!fs.existsSync(cliDir)) {
-        fs.mkdirSync(cliDir, { recursive: true });
+    const moduleBasename = moduleBasenameFromToolsPath(toolsModuleTsPath);
+    const written: string[] = [];
+    for (const hostKind of MCP_MODULE_HOST_KINDS) {
+        const serverPath = path.join(serversDir, moduleMcpServerFileName(moduleBasename, hostKind));
+        fs.writeFileSync(serverPath, renderModuleMcpServerSource(hostKind, toolsModuleTsPath, serverPath), 'utf-8');
+        written.push(serverPath);
     }
-    const dest = path.join(cliDir, 'passthrough-http-mcp-server.ts');
-    const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
-    const loggingImport = loggingAdapterImportForCliFile(dest, root);
-    fs.writeFileSync(dest, renderPassthroughHttpMcpServerSource(product, loggingImport), 'utf-8');
-    return dest;
-}
-
-/** Writes public and passthrough HTTP MCP hosts. */
-export function writeGeneratedHttpMcpHosts(
-    cliDir: string,
-    config?: ProjectBootstrapConfig,
-    projectRoot?: string
-): { publicHttpMcpHostPath: string; passthroughHttpMcpHostPath: string } {
-    return {
-        publicHttpMcpHostPath: writeGeneratedPublicHttpMcpHost(cliDir, config, projectRoot),
-        passthroughHttpMcpHostPath: writeGeneratedPassthroughHttpMcpHost(cliDir, config, projectRoot)
-    };
-}
-
-export function writeGeneratedOAuthHttpMcpHost(
-    cliDir: string,
-    config?: ProjectBootstrapConfig,
-    projectRoot?: string
-): string {
-    if (!fs.existsSync(cliDir)) {
-        fs.mkdirSync(cliDir, { recursive: true });
-    }
-    const dest = path.join(cliDir, 'oauth-http-mcp-server.ts');
-    const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
-    const loggingImport = loggingAdapterImportForCliFile(dest, root);
-    fs.writeFileSync(dest, renderOAuthHttpMcpServerSource(product, loggingImport), 'utf-8');
-    return dest;
+    return written;
 }
 
 function readCliPackageJson(config: ProjectBootstrapConfig): {
@@ -186,7 +205,7 @@ function warnIfPackageJsonMissingMcpDeps(packageJsonDir: string, config: Project
     if (missing.length > 0) {
         console.warn(
             config.missingDepsMessage?.(pjsonPath, missing) ??
-                `[generate] "${pjsonPath}": install runtime dependencies: ${missing.join(', ')} (npm install), then generated/<product>/cli/stdio-mcp-server.js can run.`
+                `[generate] "${pjsonPath}": install runtime dependencies: ${missing.join(', ')} (npm install), then run a generated servers/*-mcp-server.js host.`
         );
     }
 }

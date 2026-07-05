@@ -2,17 +2,16 @@ import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
 import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
 
 /**
- * Static MCP stdio host for generated `cli/stdio-mcp-server.ts`.
+ * Generated `cli/stdio-runtime.ts` — import tools module, call `runStdioMcp(tools, argv)`.
  */
-export function renderStdioMcpServerSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
+export function renderStdioMcpRuntimeSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
     const shared = renderMcpHostSharedSource('stdio', product);
-    return `#!/usr/bin/env node
-/**
- * Generated MCP stdio host (static runtime — no @toolfactory.dev/core).
+    return `/**
+ * Generated MCP stdio runtime (static tools import — no @toolfactory.dev/core).
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
@@ -20,6 +19,11 @@ import * as z from 'zod/v4';
 import { loggingAdapter } from '${loggingImport}';
 
 ${shared}
+
+function defaultMcpEnvDirs(): string[] {
+    const runtimeDir = path.dirname(fileURLToPath(import.meta.url));
+    return [process.cwd(), path.join(runtimeDir, '..', 'tools')];
+}
 
 async function runStdioMcpServer(
     generated: ReturnType<typeof readGeneratedModule>,
@@ -35,25 +39,18 @@ async function runStdioMcpServer(
     await server.connect(transport);
 }
 
-async function runStdioMcpStandaloneFromArgv(argv: string[]): Promise<void> {
-    const modulePath = argv[0];
-    if (!modulePath) {
-        throw new Error('Usage: node stdio-mcp-server.js <path-to-*-tools.js> [host options...]');
-    }
-    const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
+export async function runStdioMcp(
+    toolsModule: Record<string, unknown>,
+    argv: string[],
+    envDirs: string[] = defaultMcpEnvDirs()
+): Promise<void> {
     loadLocalEnvFiles(envDirs);
-    const imported = await import(pathToFileURL(path.resolve(modulePath)).href);
-    if (!imported || typeof imported !== 'object') {
-        throw new Error(\`Generated module "\${modulePath}" did not export an object.\`);
-    }
-    const generated = readGeneratedModule(imported as Record<string, unknown>);
-    const hostConfig = parseHostArgv(argv.slice(1), envDirs);
+    const generated = readGeneratedModule(toolsModule);
+    const hostConfig = parseHostArgv(argv, envDirs);
     ${requireBaseUrlEnvArgvCheck(product, 'hostConfig.baseUrlEnvKey')}
     validateHostAtStartup(hostConfig, generated);
     loggingAdapter.info('[mcp] host context refreshed each tool call');
     await runStdioMcpServer(generated, hostConfig);
 }
-
-await runStdioMcpStandaloneFromArgv(process.argv.slice(2));
 `;
 }
