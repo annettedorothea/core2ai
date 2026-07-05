@@ -59,6 +59,7 @@ type GeneratedHostModule = {
     mcpServerName?: string;
     mcpServerVersion?: string;
     requiresAuth: boolean;
+    connectionEnv?: string;
     verifyCredential?: VerifyCredentialFn;
 };`.trim();
 }

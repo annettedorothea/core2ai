@@ -65,23 +65,6 @@ function resolveHostWriteContext(
     return { product, root };
 }
 
-const LEGACY_GENERIC_MCP_HOST_FILES = [
-    'stdio-mcp-server.ts',
-    'public-http-mcp-server.ts',
-    'passthrough-http-mcp-server.ts',
-    'oauth-http-mcp-server.ts'
-] as const;
-
-/** Remove pre–Option-B generic hosts (`cli/*-mcp-server.ts` with tools path in argv). */
-export function removeLegacyGenericMcpHostFiles(cliDir: string): void {
-    for (const fileName of LEGACY_GENERIC_MCP_HOST_FILES) {
-        const filePath = path.join(cliDir, fileName);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
-    }
-}
-
 /** Writes four MCP runtime modules under `generated/<product>/cli/` (overwrite on each generate). */
 export function writeGeneratedMcpRuntimes(
     cliDir: string,
@@ -96,7 +79,6 @@ export function writeGeneratedMcpRuntimes(
     if (!fs.existsSync(cliDir)) {
         fs.mkdirSync(cliDir, { recursive: true });
     }
-    removeLegacyGenericMcpHostFiles(cliDir);
     const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
 
     const stdioRuntimePath = path.join(cliDir, 'stdio-runtime.ts');

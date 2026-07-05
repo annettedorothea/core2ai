@@ -50,6 +50,13 @@ export class LoggingAdapter {
     error(message: string, context?: object): void {
         console.error(formatLine('error', RED, message, context));
     }
+
+    /** Multi-line operator output (startup cards). No level prefix or JSON — always stderr. */
+    banner(lines: string[]): void {
+        for (const line of lines) {
+            console.error(line);
+        }
+    }
 }
 
 export const loggingAdapter = new LoggingAdapter();

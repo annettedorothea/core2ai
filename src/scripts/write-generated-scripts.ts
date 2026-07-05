@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { renderBuildMcpLibMjsSource, type McpScriptsProduct } from './render-build-mcp-lib.mjs.js';
 import { renderKillListenersOnPortMjsSource } from './render-kill-listeners-on-port.mjs.js';
 import { renderLoadEnvLocalMjsSource } from './render-load-env-local.mjs.js';
 import { renderPrintMcpCatalogMjsSource } from './render-print-mcp-catalog.mjs.js';
@@ -22,10 +23,15 @@ export function writeGeneratedScripts(projectRoot: string): void {
         return;
     }
 
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as { productName?: string };
+    const product: McpScriptsProduct = config.productName === 'db2ai' ? 'db2ai' : 'api2ai';
+
     const outDir = path.join(projectRoot, 'scripts', 'generated');
     fs.mkdirSync(outDir, { recursive: true });
 
     for (const { fileName, render } of OUTPUT_FILES) {
         fs.writeFileSync(path.join(outDir, fileName), render(), 'utf-8');
     }
+
+    fs.writeFileSync(path.join(outDir, 'build-mcp-lib.mjs'), renderBuildMcpLibMjsSource(product), 'utf-8');
 }

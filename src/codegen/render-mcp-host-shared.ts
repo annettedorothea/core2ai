@@ -1,3 +1,9 @@
+import {
+    renderHttpMcpStartupBannerFn,
+    renderMcpHostStartupBannerSource,
+    renderOAuthHttpStartupBannerFn,
+    renderStdioMcpStartupBannerFn
+} from './render-mcp-host-startup-banner.js';
 import { hostCredentialValidationRelaySource } from './mcp-host-credential-validation.js';
 import {
     dbOnlyHelperFunctions,
@@ -226,6 +232,8 @@ async function registerMcpTools(
     }
     attachListToolsDebugLogging(server, generated);
 }
+
+${renderMcpHostStartupBannerSource()}
 `.trim();
 
     const stdioExtras = `
@@ -278,6 +286,8 @@ function readCredentialFromEnv(authEnvKey: string | undefined): string | undefin
 ${validateHostAtStartupFn(product)}
 
 ${resolveHostContextForCallFn(product)}
+
+${renderStdioMcpStartupBannerFn()}
 `.trim();
 
     const httpMcpProfile = httpMcpProfileForMode(mode === 'public-http' ? mode : 'passthrough-http');
@@ -394,6 +404,8 @@ function readCredentialFromHttpHeaders(
 ${validateHttpMcpHostAtStartupFn(product)}
 
 ${resolveHostContextForHttpCallFn(product, httpMcpProfile)}
+
+${renderHttpMcpStartupBannerFn(httpMcpProfile)}
 `.trim();
 
     const oauthExtras = `
@@ -502,10 +514,6 @@ function readBearerFromHeaders(headers: Record<string, string | string[] | undef
     }
     const match = /^Bearer\\s+(.+)$/i.exec(value.trim());
     return match?.[1]?.trim() || undefined;
-}
-
-function generatedHasPublicTool(generated: GeneratedHostModule): boolean {
-    return generated.generatedTools.some((t) => t.access === 'public');
 }
 
 function generatedHasProtectedTool(generated: GeneratedHostModule): boolean {
@@ -666,6 +674,8 @@ function sendOAuthUnauthorized(res: ServerResponse, httpHostConfig: OAuthHttpHos
         })
     );
 }
+
+${renderOAuthHttpStartupBannerFn()}
 `.trim();
 
     const httpTransportExtras = `

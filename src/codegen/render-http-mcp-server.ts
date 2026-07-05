@@ -20,7 +20,6 @@ function renderHttpMcpRuntimeSourceForProfile(
     const shared = renderMcpHostSharedSource(mode, product);
     const logLabel = PROFILE_LOG_LABEL[profile];
     const runExport = PROFILE_RUN_EXPORT[profile];
-    const credentialHeaderExpr = profile === 'public' ? 'undefined' : 'readAuthHeaderNameFromEnv()';
     return `/**
  * Generated ${logLabel} MCP Streamable HTTP runtime (static tools import).
  */
@@ -149,17 +148,6 @@ async function listenHttpMcp(
     generated: GeneratedHostModule,
     httpHostConfig: HttpMcpHostRuntimeConfig
 ): Promise<void> {
-    loggingAdapter.info('[mcp] ${logLabel} listening', {
-        url:
-            'http://' +
-            httpHostConfig.listenHost +
-            ':' +
-            httpHostConfig.port +
-            httpHostConfig.mcpPath,
-        profile: '${profile}',
-        credentialHeader: ${credentialHeaderExpr}
-    });
-
     const httpServer = http.createServer(async (req, res) => {
         const url = new URL(req.url ?? '/', 'http://' + (req.headers.host ?? 'localhost'));
         if (url.pathname !== httpHostConfig.mcpPath) {
@@ -175,7 +163,10 @@ async function listenHttpMcp(
 
     await new Promise<void>((resolve, reject) => {
         httpServer.once('error', reject);
-        httpServer.listen(httpHostConfig.port, httpHostConfig.listenHost, () => resolve());
+        httpServer.listen(httpHostConfig.port, httpHostConfig.listenHost, () => {
+            printHttpMcpStartupBanner(generated, httpHostConfig);
+            resolve();
+        });
     });
 }
 

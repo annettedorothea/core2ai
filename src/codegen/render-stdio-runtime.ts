@@ -49,7 +49,7 @@ export async function runStdioMcp(
     const hostConfig = parseHostArgv(argv, envDirs);
     ${requireBaseUrlEnvArgvCheck(product, 'hostConfig.baseUrlEnvKey')}
     validateHostAtStartup(hostConfig, generated);
-    loggingAdapter.info('[mcp] host context refreshed each tool call');
+    printStdioMcpStartupBanner(generated, hostConfig);
     await runStdioMcpServer(generated, hostConfig);
 }
 `;

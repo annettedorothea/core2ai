@@ -161,18 +161,6 @@ async function listenOAuthHttpMcp(
     generated: GeneratedHostModule,
     httpHostConfig: OAuthHttpHostRuntimeConfig
 ): Promise<void> {
-    const resourceUrl =
-        'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
-    loggingAdapter.info('[mcp] oauth HTTP listening', {
-        resourceUrl,
-        authorizationServer: httpHostConfig.oauthIdpUrl,
-        oauthOnInitialize: mcpRequiresBearerOnInitialize(generated)
-            ? 'Bearer required (protected tools — Cursor login when enabling MCP' +
-              (generatedHasPublicTool(generated) ? '; public tools after login' : '') +
-              ')'
-            : 'no Bearer required (only public tools)'
-    });
-
     const httpServer = http.createServer(async (req, res) => {
         applyMcpHttpCors(req, res);
         if (req.method === 'OPTIONS') {
@@ -218,7 +206,10 @@ async function listenOAuthHttpMcp(
 
     await new Promise<void>((resolve, reject) => {
         httpServer.once('error', reject);
-        httpServer.listen(httpHostConfig.port, httpHostConfig.listenHost, () => resolve());
+        httpServer.listen(httpHostConfig.port, httpHostConfig.listenHost, () => {
+            printOAuthHttpStartupBanner(generated, httpHostConfig);
+            resolve();
+        });
     });
 }
 

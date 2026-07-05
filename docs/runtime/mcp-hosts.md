@@ -20,7 +20,8 @@ AI client
 Code generation produces:
 
 - one generated tool module per DSL file
-- four MCP host runtimes per project
+- four shared MCP runtime modules per project (`cli/*-runtime.ts`)
+- four per-module MCP server entrypoints per DSL file (`servers/<module>-<host>-mcp-server.ts`)
 
 The generated hosts are **standalone runtimes** emitted by `core2ai`.
 
@@ -46,6 +47,7 @@ No runtime dependency on `core2ai` exists after generation.
 - [api2ai vs db2ai](#api2ai-vs-db2ai)
 - [Client Configuration Summary](#client-configuration-summary)
 - [Running Demo Hosts](#running-demo-hosts)
+- [Shipping MCP Hosts (`build:mcp`)](#shipping-mcp-hosts-buildmcp)
 - [Troubleshooting](#troubleshooting)
 - [Implementation Reference](#implementation-reference)
 
@@ -62,11 +64,19 @@ generated/
       <module>-tools.ts
 
     cli/
-      stdio-mcp-server.ts
-      public-http-mcp-server.ts
-      passthrough-http-mcp-server.ts
-      oauth-http-mcp-server.ts
+      stdio-runtime.ts
+      public-http-runtime.ts
+      passthrough-http-runtime.ts
+      oauth-http-runtime.ts
+
+    servers/
+      <module>-stdio-mcp-server.ts
+      <module>-public-http-mcp-server.ts
+      <module>-passthrough-http-mcp-server.ts
+      <module>-oauth-http-mcp-server.ts
 ```
+
+Each server file statically imports its tools module and delegates to the matching runtime (`runStdioMcp`, `runPublicHttpMcp`, …). There is no generic host that takes a tools path in `argv[0]`.
 
 Generated tool modules contain:
 
@@ -93,12 +103,12 @@ tsc
 
 ## Host Overview
 
-| Host                          | Transport                   | Sessions | Typical Usage          |
-| ----------------------------- | --------------------------- | -------- | ---------------------- |
-| `stdio-mcp-server`            | stdio                       | ❌       | Cursor, Claude Desktop |
-| `public-http-mcp-server`      | Streamable HTTP             | ✅       | Public APIs            |
-| `passthrough-http-mcp-server` | Streamable HTTP             | ✅       | Shared API keys        |
-| `oauth-http-mcp-server`       | Streamable HTTP + OAuth 2.1 | ✅       | User login             |
+| Host entrypoint                        | Transport                   | Sessions | Typical Usage          |
+| -------------------------------------- | --------------------------- | -------- | ---------------------- |
+| `<module>-stdio-mcp-server`            | stdio                       | ❌       | Cursor, Claude Desktop |
+| `<module>-public-http-mcp-server`      | Streamable HTTP             | ✅       | Public APIs            |
+| `<module>-passthrough-http-mcp-server` | Streamable HTTP             | ✅       | Shared API keys        |
+| `<module>-oauth-http-mcp-server`       | Streamable HTTP + OAuth 2.1 | ✅       | User login             |
 
 HTTP hosts use:
 
@@ -108,25 +118,23 @@ path: /mcp
 endpoint: http://127.0.0.1:<port>/mcp
 ```
 
-Each project generates four host binaries; start only the one your client needs (`stdio` for Cursor, HTTP for Inspector or other HTTP clients, etc.).
+Each project generates four runtime modules and four server entrypoints **per DSL module**; start only the server binary your client needs (`stdio` for Cursor, HTTP for Inspector or other HTTP clients, etc.).
 
-The remaining host binaries can stay unused.
+Unused server binaries can stay unstarted.
 
 ---
 
 ## Choosing a Host
 
-| Scenario                 | Recommended Host              |
-| ------------------------ | ----------------------------- |
-| Cursor local development | `stdio-mcp-server`            |
-| Public HTTP access       | `public-http-mcp-server`      |
-| Shared API keys          | `passthrough-http-mcp-server` |
-| Per-user authentication  | `oauth-http-mcp-server`       |
-| MCP Inspector (browser)  | HTTP hosts only               |
+| Scenario                 | Recommended server                     |
+| ------------------------ | -------------------------------------- |
+| Cursor local development | `<module>-stdio-mcp-server`            |
+| Public HTTP access       | `<module>-public-http-mcp-server`      |
+| Shared API keys          | `<module>-passthrough-http-mcp-server` |
+| Per-user authentication  | `<module>-oauth-http-mcp-server`       |
+| MCP Inspector (browser)  | HTTP servers only                      |
 
-A project always generates all four host runtimes.
-
-The application decides which host binary to start and how clients connect to it.
+A project always generates all four server entrypoints per module.
 
 ---
 
@@ -235,8 +243,7 @@ One long-running Node.js process communicates via stdin/stdout JSON-RPC.
 ### Example
 
 ```bash
-node generated/<product>/cli/stdio-mcp-server.js \
-  generated/<product>/tools/<module>-tools.js \
+node generated/<product>/servers/<module>-stdio-mcp-server.js \
   --base-url-env API_BASE_URL \
   --auth-env GITHUB_TOKEN
 ```
@@ -274,8 +281,7 @@ Supports stateful MCP sessions.
 ### Example
 
 ```bash
-node generated/<product>/cli/public-http-mcp-server.js \
-  generated/<product>/tools/<module>-tools.js \
+node generated/<product>/servers/<module>-public-http-mcp-server.js \
   --base-url-env API_BASE_URL \
   --port 3849
 ```
@@ -319,8 +325,7 @@ Streamable HTTP
 ### Example
 
 ```bash
-node generated/<product>/cli/passthrough-http-mcp-server.js \
-  generated/<product>/tools/<module>-tools.js \
+node generated/<product>/servers/<module>-passthrough-http-mcp-server.js \
   --base-url-env API_BASE_URL \
   --port 3853
 ```
@@ -385,8 +390,7 @@ Streamable HTTP + OAuth 2.1
 ### Example
 
 ```bash
-node generated/<product>/cli/oauth-http-mcp-server.js \
-  generated/<product>/tools/<module>-tools.js \
+node generated/<product>/servers/<module>-oauth-http-mcp-server.js \
   --base-url-env API_BASE_URL \
   --oauth-idp-url http://127.0.0.1:3861 \
   --oauth-scope bookings \
@@ -497,6 +501,15 @@ See [Auth and Hooks](../authoring/auth-and-hooks.md) for details.
 
 ## Running Demo Hosts
 
+Demo workspaces start MCP hosts with **foreground** as the default: each host prints a startup banner (via `loggingAdapter.banner()`), and the terminal stays attached until Ctrl+C.
+
+| Workspace | Default start                               | Detached (no banners, terminal free) |
+| --------- | ------------------------------------------- | ------------------------------------ |
+| api2ai    | `npm run start`                             | `npm run start:background`           |
+| db2ai     | `npm run start:all` (alias `npm run start`) | `npm run start:background`           |
+
+The orchestrator prints a short summary (`printStartMcpSummary`): counts, skipped/warning lines, and compact URL lines in background mode only.
+
 ### api2ai
 
 ```bash
@@ -515,6 +528,55 @@ Ports and URLs are configured in:
 
 - `.cursor/mcp.json`
 - `.env`
+
+---
+
+## Shipping MCP Hosts (`build:mcp`)
+
+Demo workspaces can bundle **one module + one host type** into a shippable folder under `dist/mcp/`.
+
+Prerequisites:
+
+```bash
+npm run build:generated
+```
+
+Build one package (api2ai demos example):
+
+```bash
+npm run build:mcp -- --host public-http spaceflight-news
+```
+
+Build helpers live in `scripts/generated/build-mcp-lib.mjs` (regenerated from `core2ai` on `generate:all`). The hand-maintained entrypoint is `scripts/build-mcp.mjs`.
+
+Output layout:
+
+```text
+dist/mcp/<module>-<host>/
+  server.mjs          # esbuild bundle (ESM, hooks + runtime included)
+  package.json        # runtime deps + scripts.start (demo CLI flags)
+  .env.example        # env keys for this demo (no secrets)
+  mcp.json.example    # Cursor HTTP/OAuth snippet
+```
+
+Run the shipped host:
+
+```bash
+cd dist/mcp/spaceflight-news-public-http
+npm install
+cp .env.example .env
+npm start
+```
+
+`npm start` runs `server.mjs` with the flags from the demo map (e.g. `--base-url-env SPACEFLIGHT_NEWS_BASE_URL --port … --path /mcp`). Values are read from `.env`; only env **names** are fixed in `package.json`.
+
+**Notes:**
+
+- One `build:mcp` invocation = exactly one `--host` + one module name.
+- Secrets are never embedded; only variable names appear in `.env.example`.
+- **OAuth** (e.g. `bookings`): the bundle contains the **MCP host only**. Mock API, database, and OAuth IdP are **external** — configure their URLs in `.env`. The demo `npm start` script may include a default `--oauth-idp-url` from `.env.example`; change it for your deployment IdP.
+- db2ai bundles add the matching database driver (`pg`, `mysql2`, …) to `package.json`.
+- `dist/mcp/` is gitignored; ship the folder contents (zip, image, copy).
 
 ---
 
@@ -537,9 +599,10 @@ Ports and URLs are configured in:
 Host templates live inside `core2ai`:
 
 ```text
-src/codegen/render-stdio-mcp-server.ts
+src/codegen/render-stdio-runtime.ts
 src/codegen/render-http-mcp-server.ts
 src/codegen/render-oauth-http-mcp-server.ts
+src/codegen/mcp-module-host.ts
 src/codegen/render-mcp-host-shared.ts
 src/codegen/mcp-host-product-runtime.ts
 ```

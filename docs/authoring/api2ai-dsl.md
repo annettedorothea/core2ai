@@ -188,10 +188,14 @@ Saving the file (or running the CLI) emits:
 
 ```text
 generated/api2ai/tools/<module>-tools.ts
-generated/api2ai/cli/stdio-mcp-server.ts
-generated/api2ai/cli/public-http-mcp-server.ts
-generated/api2ai/cli/passthrough-http-mcp-server.ts
-generated/api2ai/cli/oauth-http-mcp-server.ts
+generated/api2ai/cli/stdio-runtime.ts
+generated/api2ai/cli/public-http-runtime.ts
+generated/api2ai/cli/passthrough-http-runtime.ts
+generated/api2ai/cli/oauth-http-runtime.ts
+generated/api2ai/servers/<module>-stdio-mcp-server.ts
+generated/api2ai/servers/<module>-public-http-mcp-server.ts
+generated/api2ai/servers/<module>-passthrough-http-mcp-server.ts
+generated/api2ai/servers/<module>-oauth-http-mcp-server.ts
 ```
 
 Each tool module exports `invokeTool`, Zod schemas, and optional hook imports.

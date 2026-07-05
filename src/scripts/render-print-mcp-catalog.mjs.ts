@@ -128,5 +128,63 @@ export function printMcpServerCatalog(options = {}) {
     }
     console.log('');
 }
+
+/**
+ * Short orchestrator summary after start — no per-host cards (servers print their own banner).
+ *
+ * @param {{
+ *   logPrefix?: string,
+ *   title?: string,
+ *   subtitleLines?: string[],
+ *   httpEntries?: { name: string, url: string, status?: string, skipReason?: string }[],
+ *   oauthEntries?: { name: string, url: string, status?: string, skipReason?: string }[],
+ *   compactRunningUrls?: boolean,
+ *   footerLines?: string[]
+ * }} options
+ */
+export function printStartMcpSummary(options = {}) {
+    const logPrefix = options.logPrefix ?? '[start]';
+    const title = options.title ?? 'MCP hosts';
+    const httpEntries = options.httpEntries ?? [];
+    const oauthEntries = options.oauthEntries ?? [];
+    const subtitleLines = options.subtitleLines ?? [];
+    const footerLines = options.footerLines ?? [];
+    const compactRunningUrls = options.compactRunningUrls ?? false;
+    const allEntries = [...httpEntries, ...oauthEntries];
+
+    const countByStatus = (status) => allEntries.filter((entry) => (entry.status ?? 'running') === status).length;
+    const running = countByStatus('running');
+    const warning = countByStatus('warning');
+    const skipped = countByStatus('skipped');
+
+    console.log('');
+    console.log(\`\${logPrefix} \${title}: \${running} running\${warning ? \`, \${warning} warning\` : ''}\${skipped ? \`, \${skipped} skipped\` : ''}\`);
+    for (const line of subtitleLines) {
+        console.log(\`\${logPrefix} \${line}\`);
+    }
+
+    for (const entry of allEntries) {
+        const status = entry.status ?? 'running';
+        if (status === 'skipped' || status === 'warning') {
+            const glyph = status === 'warning' ? '▲' : '○';
+            const reason = entry.skipReason ? \` — \${entry.skipReason}\` : '';
+            console.log(\`\${logPrefix}   \${glyph} \${entry.name}\${reason}\`);
+        }
+    }
+
+    if (compactRunningUrls) {
+        for (const entry of allEntries) {
+            const status = entry.status ?? 'running';
+            if (status === 'running' || status === 'warning') {
+                console.log(\`\${logPrefix}   \${entry.name}  \${entry.url}\`);
+            }
+        }
+    }
+
+    for (const line of footerLines) {
+        console.log(\`\${logPrefix} \${line}\`);
+    }
+    console.log('');
+}
 `;
 }
