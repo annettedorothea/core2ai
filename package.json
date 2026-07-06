@@ -1,7 +1,7 @@
 {
     "name": "@toolfactory.dev/core",
     "description": "Shared codegen library for api2ai and db2ai",
-    "version": "1.0.0-rc.1",
+    "version": "1.0.0-rc.2",
     "license": "MIT",
     "repository": {
         "type": "git",

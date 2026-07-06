@@ -12,7 +12,29 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
-## [1.0.0-rc.1] - 2026-07-04
+## [1.0.0-rc.2] - 2026-07-06
+
+### Added
+
+- **MCP startup banners:** catalog-style per-host cards on listen via `loggingAdapter.banner()`; orchestrator `printStartMcpSummary` for demo start (counts, warnings, compact URLs in background mode)
+- **Generated `build-mcp-lib.mjs`:** demo workspaces emit `scripts/generated/build-mcp-lib.mjs` for `npm run build:mcp` shippable bundles (`dist/mcp/<module>-<host>/`)
+
+### Changed
+
+- **MCP host layout (Option B):** per-module `servers/<module>-<host>-mcp-server.ts` plus shared `cli/*-runtime.ts`; removed generic `cli/*-mcp-server.ts` (tools path in argv)
+- **Demo script utilities:** `print-mcp-catalog.mjs` gains `printStartMcpSummary`; `warnEnvIfMissing` for optional secrets at start
+- **Docs:** `mcp-hosts.md` — servers layout, foreground/background start, `build:mcp` shipping with `npm start`; cursor and api2ai-dsl paths updated
+
+### Removed
+
+- Auto-delete of legacy generic MCP host files on generate (maintainers clean up manually)
+
+### Upgrade notes
+
+- Regenerate consumers: `generate:all` + `build:generated`; point `.cursor/mcp.json` and start scripts at `generated/<product>/servers/*`
+- After publish: consumers run `npm run sync:core2ai-pin:npm` before CI / VSIX release
+
+---
 
 ### Changed
 
