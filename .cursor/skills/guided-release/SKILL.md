@@ -1,20 +1,20 @@
 ---
 name: guided-release
 description: >-
-    Guided VSIX release for api2ai and db2ai (optional core2ai tag). One checkpoint per
-    turn: clean git, version bump, verify (vsix:prepare), commit, VSIX build, manual test,
-    GitHub release. Use for guided release, release, release CPn, or release weiter. Never
-    git commit/push/tag/gh unless the user explicitly asks. For commits: repo + message only
-    (user checks in via IDE).
+    Guided VSIX release for api2ai and db2ai (optional core2ai tag). Canonical skill
+    lives in core2ai only (sibling repos api2ai/db2ai). One checkpoint per turn: clean git,
+    version bump, verify (vsix:prepare), commit, VSIX build, manual test, GitHub release.
+    Use for guided release, release, release CPn, or release weiter. Never git commit/push/tag/gh
+    unless the user explicitly asks. For commits: repo + message only (user checks in via IDE).
 ---
 
 # Guided release
 
 **Ein Flow**, unterbrechbar. Der Agent führt **höchstens einen Checkpoint** pro Antwort aus und **stoppt** danach.
 
-**Invoke:** `guided release`, `release`, `release CP0`, `release CP C3`, `release weiter`, `release ab CP4`.
+**Invoke:** `guided release`, `release`, `release CP0`, `release CP C3`, `release CP1`, `release weiter`.
 
-**Repos:** `core2ai`, `../api2ai`, `../db2ai` (sibling layout). VSIX-Releases laufen **pro Consumer** (api2ai oder db2ai); beide nacheinander, wenn der User beide will.
+**Repos:** `core2ai`, `../api2ai`, `../db2ai` (sibling layout). **Single skill file:** `core2ai/.cursor/skills/guided-release/SKILL.md` — do not duplicate in consumer repos. VSIX-Releases laufen **pro Consumer** (api2ai oder db2ai); beide nacheinander, wenn der User beide will.
 
 ## Hard rules
 
@@ -22,32 +22,35 @@ description: >-
 2. **User commits in the IDE** — at commit CPs, output only **repo** + **commit message** (+ optional one-line note). No `git add` lists.
 3. **One checkpoint per turn** — status table with `[x]` / `[ ]`; wait for `release weiter` or manual test OK.
 4. **Agent may run** `npm run …` — not git.
-5. **Version before VSIX** — bump and **push** consumer version **before** `vsix:build` (VSIX filename = committed version).
+5. **Version before VSIX** — consumer VSIX version bump is **committed** (**CP2**) **before** `vsix:build` (VSIX filename = committed version).
 6. **`.vsix` is local** — not committed; GitHub upload only via `vsix:release` after manual preview.
-7. **Verify once after bump** — `npm run vsix:prepare` after `vsix:version` replaces a separate `generate:all` / `check` / `npm test` pass (those steps are already inside `vsix:prepare`).
-8. **core2ai publish order** — during hacking: sibling link (`sync:core2ai-pin`). **After** npm publish (CP **C4**): registry pin (`sync:core2ai-pin:npm`) in both consumers **before** consumer CI / VSIX release. Never commit sibling-linked lockfiles when CI expects registry.
+7. **Consumer release commit (CP2)** bundles **registry pin + CHANGELOG + VSIX version** in one commit — not split across pin-only and release commits.
+8. **`vsix:prepare` after CP2** — runs **after** the release commit to verify and to build the VSIX; feature code and `generated/**` should already be on `main` from the feature merge. If prepare dirties tracked files, fix upstream or add a follow-up commit before **CP4** (rare).
+9. **core2ai publish order** — during hacking: sibling link (`sync:core2ai-pin`). **After** npm publish (**C4**): registry pin in **CP1** (`sync:core2ai-pin:npm`) **before** consumer VSIX work. Never commit sibling-linked lockfiles when CI expects registry.
 
 ## Checkpoint map
 
-| CP     | Name                                      | Who   |
-| ------ | ----------------------------------------- | ----- |
-| **0**  | Clean git (three repos)                   | Agent |
-| **C1** | core2ai bump + verify                     | Agent |
-| **C2** | Commit core2ai                            | User  |
-| **C3** | Tag `vX.Y.Z` + push tag → npmjs           | User  |
-| **C4** | Confirm npm publish (Actions / npm view)  | User  |
-| **C5** | Consumer registry pin sync                | Agent |
-| **C6** | Commit consumer lockfiles                 | User  |
-| **1**  | Consumer VSIX version bump                | Agent |
-| **2**  | Verify pipeline (`vsix:prepare`)          | Agent |
-| **3**  | Commit + push consumer release            | User  |
-| **4**  | VSIX build                                | Agent |
-| **5**  | Manual preview                            | User  |
-| **6**  | GitHub release (`vsix:release`)           | User  |
+| CP     | Name                                                         | Who   |
+| ------ | ------------------------------------------------------------ | ----- |
+| **0**  | Clean git (three repos)                                      | Agent |
+| **C1** | core2ai CHANGELOG + bump + verify                            | Agent |
+| **C2** | Commit + push core2ai                                        | User  |
+| **C3** | Tag `vX.Y.Z` + push tag → npmjs                              | User  |
+| **C4** | Confirm npm publish (Actions / npm view)                       | User  |
+| **1**  | Consumer: pin + CHANGELOG + `vsix:version`                   | Agent |
+| **2**  | Commit + push consumer release                               | User  |
+| **3**  | `vsix:prepare` (verify)                                      | Agent |
+| **4**  | `vsix:build`                                                 | Agent |
+| **5**  | Manual preview                                               | User  |
+| **6**  | GitHub release (`vsix:release`)                            | User  |
 
-**CP C1–C6** whenever **core2ai** `package.json` version changes (codegen release or coordinated minor). Skip only if that version is already on npmjs **and** both consumers have registry lockfiles for it.
+**CP C1–C4** whenever **core2ai** `package.json` version changes. Skip only if that version is already on npmjs.
 
-During active core2ai work, **C1–C2** may use sibling link locally; **C5–C6** (registry) are still required before consumer CI passes.
+**CP1–CP6** repeat per releasing consumer (api2ai, then db2ai if both ship).
+
+```
+C1 → C2 → C3 → npmjs → C4 → CP1 → CP2 commit → CP3 prepare → CP4 build → CP5 test → CP6 release
+```
 
 ---
 
@@ -56,53 +59,41 @@ During active core2ai work, **C1–C2** may use sibling link locally; **C5–C6*
 Agent: `git status` in **core2ai**, **api2ai**, **db2ai**.
 
 - **Stop** if dirty before release work — **repo + commit message** per repo (IDE).
-- **Exception:** after **CP1–CP2** until **CP3** push, the releasing consumer may stay dirty (version bump ± regenerated demos from `vsix:prepare`) — expected.
-- **Exception:** after **C5** until **C6** push, both consumers may stay dirty (registry pin + lockfile) — expected.
+- **Exception:** after **CP1** until **CP2** push, the releasing consumer may stay dirty (pin + CHANGELOG + version bump) — expected.
+- **Exception:** after **CP3**, tree should be clean unless prepare surfaced a fix — resolve before **CP4**.
 
-→ **CP C1** (if core2ai bump needed) or **CP1**
-
----
-
-## CP C — core2ai npm publish + consumer pin
-
-**@toolfactory.dev/core** publishes to **npmjs** via **Git tag** — not manual `npm publish` in normal flow.
-
-Workflow: [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml) — on push of tag `v*`: `npm ci` → tag/version check → `check` → `test` → `npm publish --provenance`.
-
-```
-C1 bump → C2 commit → C3 tag push → npmjs → C4 verify → C5 sync:npm → C6 commit consumers → CP1…
-```
-
-Tag **`vX.Y.Z`** must match **`package.json` `version`** (`v1.0.0-rc.1` ↔ `1.0.0-rc.1`). Mismatch fails the publish workflow.
+→ **CP C1** (if core2ai bump needed) or **CP1** (consumer)
 
 ---
 
-### C1 — Bump + verify (agent)
+## CP C — core2ai npm publish
+
+**@toolfactory.dev/core** publishes to **npmjs** via **Git tag**.
+
+Workflow: [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml) — tag `v*`: `npm ci` → version check → `check` → `test` → `npm publish --provenance`.
+
+Tag **`vX.Y.Z`** must match **`package.json` `version`**.
+
+### C1 — CHANGELOG + bump + verify (agent)
 
 From **core2ai** root:
 
 ```bash
+# Agent: add ## [X.Y.Z] - YYYY-MM-DD to CHANGELOG.md (move [Unreleased] content)
 npm run version -- X.Y.Z
+# bumps package.json and runs npm install (syncs package-lock.json version)
 npm run build && npm run check && npm test
 ```
 
-CHANGELOG should already have a `[X.Y.Z]` section (date on release day).
-
 **End C1:** stop → **C2**
 
----
+### C2 — Commit + push core2ai (user)
 
-### C2 — Commit core2ai (user)
-
-| Repo      | Message (example)                    |
-| --------- | ------------------------------------ |
-| `core2ai` | `Release v1.0.0-rc.1: hooks codegen` |
-
-Push **`main`** (or your default branch) **before** tagging.
+| Repo      | Message (example)                                              |
+| --------- | -------------------------------------------------------------- |
+| `core2ai` | `Release v1.0.0-rc.2: MCP Option B hosts, startup banners` |
 
 **End C2:** stop → **C3**
-
----
 
 ### C3 — Tag + push tag (user)
 
@@ -111,137 +102,94 @@ git tag vX.Y.Z
 git push origin vX.Y.Z
 ```
 
-- Pushes **only the tag** — commit from **C2** must already be on the remote.
-- GitHub Action **publish** publishes `@toolfactory.dev/core@X.Y.Z` to **registry.npmjs.org**.
-- **Do not** re-use a tag/npm version — npm rejects duplicate publishes. Bump to a new version (e.g. `rc.2`) instead.
-
-Emergency local publish (no CI): `npm publish` from **core2ai** root after build — prefer **C3** tag flow.
-
 **End C3:** stop → **C4**
-
----
 
 ### C4 — Confirm npm publish (user)
 
-1. GitHub → **core2ai** → Actions → workflow **publish** → green.
-2. Or terminal: `npm view @toolfactory.dev/core version` → `X.Y.Z`.
+`npm view @toolfactory.dev/core version` → `X.Y.Z`, or Actions **publish** green.
 
-If publish failed: read Action log, fix, **new** version + commit + **new** tag. Never force-push published tags.
-
-**End C4:** stop → **C5**
+**End C4:** stop → **CP1**
 
 ---
 
-### C5 — Registry pin sync (agent)
+## CP1 — Consumer: pin + CHANGELOG + VSIX version (agent)
 
-In **api2ai** and **db2ai** roots:
-
-```bash
-npm run sync:core2ai-pin:npm
-# optional explicit version:
-# node scripts/sync-core2ai-pin.mjs --npm X.Y.Z
-```
-
-Confirm in each repo:
-
-- `packages/cli/package.json` → `"@toolfactory.dev/core": "X.Y.Z"`
-- `package-lock.json` → `registry.npmjs.org/.../core-X.Y.Z.tgz`, **no** `"link": true`
-
-**Local dev after C6:** `npm run sync:core2ai-pin` restores sibling `../core2ai` link (optional).
-
-**End C5:** stop → **C6**
-
----
-
-### C6 — Commit consumer pins (user)
-
-One commit per repo (both consumers if both ship):
-
-| Repo     | Message (example)                                              |
-| -------- | -------------------------------------------------------------- |
-| `api2ai` | `Sync @toolfactory.dev/core pin to X.Y.Z for CI (npm registry)` |
-| `db2ai`  | same                                                           |
-
-Push both before expecting green CI on either consumer.
-
-**End C6:** stop → **CP1** (or done if core-only release)
-
----
-
-## CP1 — Consumer VSIX version bump
-
-Ask target **VSIX version** (`X.Y.Z`) — do not guess. VSIX version may differ from **core2ai** library version (e.g. core `1.0.0-rc.1`, VSIX `1.0.0-rc`).
+**One agent step** per releasing consumer. Ask target **VSIX version** (`X.Y.Z`) — do not guess. VSIX version may differ from **core** (e.g. core `1.0.0-rc.2`, VSIX `1.0.0-rc.1`).
 
 From the **releasing consumer** root:
 
-```bash
-npm run vsix:version -- X.Y.Z
-```
+1. **Registry pin** (skip if already on published core version):
 
-Updates root + `packages/cli`, `packages/language`, `packages/extension` `package.json` (workspace semver only — **not** `@toolfactory.dev/core` pin; use **CP C** for that).
+    ```bash
+    npm run sync:core2ai-pin:npm
+    # optional: node scripts/sync-core2ai-pin.mjs --npm X.Y.Z
+    ```
 
-Do **not** use `npm version` or single-file edits — misaligns VSIX filename vs package versions.
+    Confirm: `packages/cli/package.json` + `package-lock.json` → `registry.npmjs.org/.../core-X.Y.Z.tgz`, **no** `"link": true` on core.
 
-Confirm all four consumer workspace `package.json` files show the same `X.Y.Z`.
+2. **CHANGELOG** — add `## [VSIX.X.Y.Z] - YYYY-MM-DD` with user-facing changes (features on `main`, pin note if useful). Clear `[Unreleased]`.
 
-If core2ai was bumped but **C5–C6** not done: run **C5** first — CI needs registry lockfiles, not sibling link.
+3. **VSIX version bump:**
+
+    ```bash
+    npm run vsix:version -- X.Y.Z
+    ```
+
+    Updates root + `packages/cli`, `packages/language`, `packages/extension` — **not** `@toolfactory.dev/core` (step 1). Runs `npm install` so `package-lock.json` workspace `version` fields match.
+
+Confirm all four consumer workspace `package.json` files show the same VSIX `X.Y.Z`.
+
+If **C4** not done: stop — npm must have the core version first.
 
 **End CP1:** stop → **CP2**
 
 ---
 
-## CP2 — Verify pipeline
+## CP2 — Commit + push consumer release (user)
 
-Agent runs in the **releasing consumer** (api2ai or db2ai):
+**One commit** per releasing consumer:
 
-1. If **core2ai** `src/codegen/**` changed: `npm run build && npm run check` in **core2ai** (or confirm `npm run watch` was running) — optional prelude if not done in **C1**.
-2. From consumer root: **`npm run vsix:prepare`** — runs `langium:generate`, `build`, `install:demos`, `generate:all`, `build:generated` (demos), `check`, and workspace tests (language, cli, demos). Does **not** package a VSIX.
+- `packages/cli/package.json` (core pin)
+- `package-lock.json`
+- `CHANGELOG.md`
+- root + `packages/cli` + `packages/language` + `packages/extension` `package.json` (VSIX version)
 
-Manual equivalent (same order as `packages/extension/scripts/vsix-prepare.mjs`):
+Do **not** include `.vsix` or `dist/mcp/`.
 
-```bash
-npm run langium:generate && npm run build
-npm run install:demos
-npm run generate:all
-npm run build:generated --prefix packages/extension/demos
-npm run check
-npm run test --workspace packages/language
-npm run test --workspace packages/cli
-npm run test --prefix packages/extension/demos
-```
+| Repo     | Message (example)                                      |
+| -------- | ------------------------------------------------------ |
+| `api2ai` | `Release v1.0.0-rc.1: MCP servers, build:mcp, demos` |
+| `db2ai`  | same pattern                                           |
 
-**Not enough before `vsix:build`:** `npm run build --workspace packages/extension` alone — missing regenerate, demos JS, check, and tests.
+Push before **CP3**.
 
-**Do not** re-run `generate:all` / `check` / `npm test` after a green `vsix:prepare` unless you skipped CP2 or changed DSL/generator between CP2 and CP3.
-
-**End CP2:** stop if red; else → **CP3**
+**End CP2:** stop → **CP3**
 
 ---
 
-## CP3 — Commit + push (user)
+## CP3 — Verify (`vsix:prepare`)
 
-**One commit** per releasing consumer — feature/fix changes, VSIX version bumps, and any regenerated `generated/**/*.ts` from `vsix:prepare`, then **push**.
+Agent runs in the **releasing consumer**:
 
-| Repo     | Message (example)                |
-| -------- | -------------------------------- |
-| `api2ai` | `Release v1.0.0-rc: <one line why>` |
-| `db2ai`  | `Release v1.0.0-rc: <one line why>` |
+```bash
+npm run vsix:prepare
+```
 
-(core2ai + pin sync already committed in **C2** / **C6**.)
+Runs `langium:generate`, `build`, `install:demos`, `generate:all`, `build:generated`, `check`, workspace tests. Does **not** package a VSIX.
 
-**End CP3:** repos clean and pushed → **CP4**
+If prepare modifies **tracked** files unexpectedly: stop — fix generator/DSL or commit the delta before **CP4** (should be rare after feature merge).
+
+**End CP3:** stop if red; else → **CP4**
 
 ---
 
 ## CP4 — VSIX build
 
-From consumer root:
-
 ```bash
 npm run vsix:build
 ```
 
-Output (local, not committed): `packages/extension/vscode-api2ai-X.Y.Z.vsix` or `vscode-db2ai-X.Y.Z.vsix`.
+Output (local): `packages/extension/vscode-api2ai-X.Y.Z.vsix` or `vscode-db2ai-X.Y.Z.vsix`.
 
 **End CP4:** stop → **CP5**
 
@@ -249,64 +197,54 @@ Output (local, not committed): `packages/extension/vscode-api2ai-X.Y.Z.vsix` or 
 
 ## CP5 — Manual preview (user)
 
-1. Install the **`.vsix`** from CP4; reload window.
-2. Extension Dev Host or copied demo workspace: **`npm run init`**, enable MCP, smoke-test tools.
-3. **db2ai:** Docker required for DB demos.
-4. Optional: repeat `npm run vsix:prepare` only if something failed in preview and you fixed it — then new commit before rebuilding VSIX.
+1. Install **`.vsix`** from CP4; reload window.
+2. Demo workspace: MCP smoke-test.
+3. **db2ai:** Docker for DB demos.
+4. Optional: `/test-all` before **CP6**.
 
-**End CP5:** stop until OK → **CP6** or done.
+**End CP5:** stop until OK → **CP6** or repeat for other consumer.
 
 ---
 
-## CP6 — GitHub release (user, optional)
+## CP6 — GitHub release (user)
 
-Only after **CP5** OK — publish the **same VSIX** you tested.
-
-From consumer root:
+After **CP5** OK — same VSIX file you tested:
 
 ```bash
 npm run vsix:release
 ```
 
-Runs `gh release create` (prerelease) for `vscode-*-X.Y.Z.vsix`. No rebuild.
-
-Repeat **CP0–CP6** for the other consumer if both extensions ship.
+Repeat **CP1–CP6** for the other consumer if both ship.
 
 ---
 
 ## Resume
 
-| User says         | Agent does                         |
-| ----------------- | ---------------------------------- |
-| `guided release`  | CP0 → CP C1 or CP1                 |
-| `release CP C3`   | Remind user: tag + push tag only   |
-| `release CP C5`   | `sync:core2ai-pin:npm` both        |
-| `release CP2`     | CP2 `vsix:prepare` only            |
-| `release CP1`     | CP1 version bump only              |
-| `release CP4`     | CP4 VSIX only                      |
-| `release weiter`  | Next open CP                       |
+| User says        | Agent does                                      |
+| ---------------- | ----------------------------------------------- |
+| `guided release` | CP0 → CP C1 or CP1                              |
+| `release CP C3`  | Remind: tag + push tag only                     |
+| `release CP1`    | pin + CHANGELOG + `vsix:version` for one consumer |
+| `release CP3`    | `vsix:prepare` only                             |
+| `release CP4`    | `vsix:build` only                               |
+| `release weiter` | Next open CP                                    |
 
 ---
 
 ## Troubleshooting
 
-| Problem                                   | Action                                                                 |
-| ----------------------------------------- | ---------------------------------------------------------------------- |
-| CI `Cannot find module …/core/codegen`    | **C4** publish done? **C5–C6** registry lockfiles committed?           |
-| CI `npm ci` 404 `@toolfactory.dev/core`   | Version not on npmjs yet — finish **C3–C4** first                      |
-| publish workflow: tag/version mismatch    | Tag must be `v` + exact `package.json` version                       |
-| npm publish: version already exists       | Bump new version (**C1**), commit (**C2**), new tag (**C3**)           |
-| VSIX wrong version in filename            | **CP1** bump, **CP3** commit, **CP4** rebuild                          |
-| `vsix:release` missing file               | Run **CP4** (`vsix:build`) first                                       |
-| Prepare fails after bump                  | Fix code/generator; version may stay — re-run CP2                      |
-| MCP broken after core2ai change           | Rebuild core2ai (`watch`/`build`), **CP2** again, restart MCP          |
-| Check fails on generated output           | Fix generator or DSL — never hand-edit `generated/**` (see rules)      |
+| Problem                                | Action                                                          |
+| -------------------------------------- | --------------------------------------------------------------- |
+| CI cannot find `…/core/codegen`        | **C4** done? **CP2** committed registry pin?                    |
+| CI 404 `@toolfactory.dev/core`         | Finish **C3–C4** first                                          |
+| VSIX wrong filename version            | **CP1** bump, **CP2** commit, **CP4** rebuild                   |
+| Prepare fails after **CP2**            | Fix code; re-run **CP3** — version/CHANGELOG usually stay       |
+| Prepare dirties `generated/**`         | Commit fix or re-run generate; then **CP4**                     |
+| MCP broken after core publish          | **CP3** again, restart MCP                                      |
 
 ## Reference
 
-- core2ai publish workflow: [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml)
+- core2ai publish: [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml)
 - Link vs registry: [core2ai-link-vs-registry/SKILL.md](../core2ai-link-vs-registry/SKILL.md)
-- Build/link: [`.cursor/rules/core2ai-build.mdc`](../../.cursor/rules/core2ai-build.mdc)
-- core2ai library version: `npm run version -- X.Y.Z` → `scripts/bump-version.mjs`
-- Consumer pin sync: `sync:core2ai-pin` (sibling) / `sync:core2ai-pin:npm` (registry) → `scripts/sync-core2ai-pin.mjs`
-- Consumers: `vsix:version`, `vsix:prepare`, `vsix:build`, `vsix:release` in sibling api2ai/db2ai
+- CHANGELOG policy: [docs/development/changelog-policy.md](../../docs/development/changelog-policy.md)
+- Consumers: `vsix:version`, `vsix:prepare`, `vsix:build`, `vsix:release`

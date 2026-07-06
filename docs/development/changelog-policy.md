@@ -76,10 +76,10 @@ Each consumer repo pins `@toolfactory.dev/core` (sibling checkout or npm). When 
 
 Extends [guided-release](../../.cursor/skills/guided-release/SKILL.md):
 
-1. Version bump (`vsix:version` / CP1)
-2. Add `## [X.Y.Z] - YYYY-MM-DD` to each affected `CHANGELOG.md`
-3. Commit, build VSIX, copy relevant sections to GitHub release notes
-4. Before **1.0** or **1.0.0-rc** tag: `npm run check` in affected repos + full **`/test-all`** (see [testing strategy](../architecture/05-testing-strategy.md))
+1. **core2ai:** CHANGELOG + `npm run version` → commit → tag → npmjs (**C1–C4**)
+2. **Consumer (per api2ai / db2ai):** one agent step — registry pin + CHANGELOG + `vsix:version` (**CP1**); **one commit** (**CP2**); then `vsix:prepare` → `vsix:build` → manual test → `vsix:release` (**CP3–CP6**)
+3. Copy relevant CHANGELOG sections to GitHub release notes
+4. Before **1.0** or **1.0.0-rc** tag: `npm run check` in affected repos + full **`/test-all`**
 
 ---
 
