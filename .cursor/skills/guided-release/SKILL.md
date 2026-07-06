@@ -3,9 +3,10 @@ name: guided-release
 description: >-
     Guided VSIX release for api2ai and db2ai (optional core2ai tag). Canonical skill
     lives in core2ai only (sibling repos api2ai/db2ai). One checkpoint per turn: clean git,
-    version bump, verify (vsix:prepare), commit, VSIX build, manual test, GitHub release.
-    Use for guided release, release, release CPn, or release weiter. Never git commit/push/tag/gh
-    unless the user explicitly asks. For commits: repo + message only (user checks in via IDE).
+    version bump, vsix:prepare, commit (incl. generated mcpServerVersion), VSIX build,
+    manual test, GitHub release. Use for guided release, release, release CPn, or release
+    weiter. Never git commit/push/tag/gh unless the user explicitly asks. For commits: repo
+    + message only (user checks in via IDE).
 ---
 
 # Guided release
@@ -22,10 +23,10 @@ description: >-
 2. **User commits in the IDE** — at commit CPs, output only **repo** + **commit message** (+ optional one-line note). No `git add` lists.
 3. **One checkpoint per turn** — status table with `[x]` / `[ ]`; wait for `release weiter` or manual test OK.
 4. **Agent may run** `npm run …` — not git.
-5. **Version before VSIX** — consumer VSIX version bump is **committed** (**CP2**) **before** `vsix:build` (VSIX filename = committed version).
+5. **Version before VSIX build** — `vsix:version` in **CP1**; release **commit** in **CP3** before **CP4** `vsix:build` (VSIX filename = committed version).
 6. **`.vsix` is local** — not committed; GitHub upload only via `vsix:release` after manual preview.
-7. **Consumer release commit (CP2)** bundles **registry pin + CHANGELOG + VSIX version** in one commit — not split across pin-only and release commits.
-8. **`vsix:prepare` after CP2** — runs **after** the release commit to verify and to build the VSIX; feature code and `generated/**` should already be on `main` from the feature merge. If prepare dirties tracked files, fix upstream or add a follow-up commit before **CP4** (rare).
+7. **Consumer release commit (CP3)** bundles **registry pin + CHANGELOG + VSIX version + `generated/**`** (`mcpServerVersion` in `*-tools.ts`) — one commit, not split.
+8. **`vsix:prepare` before commit** — **CP2** runs `generate:all`; that rewrites `export const mcpServerVersion = '…'` from workspace `package.json`. **Do not commit before CP2** or generated tools stay on the old version.
 9. **core2ai publish order** — during hacking: sibling link (`sync:core2ai-pin`). **After** npm publish (**C4**): registry pin in **CP1** (`sync:core2ai-pin:npm`) **before** consumer VSIX work. Never commit sibling-linked lockfiles when CI expects registry.
 
 ## Checkpoint map
@@ -38,8 +39,8 @@ description: >-
 | **C3** | Tag `vX.Y.Z` + push tag → npmjs                              | User  |
 | **C4** | Confirm npm publish (Actions / npm view)                       | User  |
 | **1**  | Consumer: pin + CHANGELOG + `vsix:version`                   | Agent |
-| **2**  | Commit + push consumer release                               | User  |
-| **3**  | `vsix:prepare` (verify)                                      | Agent |
+| **2**  | `vsix:prepare` (verify + regenerate demos)                 | Agent |
+| **3**  | Commit + push consumer release                               | User  |
 | **4**  | `vsix:build`                                                 | Agent |
 | **5**  | Manual preview                                               | User  |
 | **6**  | GitHub release (`vsix:release`)                            | User  |
@@ -49,7 +50,7 @@ description: >-
 **CP1–CP6** repeat per releasing consumer (api2ai, then db2ai if both ship).
 
 ```
-C1 → C2 → C3 → npmjs → C4 → CP1 → CP2 commit → CP3 prepare → CP4 build → CP5 test → CP6 release
+C1 → C2 → C3 → npmjs → C4 → CP1 → CP2 prepare → CP3 commit → CP4 build → CP5 test → CP6 release
 ```
 
 ---
@@ -59,8 +60,8 @@ C1 → C2 → C3 → npmjs → C4 → CP1 → CP2 commit → CP3 prepare → CP4
 Agent: `git status` in **core2ai**, **api2ai**, **db2ai**.
 
 - **Stop** if dirty before release work — **repo + commit message** per repo (IDE).
-- **Exception:** after **CP1** until **CP2** push, the releasing consumer may stay dirty (pin + CHANGELOG + version bump) — expected.
-- **Exception:** after **CP3**, tree should be clean unless prepare surfaced a fix — resolve before **CP4**.
+- **Exception:** after **CP1** until **CP3** push, the releasing consumer may stay dirty (pin, CHANGELOG, version bump, then `generated/**` after **CP2**) — expected.
+- **Exception:** after **CP3**, tree should be clean before **CP4**.
 
 → **CP C1** (if core2ai bump needed) or **CP1** (consumer)
 
@@ -141,33 +142,13 @@ Confirm all four consumer workspace `package.json` files show the same VSIX `X.Y
 
 If **C4** not done: stop — npm must have the core version first.
 
+**Do not commit yet** — `generate:all` in **CP2** must run first so `mcpServerVersion` in demo `*-tools.ts` matches.
+
 **End CP1:** stop → **CP2**
 
 ---
 
-## CP2 — Commit + push consumer release (user)
-
-**One commit** per releasing consumer:
-
-- `packages/cli/package.json` (core pin)
-- `package-lock.json`
-- `CHANGELOG.md`
-- root + `packages/cli` + `packages/language` + `packages/extension` `package.json` (VSIX version)
-
-Do **not** include `.vsix` or `dist/mcp/`.
-
-| Repo     | Message (example)                                      |
-| -------- | ------------------------------------------------------ |
-| `api2ai` | `Release v1.0.0-rc.1: MCP servers, build:mcp, demos` |
-| `db2ai`  | same pattern                                           |
-
-Push before **CP3**.
-
-**End CP2:** stop → **CP3**
-
----
-
-## CP3 — Verify (`vsix:prepare`)
+## CP2 — Verify (`vsix:prepare`)
 
 Agent runs in the **releasing consumer**:
 
@@ -177,9 +158,34 @@ npm run vsix:prepare
 
 Runs `langium:generate`, `build`, `install:demos`, `generate:all`, `build:generated`, `check`, workspace tests. Does **not** package a VSIX.
 
-If prepare modifies **tracked** files unexpectedly: stop — fix generator/DSL or commit the delta before **CP4** (should be rare after feature merge).
+**Expected:** `packages/extension/demos/generated/**/tools/*-tools.ts` now export `mcpServerVersion` equal to the VSIX version from **CP1**. Commit those files in **CP3**.
 
-**End CP3:** stop if red; else → **CP4**
+If prepare fails: fix code or generator; re-run **CP2** — version/CHANGELOG from **CP1** usually stay.
+
+**End CP2:** stop if red; else → **CP3**
+
+---
+
+## CP3 — Commit + push consumer release (user)
+
+**One commit** per releasing consumer — **after** green **CP2**:
+
+- `packages/cli/package.json` (core pin)
+- `package-lock.json`
+- `CHANGELOG.md`
+- root + `packages/cli` + `packages/language` + `packages/extension` `package.json` (VSIX version)
+- `packages/extension/demos/generated/**/*.ts` (and `scripts/generated/**` if prepare rewrote them)
+
+Do **not** include `.vsix` or `dist/mcp/`.
+
+| Repo     | Message (example)                                      |
+| -------- | ------------------------------------------------------ |
+| `api2ai` | `Release v1.0.0-rc.1: MCP servers, build:mcp, demos` |
+| `db2ai`  | same pattern                                           |
+
+Push before **CP4**.
+
+**End CP3:** stop → **CP4**
 
 ---
 
@@ -220,14 +226,14 @@ Repeat **CP1–CP6** for the other consumer if both ship.
 
 ## Resume
 
-| User says        | Agent does                                      |
-| ---------------- | ----------------------------------------------- |
-| `guided release` | CP0 → CP C1 or CP1                              |
-| `release CP C3`  | Remind: tag + push tag only                     |
+| User says        | Agent does                                        |
+| ---------------- | ------------------------------------------------- |
+| `guided release` | CP0 → CP C1 or CP1                                |
+| `release CP C3`  | Remind: tag + push tag only                       |
 | `release CP1`    | pin + CHANGELOG + `vsix:version` for one consumer |
-| `release CP3`    | `vsix:prepare` only                             |
-| `release CP4`    | `vsix:build` only                               |
-| `release weiter` | Next open CP                                    |
+| `release CP2`    | `vsix:prepare` only                               |
+| `release CP4`    | `vsix:build` only                                 |
+| `release weiter` | Next open CP                                      |
 
 ---
 
@@ -235,12 +241,12 @@ Repeat **CP1–CP6** for the other consumer if both ship.
 
 | Problem                                | Action                                                          |
 | -------------------------------------- | --------------------------------------------------------------- |
-| CI cannot find `…/core/codegen`        | **C4** done? **CP2** committed registry pin?                    |
+| CI cannot find `…/core/codegen`        | **C4** done? **CP3** committed registry pin?                    |
 | CI 404 `@toolfactory.dev/core`         | Finish **C3–C4** first                                          |
-| VSIX wrong filename version            | **CP1** bump, **CP2** commit, **CP4** rebuild                   |
-| Prepare fails after **CP2**            | Fix code; re-run **CP3** — version/CHANGELOG usually stay       |
-| Prepare dirties `generated/**`         | Commit fix or re-run generate; then **CP4**                     |
-| MCP broken after core publish          | **CP3** again, restart MCP                                      |
+| VSIX wrong filename version            | **CP1** bump, **CP3** commit, **CP4** rebuild                   |
+| `mcpServerVersion` still old on main     | **CP2** before **CP3**; include `generated/**` in release commit |
+| Prepare fails after **CP1**            | Fix code; re-run **CP2** — version/CHANGELOG usually stay       |
+| MCP broken after core publish          | **CP2** again, restart MCP                                      |
 
 ## Reference
 
@@ -248,3 +254,4 @@ Repeat **CP1–CP6** for the other consumer if both ship.
 - Link vs registry: [core2ai-link-vs-registry/SKILL.md](../core2ai-link-vs-registry/SKILL.md)
 - CHANGELOG policy: [docs/development/changelog-policy.md](../../docs/development/changelog-policy.md)
 - Consumers: `vsix:version`, `vsix:prepare`, `vsix:build`, `vsix:release`
+- Generator: `mcpServerVersion` in `packages/cli/src/generator/render-tools-module.ts`

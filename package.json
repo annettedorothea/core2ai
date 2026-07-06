@@ -1,7 +1,7 @@
 {
     "name": "@toolfactory.dev/core",
     "description": "Shared codegen library for api2ai and db2ai",
-    "version": "1.0.0-rc.2",
+    "version": "1.0.0-rc.3",
     "license": "MIT",
     "repository": {
         "type": "git",
@@ -13,6 +13,8 @@
     "type": "module",
     "files": [
         "out",
+        "scripts/npm-prepare.mjs",
+        "scripts/npm-postinstall.mjs",
         "README.md",
         "LICENSE"
     ],
@@ -26,8 +28,9 @@
         "version": "node scripts/bump-version.mjs",
         "build": "tsc -p tsconfig.json",
         "watch": "tsc -p tsconfig.json --watch",
-        "postinstall": "husky",
-        "prepare": "npm run build",
+        "postinstall": "node scripts/npm-postinstall.mjs",
+        "prepare": "node scripts/npm-prepare.mjs",
+        "prepublishOnly": "npm run build",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "typecheck": "tsc -p tsconfig.json --noEmit",

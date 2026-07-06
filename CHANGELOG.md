@@ -12,6 +12,23 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.0.0-rc.3] - 2026-07-06
+
+### Fixed
+
+- **npm install as a dependency:** `postinstall` no longer runs `husky` and `prepare` no longer runs `tsc` when consumers install `@toolfactory.dev/core` (demo workspaces, api2ai/db2ai CLI). Lifecycle scripts run only in the core2ai git checkout (`src/` present).
+- **Publish:** `prepublishOnly` runs `npm run build`; lifecycle helpers ship in the npm tarball (`scripts/npm-prepare.mjs`, `scripts/npm-postinstall.mjs`).
+
+### Changed
+
+- **`npm run version`:** runs `npm install` afterward so `package-lock.json` workspace version stays in sync.
+
+### Upgrade notes
+
+- Consumers on **1.0.0-rc.2** that added `@toolfactory.dev/core` to demo `package.json`: bump pin to **^1.0.0-rc.3** and re-run `npm install` (no `--ignore-scripts` workaround needed).
+
+---
+
 ## [1.0.0-rc.2] - 2026-07-06
 
 ### Added
