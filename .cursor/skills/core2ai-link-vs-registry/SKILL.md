@@ -86,9 +86,11 @@ Commit `packages/cli/package.json` + `package-lock.json` before CI expects regis
 
 See [core2ai-build.mdc](../../rules/core2ai-build.mdc).
 
-## Demos generate: live CLI vs embed
+## Demos generate: explicit cliPath
 
-`packages/extension/demos/scripts/generate.mjs` must prefer **`packages/cli/bin/cli.js`** (live monorepo CLI) over `packages/extension/out/embed-*/cli.cjs` while hacking codegen. Stale embed → old generated hook maps even when link mode is correct.
+`project-generate.config.json` sets **`cliPath`** (monorepo default: `../../cli/bin/cli.js`). `generate.mjs` uses that path or `${CLI_ENV_VAR}` — no extension-folder scan.
+
+`createDemoWorkspace` overwrites `cliPath` with the installed VSIX embed (`out/embed-*/cli.cjs`). Hand-copied demo folders: set `cliPath` manually or recreate via the extension command.
 
 ## Release coordination
 
