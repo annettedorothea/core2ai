@@ -12,6 +12,20 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.0.0-rc.4] - 2026-07-07
+
+### Changed
+
+- **Hook stubs:** one file per hook export name (`checkToolAccessFor*` / `prepareToolCallFor*`); generated imports always follow DSL flags (write-once stub files unchanged)
+- **Docs:** demo start workflow (`start:all` / `start:mcp` / `start:fixtures`), Cursor integration, MCP hosts, MCP Inspector, testing policy
+
+### Upgrade notes
+
+- Split combined hook stub files in consumer demos; delete legacy `${toolName}.ts` stubs; run `generate:all` + `build:generated`
+- After publish: `npm run sync:core2ai-pin:npm` in api2ai/db2ai before consumer VSIX release
+
+---
+
 ## [1.0.0-rc.3] - 2026-07-06
 
 ### Fixed
