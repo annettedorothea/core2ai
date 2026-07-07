@@ -438,6 +438,7 @@ Example:
 
 ```text
 cursor://anysphere.cursor-mcp/oauth/callback
+http://localhost:8787/callback
 http://localhost:6274/oauth/callback
 http://localhost:6274/oauth/callback/debug
 http://127.0.0.1:6274/oauth/callback
@@ -503,25 +504,29 @@ See [Auth and Hooks](../authoring/auth-and-hooks.md) for details.
 
 Demo workspaces start MCP hosts with **foreground** as the default: each host prints a startup banner (via `loggingAdapter.banner()`), and the terminal stays attached until Ctrl+C.
 
-| Workspace | Default start                               | Detached (no banners, terminal free) |
-| --------- | ------------------------------------------- | ------------------------------------ |
-| api2ai    | `npm run start`                             | `npm run start:background`           |
-| db2ai     | `npm run start:all` (alias `npm run start`) | `npm run start:background`           |
+| Workspace | MCP (`start:mcp`, alias `start`) — foreground | Full stack (`start:all`) — foreground | Fixtures only (`start:fixtures`) — background |
+| --------- | --------------------------------------------- | ------------------------------------- | --------------------------------------------- |
+| api2ai    | `npm run start` / `npm run start:mcp`         | `npm run start:all`                   | `npm run start:fixtures`                      |
+| db2ai     | `npm run start` / `npm run start:mcp`         | `npm run start:all`                   | `npm run start:fixtures`                      |
 
-The orchestrator prints a short summary (`printStartMcpSummary`): counts, skipped/warning lines, and compact URL lines in background mode only.
+The orchestrator prints a short summary (`printStartMcpSummary`) after MCP hosts start.
 
 ### api2ai
 
 ```bash
 npm run build:generated
-npm run start
+npm run start:all    # full stack (/test-all, fresh clone)
+npm run start:mcp    # MCP only after fixtures are up (alias: npm run start)
+npm run start:fixtures   # mock APIs / DBs only (background)
 ```
 
 ### db2ai
 
 ```bash
 npm run build:generated
-npm run start:all
+npm run start:all    # full stack (/test-all, fresh clone)
+npm run start:mcp    # MCP only after DBs/IdP are up (alias: npm run start)
+npm run start:fixtures   # Docker DBs + IdP only (background)
 ```
 
 Ports and URLs are configured in:

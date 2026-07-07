@@ -1,45 +1,48 @@
 import { describe, expect, test } from 'vitest';
 import { renderInvokeAuthPipeline } from '../src/codegen/auth-pipeline-render.js';
 import {
+    renderCheckToolAccessStubFileContent,
     renderPrepareToolCallHooksMap,
-    renderToolHookStubFileContent,
-    type ToolHookStubSpec
+    renderPrepareToolCallStubFileContent
 } from '../src/codegen/auth-stub-bootstrap.js';
 
 const toolsModuleTsPath = '/project/generated/api2ai/tools/demo-tools.ts';
-const hookStubTsPath = '/project/src/hooks/api2ai/demo-tools/listItems.ts';
+const prepareStubTsPath = '/project/src/hooks/api2ai/demo-tools/prepareToolCallForListItems.ts';
+const checkStubTsPath = '/project/src/hooks/api2ai/demo-tools/checkToolAccessForListItems.ts';
 
-function publicPrepareSpec(): ToolHookStubSpec {
-    return { toolName: 'listItems', checkToolAccess: false, prepareToolCall: true, access: 'public' };
-}
-
-function protectedPrepareSpec(): ToolHookStubSpec {
-    return { toolName: 'listItems', checkToolAccess: false, prepareToolCall: true, access: 'protected' };
-}
-
-describe('renderToolHookStubFileContent', () => {
+describe('renderPrepareToolCallStubFileContent', () => {
     test('public prepare stub has no credential param', () => {
-        const content = renderToolHookStubFileContent(
+        const content = renderPrepareToolCallStubFileContent(
             'listItems',
-            publicPrepareSpec(),
-            hookStubTsPath,
+            'public',
+            prepareStubTsPath,
             toolsModuleTsPath
         );
         expect(content).not.toContain('ModuleCredentials');
         expect(content).toContain('export function prepareToolCallForListItems(options: InvokeOptions): InvokeOptions');
+        expect(content).toContain('prepareToolCallForListItems.ts');
     });
 
     test('protected prepare stub requires credential param', () => {
-        const content = renderToolHookStubFileContent(
+        const content = renderPrepareToolCallStubFileContent(
             'listItems',
-            protectedPrepareSpec(),
-            hookStubTsPath,
+            'protected',
+            prepareStubTsPath,
             toolsModuleTsPath
         );
         expect(content).not.toContain('ModuleCredentials');
         expect(content).toContain(
             'export function prepareToolCallForListItems(options: InvokeOptions, credential: string): InvokeOptions'
         );
+    });
+});
+
+describe('renderCheckToolAccessStubFileContent', () => {
+    test('names stub file after export function', () => {
+        const content = renderCheckToolAccessStubFileContent('listItems', checkStubTsPath, toolsModuleTsPath);
+        expect(content).toContain('export function checkToolAccessForListItems(credential: string): void');
+        expect(content).toContain('checkToolAccessForListItems.ts');
+        expect(content).not.toContain('InvokeOptions');
     });
 });
 

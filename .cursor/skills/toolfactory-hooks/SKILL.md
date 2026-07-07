@@ -62,10 +62,12 @@ auth {
 |----------|--------|
 | Verify-Stub-Datei | `verifyGithubCredential.ts` (singular **Credential**) |
 | Verify-Funktion | `verifyGithubCredential` → export as `verifyCredential` |
-| Access-Stub | `checkToolAccessForListBookings(credential)` |
-| Prepare-Stub | `prepareToolCallForListBookings(options, credential?)` |
+| Access-Stub-Datei | `checkToolAccessForListBookings.ts` (filename = export name) |
+| Prepare-Stub-Datei | `prepareToolCallForListBookings.ts` (filename = export name) |
+| Access-Funktion | `checkToolAccessForListBookings(credential)` |
+| Prepare-Funktion | `prepareToolCallForListBookings(options, credential?)` |
 
-Stub-Pfad: `src/hooks/{api2ai\|db2ai}/<module>-tools/`.
+Stub-Pfad: `src/hooks/{api2ai\|db2ai}/<module>-tools/`. One hook function per file; write-once on generate; imports in `*-tools.ts` always follow DSL.
 
 ## Pipeline tiers (codegen)
 

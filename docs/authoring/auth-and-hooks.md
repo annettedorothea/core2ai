@@ -66,12 +66,13 @@ After generation, hand-written hooks live beside the demo/project workspace:
 
 ```text
 src/hooks/api2ai/<module>-tools/
-    verifyGithubCredential.ts     ← when auth.hooks.verifyCredential (api2ai)
-    listBookings.ts               ← checkToolAccess + prepareToolCall exports when declared
+    verifyGithubCredential.ts              ← when auth.hooks.verifyCredential (api2ai)
+    checkToolAccessForListBookings.ts      ← one file per hook export (write-once)
+    prepareToolCallForListBookings.ts
 
 src/hooks/db2ai/<module>-tools/
-    verifyPagilaPostgresqlCredential.ts   ← when auth keyword present (db2ai)
-    listCustomerOrders.ts                 ← per-tool hook exports
+    verifyPagilaPostgresqlCredential.ts    ← when auth keyword present (db2ai)
+    prepareToolCallForListActors.ts        ← filename matches export function name
 ```
 
 | DSL declaration                        | Generated import / map           | Typical export                                                   |

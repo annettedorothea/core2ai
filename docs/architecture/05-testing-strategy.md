@@ -80,7 +80,7 @@ npm run build
 ## Release checklist
 
 ```text
-vsix:prepare → vsix:build → VSIX install → Create demo workspace → npm install && npm run start → /test-all
+vsix:prepare → vsix:build → VSIX install → Create demo workspace → npm install && npm run start:all → /test-all
 ```
 
 ---

@@ -23,10 +23,10 @@ export function resolveHookStubDir(projectRoot: string, toolsModuleTsPath: strin
     return path.join(projectRoot, 'src', 'hooks', hostProduct, mcpModuleName);
 }
 
-function hookStubRelativePath(toolsModuleTsPath: string, fileBase: string): string {
+function hookStubRelativePath(toolsModuleTsPath: string, exportName: string): string {
     const hostProduct = resolveHostProductFromGeneratedToolsPath(toolsModuleTsPath);
     const mcpModuleName = resolveMcpModuleNameFromToolsModule(toolsModuleTsPath);
-    return `src/hooks/${hostProduct}/${mcpModuleName}/${fileBase}.ts`;
+    return `src/hooks/${hostProduct}/${mcpModuleName}/${exportName}.ts`;
 }
 
 function resolveVerifyStubRelPath(toolsModuleTsPath: string): string {
@@ -34,58 +34,71 @@ function resolveVerifyStubRelPath(toolsModuleTsPath: string): string {
     return hookStubRelativePath(toolsModuleTsPath, names.fileBase);
 }
 
-function renderToolHookStubBody(toolName: string, spec: ToolHookStubSpec, toolsModuleTsPath: string): string {
-    const lines: string[] = [];
-    if (spec.checkToolAccess) {
-        const fn = checkToolAccessExportName(toolName);
-        lines.push(`export function ${fn}(credential: string): void {
+export function renderCheckToolAccessStubFileContent(
+    toolName: string,
+    hookStubTsPath: string,
+    toolsModuleTsPath: string
+): string {
+    const fn = checkToolAccessExportName(toolName);
+    return `/**
+ * checkToolAccess hook for "${toolName}" (write-once — implement ${fn}).
+ */
+export function ${fn}(credential: string): void {
     void credential;
-}`);
-    }
-    if (spec.prepareToolCall) {
-        const fn = prepareToolCallExportName(toolName);
-        if (spec.access === 'public') {
-            lines.push(`export function ${fn}(options: InvokeOptions): InvokeOptions {
-    void options;
-    throw new Error('Implement ${fn} in ${hookStubRelativePath(toolsModuleTsPath, toolName)}');
-}`);
-        } else {
-            lines.push(`export function ${fn}(options: InvokeOptions, credential: string): InvokeOptions {
-    void options;
-    void credential;
-    throw new Error('Implement ${fn} in ${hookStubRelativePath(toolsModuleTsPath, toolName)}');
-}`);
-        }
-    }
-    return lines.join('\n\n');
+    throw new Error('Implement ${fn} in ${hookStubRelativePath(toolsModuleTsPath, fn)}');
+}
+`;
 }
 
+export function renderPrepareToolCallStubFileContent(
+    toolName: string,
+    access: 'public' | 'protected',
+    hookStubTsPath: string,
+    toolsModuleTsPath: string
+): string {
+    const fn = prepareToolCallExportName(toolName);
+    const importSpec = relativeJsImportPath(hookStubTsPath, toolsModuleTsPath);
+    const signature =
+        access === 'public'
+            ? `export function ${fn}(options: InvokeOptions): InvokeOptions`
+            : `export function ${fn}(options: InvokeOptions, credential: string): InvokeOptions`;
+    const voidLines =
+        access === 'public'
+            ? `    void options;`
+            : `    void options;
+    void credential;`;
+    return `/**
+ * prepareToolCall hook for "${toolName}" (write-once — implement ${fn}).
+ */
+import type { InvokeOptions } from '${importSpec}';
+
+${signature} {
+${voidLines}
+    throw new Error('Implement ${fn} in ${hookStubRelativePath(toolsModuleTsPath, fn)}');
+}
+`;
+}
+
+/** @deprecated Use renderCheckToolAccessStubFileContent / renderPrepareToolCallStubFileContent. */
 export function renderToolHookStubFileContent(
     toolName: string,
     spec: ToolHookStubSpec,
     hookStubTsPath: string,
     toolsModuleTsPath: string
 ): string {
-    const importSpec = relativeJsImportPath(hookStubTsPath, toolsModuleTsPath);
-    const header =
-        spec.checkToolAccess && spec.prepareToolCall
-            ? `/**
- * checkToolAccess + prepareToolCall hooks for "${toolName}" (write-once — implement hooks).
- */`
-            : spec.checkToolAccess
-              ? `/**
- * checkToolAccess hook for "${toolName}" (write-once — override ${checkToolAccessExportName(toolName)} for role gates).
- */`
-              : `/**
- * prepareToolCall hook for "${toolName}" (write-once — implement ${prepareToolCallExportName(toolName)}).
- */`;
-    return `${header}
-import type { InvokeOptions } from '${importSpec}';
-
-${renderToolHookStubBody(toolName, spec, toolsModuleTsPath)}
-`;
+    const parts: string[] = [];
+    if (spec.checkToolAccess) {
+        parts.push(renderCheckToolAccessStubFileContent(toolName, hookStubTsPath, toolsModuleTsPath).trimEnd());
+    }
+    if (spec.prepareToolCall) {
+        parts.push(
+            renderPrepareToolCallStubFileContent(toolName, spec.access, hookStubTsPath, toolsModuleTsPath).trimEnd()
+        );
+    }
+    return `${parts.join('\n\n')}\n`;
 }
 
+/** Map export name → absolute stub path (one file per hook function). */
 export async function ensureToolHookStubsAtProjectRoot(
     projectRoot: string,
     toolSpecs: readonly ToolHookStubSpec[],
@@ -98,18 +111,30 @@ export async function ensureToolHookStubsAtProjectRoot(
 
     const importPaths = new Map<string, string>();
     for (const spec of toolSpecs) {
-        if (!spec.checkToolAccess && !spec.prepareToolCall) {
-            continue;
+        if (spec.checkToolAccess) {
+            const fn = checkToolAccessExportName(spec.toolName);
+            const tsPath = path.join(hookDir, `${fn}.ts`);
+            if (!fs.existsSync(tsPath)) {
+                fs.writeFileSync(
+                    tsPath,
+                    renderCheckToolAccessStubFileContent(spec.toolName, tsPath, toolsModuleTsPath),
+                    'utf-8'
+                );
+            }
+            importPaths.set(fn, tsPath);
         }
-        const tsPath = path.join(hookDir, `${spec.toolName}.ts`);
-        if (!fs.existsSync(tsPath)) {
-            fs.writeFileSync(
-                tsPath,
-                renderToolHookStubFileContent(spec.toolName, spec, tsPath, toolsModuleTsPath),
-                'utf-8'
-            );
+        if (spec.prepareToolCall) {
+            const fn = prepareToolCallExportName(spec.toolName);
+            const tsPath = path.join(hookDir, `${fn}.ts`);
+            if (!fs.existsSync(tsPath)) {
+                fs.writeFileSync(
+                    tsPath,
+                    renderPrepareToolCallStubFileContent(spec.toolName, spec.access, tsPath, toolsModuleTsPath),
+                    'utf-8'
+                );
+            }
+            importPaths.set(fn, tsPath);
         }
-        importPaths.set(spec.toolName, tsPath);
     }
 
     return importPaths;
@@ -216,40 +241,38 @@ export function renderPrepareToolCallHooksMap(entries: readonly PrepareToolCallH
     return `const prepareToolCallHooks${typeAnnotation} = {\n${mapEntries.join(',\n')}\n};`;
 }
 
-function stubExportsFunction(stubContent: string, fn: string): boolean {
-    return stubContent.includes(`export function ${fn}`) || stubContent.includes(`export async function ${fn}`);
-}
-
 export function renderCheckToolAccessHookImports(
     tsPath: string,
     stubPaths: Map<string, string>,
     checkToolAccessToolNames: readonly string[]
 ): string {
-    const allowed = new Set(checkToolAccessToolNames);
     const lines: string[] = [];
-    for (const [toolName, absStub] of stubPaths) {
-        if (!allowed.has(toolName)) {
+    for (const toolName of checkToolAccessToolNames) {
+        const fn = checkToolAccessExportName(toolName);
+        const absStub = stubPaths.get(fn);
+        if (!absStub) {
             continue;
         }
         const rel = relativeJsImportPath(tsPath, absStub);
-        const fn = checkToolAccessExportName(toolName);
-        const stubContent = fs.existsSync(absStub) ? fs.readFileSync(absStub, 'utf-8') : '';
-        if (stubExportsFunction(stubContent, fn)) {
-            lines.push(`import { ${fn} } from '${rel}';`);
-        }
+        lines.push(`import { ${fn} } from '${rel}';`);
     }
     return lines.join('\n');
 }
 
-export function renderPrepareToolCallHookImports(tsPath: string, stubPaths: Map<string, string>): string {
+export function renderPrepareToolCallHookImports(
+    tsPath: string,
+    stubPaths: Map<string, string>,
+    prepareToolCallToolNames: readonly string[]
+): string {
     const lines: string[] = [];
-    for (const [toolName, absStub] of stubPaths) {
-        const rel = relativeJsImportPath(tsPath, absStub);
+    for (const toolName of prepareToolCallToolNames) {
         const fn = prepareToolCallExportName(toolName);
-        const stubContent = fs.existsSync(absStub) ? fs.readFileSync(absStub, 'utf-8') : '';
-        if (stubExportsFunction(stubContent, fn)) {
-            lines.push(`import { ${fn} } from '${rel}';`);
+        const absStub = stubPaths.get(fn);
+        if (!absStub) {
+            continue;
         }
+        const rel = relativeJsImportPath(tsPath, absStub);
+        lines.push(`import { ${fn} } from '${rel}';`);
     }
     return lines.join('\n');
 }

@@ -242,7 +242,8 @@ inside the Inspector.
 Start the host:
 
 ```bash
-node scripts/start-mcp-http.mjs open-meteo
+npm run mcp:inspect -- open-meteo
+# or: npm run mcp:inspect -- open-meteo
 ```
 
 Start the Inspector:

@@ -154,7 +154,7 @@ See demo files: `pagila-postgresql.db2ai`, `sakila-mysql.db2ai`, `animals-sqlser
 ## When validation is weak or offline
 
 1. Add complete `params` with `description`, `example`, and `type`.
-2. Start the matching demo database (`npm run start:pagila-postgresql`, etc.).
+2. Start the matching demo stack (`npm run start:all`, or `npm run mcp:inspect -- <demo>` for one host).
 3. Ensure `.env` URL matches the declared dialect prefix.
 4. Regenerate after DSL changes (`generate:all`, `build:generated`).
 5. Run `/test-all` (skill `db2ai-test-all-mcp`) before release.

@@ -12,7 +12,7 @@ End-to-end coverage (invoke, auth, stdio/HTTP MCP hosts) is validated **manually
 - api2ai: skill `api2ai-test-all-mcp` in `packages/extension/demos/.cursor/skills/`
 - db2ai: skill `db2ai-test-all-mcp` in `packages/extension/demos/.cursor/skills/`
 
-Prerequisites: `npm run start` in the demos workspace, MCP servers enabled in Cursor, entries in `.cursor/mcp.json`.
+Prerequisites: `npm run start:all` in the demos workspace (or `npm run start:mcp` when fixtures/DBs are already up), MCP servers enabled in Cursor, entries in `.cursor/mcp.json`.
 
 **Do not** propose replacing or duplicating this with automated integration tests unless the user explicitly asks.
 

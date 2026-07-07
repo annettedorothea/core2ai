@@ -22,13 +22,7 @@ Typical commands:
 npm run build:generated
 ```
 
-or:
-
-```bash
-npm run start
-```
-
-For `db2ai` demo workspaces:
+or in a demo workspace:
 
 ```bash
 npm run start:all
@@ -291,17 +285,17 @@ Connect / Sign-in
 
 Cursor stores the access token automatically.
 
-Cursor callback URI:
+Cursor redirect URIs (include all that apply in `OAUTH_IDP_REDIRECT_URIS`):
 
 ```text
 cursor://anysphere.cursor-mcp/oauth/callback
+http://localhost:8787/callback
 ```
 
-This URI must be included in:
+- **Desktop IDE:** `cursor://anysphere.cursor-mcp/oauth/callback`
+- **CLI / loopback OAuth:** `http://localhost:8787/callback` (Cursor may send this during dynamic client registration even when you sign in from the IDE)
 
-```text
-OAUTH_IDP_REDIRECT_URIS
-```
+Demo workspaces list both in `.env.example` alongside MCP Inspector (`localhost:6274`).
 
 ---
 
@@ -320,7 +314,7 @@ api2ai: Create demo workspace
 4. Start the demos:
 
 ```bash
-npm run start
+npm run start:all
 ```
 
 5. Enable MCP servers in:
@@ -339,11 +333,7 @@ api2ai What will the weather be like tomorrow in Berlin?
 
 ### db2ai
 
-Same workflow using:
-
-```bash
-npm run start:all
-```
+Same workflow (`npm run start:all` in the demo workspace root).
 
 Example prompt:
 
