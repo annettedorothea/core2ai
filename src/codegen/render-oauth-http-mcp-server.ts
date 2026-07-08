@@ -106,7 +106,8 @@ async function handleOAuthMcpRequest(
 
     if (mcpRequiresBearerOnInitialize(generated)) {
         const bearer = readBearerFromHeaders(headers);
-        const verified = await verifyCredentialForGate(generated, bearer);
+        const sessionForGate = sessionIdHeader ? sessionStore.get(sessionIdHeader) : undefined;
+        const verified = await verifyCredentialForGate(generated, bearer, sessionForGate);
         if (!verified) {
             if (!sessionIdHeader && isInitializeRequestBody(parsedBody)) {
                 sendOAuthUnauthorized(res, httpHostConfig);

@@ -39,5 +39,26 @@ export function resolveVerifyCredentialStubFileName(toolsModuleTsPath: string): 
     return `${resolveModuleCredentialNames(toolsModuleTsPath).fileBase}.ts`;
 }
 
+export type ModuleTokenExchangeNames = {
+    pascalBase: string;
+    tokenExchangeFunctionName: string;
+    fileBase: string;
+};
+
+/** Derive per-module tokenExchange stub names from `generated/{product}/tools/<module>-tools.ts`. */
+export function resolveModuleTokenExchangeNames(toolsModuleTsPath: string): ModuleTokenExchangeNames {
+    const { pascalBase } = resolveModuleCredentialNames(toolsModuleTsPath);
+    const tokenExchangeFunctionName = `tokenExchange${pascalBase}Credential`;
+    return {
+        pascalBase,
+        tokenExchangeFunctionName,
+        fileBase: tokenExchangeFunctionName
+    };
+}
+
+export function resolveTokenExchangeStubFileName(toolsModuleTsPath: string): string {
+    return `${resolveModuleTokenExchangeNames(toolsModuleTsPath).fileBase}.ts`;
+}
+
 /** @deprecated Use `resolveVerifyCredentialStubFileName`. */
 export const resolveVerifyCredentialsStubFileName = resolveVerifyCredentialStubFileName;

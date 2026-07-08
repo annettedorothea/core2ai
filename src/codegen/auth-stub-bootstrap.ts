@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { resolveModuleCredentialNames } from './auth-module-names.js';
+import { resolveModuleCredentialNames, resolveModuleTokenExchangeNames } from './auth-module-names.js';
 import { checkToolAccessExportName, prepareToolCallExportName } from './access-stubs.js';
 import { relativeJsImportPath, resolveHostProductFromGeneratedToolsPath } from './generated-layout.js';
 import { resolveBootstrapProjectRootFromSource } from './project-bootstrap.js';
@@ -206,6 +206,66 @@ export function renderVerifyCredentialReExport(toolsModuleTsPath: string, verify
 export function renderVerifyCredentialImport(toolsModuleTsPath: string, verifyStubTsPath: string): string {
     const rel = relativeJsImportPath(toolsModuleTsPath, verifyStubTsPath);
     return `import { verifyCredential } from '${rel}';`;
+}
+
+function resolveTokenExchangeStubRelPath(toolsModuleTsPath: string): string {
+    const names = resolveModuleTokenExchangeNames(toolsModuleTsPath);
+    return hookStubRelativePath(toolsModuleTsPath, names.fileBase);
+}
+
+export function renderTokenExchangeStubFileContent(toolsModuleTsPath: string): string {
+    const names = resolveModuleTokenExchangeNames(toolsModuleTsPath);
+    const stubPath = resolveTokenExchangeStubRelPath(toolsModuleTsPath);
+    return `/**
+ * OAuth IdP → portal token exchange (write-once — implement ${names.tokenExchangeFunctionName}).
+ * Used by oauth-http host only when auth.hooks.tokenExchange is enabled.
+ */
+export async function ${names.tokenExchangeFunctionName}(idpCredential: string): Promise<string> {
+    void idpCredential;
+    throw new Error('Implement ${names.tokenExchangeFunctionName} in ${stubPath}');
+}
+
+export { ${names.tokenExchangeFunctionName} as tokenExchange };
+`;
+}
+
+export function resolveTokenExchangeStubPath(projectRoot: string, toolsModuleTsPath: string): string {
+    const hookDir = resolveHookStubDir(projectRoot, toolsModuleTsPath);
+    const names = resolveModuleTokenExchangeNames(toolsModuleTsPath);
+    return path.join(hookDir, `${names.fileBase}.ts`);
+}
+
+export async function ensureTokenExchangeStubAtProjectRoot(
+    projectRoot: string,
+    toolsModuleTsPath: string
+): Promise<string | undefined> {
+    const hookDir = resolveHookStubDir(projectRoot, toolsModuleTsPath);
+    if (!fs.existsSync(hookDir)) {
+        fs.mkdirSync(hookDir, { recursive: true });
+    }
+    const tsPath = resolveTokenExchangeStubPath(projectRoot, toolsModuleTsPath);
+    if (!fs.existsSync(tsPath)) {
+        fs.writeFileSync(tsPath, renderTokenExchangeStubFileContent(toolsModuleTsPath), 'utf-8');
+    }
+    return tsPath;
+}
+
+export async function ensureTokenExchangeStubFromSource(
+    source: string,
+    toolsModuleTsPath: string
+): Promise<string | undefined> {
+    const projectRoot = resolveBootstrapProjectRootFromSource(source);
+    return ensureTokenExchangeStubAtProjectRoot(projectRoot, toolsModuleTsPath);
+}
+
+export function renderTokenExchangeReExport(toolsModuleTsPath: string, tokenExchangeStubTsPath: string): string {
+    const rel = relativeJsImportPath(toolsModuleTsPath, tokenExchangeStubTsPath);
+    return `export { tokenExchange } from '${rel}';`;
+}
+
+export function renderTokenExchangeImport(toolsModuleTsPath: string, tokenExchangeStubTsPath: string): string {
+    const rel = relativeJsImportPath(toolsModuleTsPath, tokenExchangeStubTsPath);
+    return `import { tokenExchange } from '${rel}';`;
 }
 
 export function renderCheckToolAccessHooksMap(toolNames: readonly string[]): string {

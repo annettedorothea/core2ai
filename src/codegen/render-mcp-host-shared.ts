@@ -422,9 +422,14 @@ type OAuthHttpHostRuntimeConfig = {
 type McpOAuthSession = {
     sessionId: string;
     credential?: string;
+    sourceCredential?: string;
     verifiedAt?: number;
+    exchangedAt?: number;
     createdAt: number;
 };
+
+/** IdP Bearer → portal/API credential (shared by gate + session resolver). */
+const oauthCredentialByInbound = new Map<string, string>();
 
 function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
@@ -535,9 +540,61 @@ ${oauthHostContextBaseUrlFieldsFn(product)}
 
 ${withDbConnectionHostContextFn(product)}
 
+async function resolveOAuthSessionCredential(
+    generated: GeneratedHostModule,
+    inboundIdpToken: string,
+    session: McpOAuthSession | undefined
+): Promise<string> {
+    const inbound = inboundIdpToken.trim();
+    if (
+        session?.exchangedAt &&
+        session.credential &&
+        session.sourceCredential === inbound
+    ) {
+        return session.credential;
+    }
+
+    const cached = oauthCredentialByInbound.get(inbound);
+    if (cached) {
+        if (session) {
+            session.credential = cached;
+            session.sourceCredential = inbound;
+            session.exchangedAt = Date.now();
+            session.verifiedAt = Date.now();
+        }
+        return cached;
+    }
+
+    let credential = inbound;
+    const exchange = generated.tokenExchange;
+    if (typeof exchange === 'function') {
+        credential = String(await exchange(inbound)).trim();
+        if (!credential) {
+            throw new Error('tokenExchange returned an empty credential.');
+        }
+    }
+
+    const verify = generated.verifyCredential;
+    if (typeof verify === 'function') {
+        await verify(credential);
+    }
+
+    oauthCredentialByInbound.set(inbound, credential);
+
+    if (session) {
+        session.credential = credential;
+        session.sourceCredential = inbound;
+        session.exchangedAt = Date.now();
+        session.verifiedAt = Date.now();
+    }
+
+    return credential;
+}
+
 async function verifyCredentialForGate(
     generated: GeneratedHostModule,
-    bearer: string | undefined
+    bearer: string | undefined,
+    session?: McpOAuthSession
 ): Promise<boolean> {
     const token = bearer?.trim();
     if (!token) {
@@ -547,11 +604,12 @@ async function verifyCredentialForGate(
         return true;
     }
     const verify = generated.verifyCredential;
-    if (typeof verify !== 'function') {
+    const exchange = generated.tokenExchange;
+    if (typeof verify !== 'function' && typeof exchange !== 'function') {
         return true;
     }
     try {
-        await verify(token);
+        await resolveOAuthSessionCredential(generated, token, session);
         return true;
     } catch {
         return false;
@@ -572,15 +630,20 @@ async function resolveHostContextForOAuthSession(
         sessionStore.set(sessionId, session);
     }
 
-    if (session?.verifiedAt && session.credential) {
+    const bearer = readBearerFromHeaders(headers);
+    const inbound = bearer?.trim();
+
+    if (
+        session?.exchangedAt &&
+        session.credential &&
+        (!inbound || session.sourceCredential === inbound)
+    ) {
         return withDbConnectionHostContext(${generatedModuleParam(product)}, {
             ...apiFields,
             credential: session.credential
         });
     }
 
-    const bearer = readBearerFromHeaders(headers);
-    const inbound = bearer?.trim();
     if (!inbound) {
         if (session?.credential) {
             return withDbConnectionHostContext(${generatedModuleParam(product)}, {
@@ -591,18 +654,11 @@ async function resolveHostContextForOAuthSession(
         return withDbConnectionHostContext(${generatedModuleParam(product)}, { ...apiFields });
     }
 
-    const verify = ${generatedModuleParam(product)}.verifyCredential;
-    if (typeof verify === 'function') {
-        await verify(inbound);
-    }
-    if (session) {
-        session.credential = inbound;
-        session.verifiedAt = Date.now();
-    }
+    const credential = await resolveOAuthSessionCredential(${generatedModuleParam(product)}, inbound, session);
 
     return withDbConnectionHostContext(${generatedModuleParam(product)}, {
         ...apiFields,
-        credential: inbound
+        credential
     });
 }
 

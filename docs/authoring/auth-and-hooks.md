@@ -35,6 +35,8 @@ See also: [api2ai DSL](./api2ai-dsl.md), [db2ai DSL](./db2ai-dsl.md), [MCP hosts
 ```text
 MCP tools/call (credential from client)
         ↓
+tokenExchange      ← optional module hook (api2ai only); IdP JWT → portal/API credential
+        ↓
 verifyCredential   ← optional module hook; validate raw credential string (void)
         ↓
 checkToolAccess    ← optional per-tool hook; throw to deny (403)
@@ -43,6 +45,8 @@ prepareToolCall    ← optional per-tool hook; reshape options (query, path, bod
         ↓
 HTTP request or SQL execute
 ```
+
+On **OAuth HTTP** hosts, `tokenExchange` (when declared) runs once per MCP session inside `resolveOAuthSessionCredential` before `verifyCredential`. The exchanged credential is cached for later tool calls. Demos without `tokenExchange` keep the inbound Bearer token (bookings, cakes).
 
 Public tools (`access: public`) skip credential requirements. `prepareToolCall` may still run on public tools (for example SQL limit capping) without a credential parameter.
 
@@ -75,12 +79,13 @@ src/hooks/db2ai/<module>-tools/
     prepareToolCallForListActors.ts        ← filename matches export function name
 ```
 
-| DSL declaration                        | Generated import / map           | Typical export                                                   |
-| -------------------------------------- | -------------------------------- | ---------------------------------------------------------------- |
-| `auth { hooks: { verifyCredential } }` | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)          |
-| `auth` keyword (db2ai)                 | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)          |
-| `hooks: { checkToolAccess: true }`     | `checkToolAccessHooks[toolName]` | `checkToolAccessForToolName(credential)`                         |
-| `hooks: { prepareToolCall: true }`     | `prepareToolCallHooks[toolName]` | `prepareToolCallForToolName(options)` or `(options, credential)` |
+| DSL declaration                        | Generated import / map           | Typical export                                                           |
+| -------------------------------------- | -------------------------------- | ------------------------------------------------------------------------ |
+| `auth { hooks: { verifyCredential } }` | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)                  |
+| `auth { hooks: { tokenExchange } }`    | `tokenExchange`                  | `tokenExchangeXCredential` (re-exported as `tokenExchange`; api2ai only) |
+| `auth` keyword (db2ai)                 | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)                  |
+| `hooks: { checkToolAccess: true }`     | `checkToolAccessHooks[toolName]` | `checkToolAccessForToolName(credential)`                                 |
+| `hooks: { prepareToolCall: true }`     | `prepareToolCallHooks[toolName]` | `prepareToolCallForToolName(options)` or `(options, credential)`         |
 
 Stub files are created on first generate; implement logic, then regenerate (imports are wired automatically).
 
@@ -141,6 +146,22 @@ auth {
     }
 }
 ```
+
+Optional **token exchange** (api2ai OAuth HTTP only):
+
+```text
+auth {
+    in: header
+    name: "Authorization"
+    prefix: "Bearer "
+    hooks: {
+        tokenExchange: true
+        verifyCredential: true
+    }
+}
+```
+
+`tokenExchange` requires `verifyCredential: true`. The host exchanges the inbound IdP Bearer once per session, then `verifyCredential` and `checkToolAccess` run on the portal/API credential.
 
 On protected tools, `invokeTool` sets `requestHeaders[name]` or `url.searchParams` from the resolved credential after `verifyCredential` (when declared).
 
@@ -206,15 +227,16 @@ Enables credential checks for `access: protected` SQL tools. Connection strings 
 
 ## Demo references
 
-| Demo                      | Pattern                                               |
-| ------------------------- | ----------------------------------------------------- |
-| `todo.api2ai`             | passthrough header + `verifyCredential`               |
-| `test.api2ai`             | query `api_key` + protected route                     |
-| `bookings.api2ai`         | OAuth MCP + `checkToolAccess` + `prepareToolCall`     |
-| `cakes.api2ai`            | OAuth MCP + JWT in hooks (no module verify stub)      |
-| `spaceflight-news.api2ai` | public `prepareToolCall` + `clientMayOmit` on `limit` |
-| `orders-postgresql.db2ai` | protected SQL + `checkToolAccess` + `clientMayOmit`   |
-| `pagila-postgresql.db2ai` | public `prepareToolCall` (SQL limit cap)              |
+| Demo                      | Pattern                                                              |
+| ------------------------- | -------------------------------------------------------------------- |
+| `todo.api2ai`             | passthrough header + `verifyCredential`                              |
+| `test.api2ai`             | query `api_key` + protected route                                    |
+| `bookings.api2ai`         | OAuth MCP + `checkToolAccess` + `prepareToolCall`                    |
+| `banking.api2ai`          | OAuth MCP + `tokenExchange` + `verifyCredential` + `checkToolAccess` |
+| `cakes.api2ai`            | OAuth MCP + JWT in hooks (no module verify stub)                     |
+| `spaceflight-news.api2ai` | public `prepareToolCall` + `clientMayOmit` on `limit`                |
+| `orders-postgresql.db2ai` | protected SQL + `checkToolAccess` + `clientMayOmit`                  |
+| `pagila-postgresql.db2ai` | public `prepareToolCall` (SQL limit cap)                             |
 
 ---
 

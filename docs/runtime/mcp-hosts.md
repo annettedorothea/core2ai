@@ -417,6 +417,20 @@ No `--auth-env` is used.
 4. Credential is stored for the MCP session.
 5. Subsequent tool calls reuse the session credential.
 
+When the tools module exports `tokenExchange` (api2ai DSL `auth.hooks.tokenExchange`), the OAuth HTTP host runs **two credential layers**:
+
+```text
+Inbound Bearer (IdP JWT from Cursor OAuth)
+        ↓
+tokenExchange hook  →  portal/API JWT
+        ↓
+verifyCredential  →  session.credential = portal JWT
+```
+
+Re-exchange happens when the inbound IdP Bearer changes (new login). Later tool calls reuse the cached portal credential without calling `tokenExchange` again. Demos without `tokenExchange` (bookings, cakes, db2ai) cache the inbound Bearer directly.
+
+See demo `banking.api2ai` (IdP on `:3860`, banking API on `:3858`, OAuth MCP on `:3873`).
+
 ### Cursor Example
 
 ```json

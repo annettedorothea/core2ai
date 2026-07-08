@@ -23,6 +23,8 @@ type ApiLikeHostContext = {
 
 type VerifyCredentialFn = (credential: string) => void | Promise<void>;
 
+type TokenExchangeFn = (idpCredential: string) => Promise<string>;
+
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
     invokeTool: (
@@ -37,6 +39,7 @@ type GeneratedHostModule = {
     connectionEnv?: string;
     databaseDialect?: DatabaseDialect;
     verifyCredential?: VerifyCredentialFn;
+    tokenExchange?: TokenExchangeFn;
 };`.trim();
     }
     return `
@@ -47,6 +50,8 @@ type ApiLikeHostContext = {
 };
 
 type VerifyCredentialFn = (credential: string) => void | Promise<void>;
+
+type TokenExchangeFn = (idpCredential: string) => Promise<string>;
 
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
@@ -61,6 +66,7 @@ type GeneratedHostModule = {
     requiresAuth: boolean;
     connectionEnv?: string;
     verifyCredential?: VerifyCredentialFn;
+    tokenExchange?: TokenExchangeFn;
 };`.trim();
 }
 
@@ -96,11 +102,18 @@ function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialec
 }`.trim();
 }
 
-function readVerifyCredentialExports(): string {
+function readAuthHookExports(): string {
     return `
     const verifyCredential = imported.verifyCredential;
     const verifyCredentialFn =
-        typeof verifyCredential === 'function' ? (verifyCredential as VerifyCredentialFn) : undefined;`.trim();
+        typeof verifyCredential === 'function' ? (verifyCredential as VerifyCredentialFn) : undefined;
+    const tokenExchange = imported.tokenExchange;
+    const tokenExchangeFn =
+        typeof tokenExchange === 'function' ? (tokenExchange as TokenExchangeFn) : undefined;`.trim();
+}
+
+function readVerifyCredentialExports(): string {
+    return readAuthHookExports();
 }
 
 export function readGeneratedModuleTail(product: McpHostProduct): string {
@@ -124,7 +137,8 @@ export function readGeneratedModuleTail(product: McpHostProduct): string {
         requiresAuth: imported.requiresAuth === true,
         connectionEnv: typeof connectionEnv === 'string' ? connectionEnv : undefined,
         databaseDialect: parseDatabaseDialect(imported.databaseDialect),
-        verifyCredential: verifyCredentialFn
+        verifyCredential: verifyCredentialFn,
+        tokenExchange: tokenExchangeFn
     };`.trim();
     }
     return `
@@ -143,7 +157,8 @@ export function readGeneratedModuleTail(product: McpHostProduct): string {
         mcpServerName: typeof mcpServerName === 'string' ? mcpServerName : undefined,
         mcpServerVersion: typeof mcpServerVersion === 'string' ? mcpServerVersion : undefined,
         requiresAuth: imported.requiresAuth === true,
-        verifyCredential: verifyCredentialFn
+        verifyCredential: verifyCredentialFn,
+        tokenExchange: tokenExchangeFn
     };`.trim();
 }
 
