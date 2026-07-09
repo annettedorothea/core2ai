@@ -74,7 +74,7 @@ npm run sync:core2ai-pin:npm
 
 **Verify:** lockfile `registry.npmjs.org`, **no** `"link": true`.
 
-Commit `packages/cli/package.json` + `package-lock.json` before CI expects registry.
+Commit `packages/cli/package.json` + `package-lock.json` in the **release commit (CP5)** before pushing tag **CP6** — consumer CI runs on **`v*` tags only**, not on branch push.
 
 ## After core2ai changes (link mode)
 
@@ -94,13 +94,16 @@ See [core2ai-build.mdc](../../rules/core2ai-build.mdc).
 
 ## Release coordination
 
-During a **core2ai** release (see [guided-release/SKILL.md](../guided-release/SKILL.md) **C1–C6**):
+During a **core2ai** release (see [guided-release/SKILL.md](../guided-release/SKILL.md) **C1–C4**, consumer **CP1–CP7**):
 
 1. Finish work in **link mode**
-2. **C2** commit core2ai → **C3** `git tag vX.Y.Z` + `git push origin vX.Y.Z` → [publish.yml](../../.github/workflows/publish.yml) → npmjs
+2. **C2** commit core2ai → **C3** `git tag vX.Y.Z` + push → [publish.yml](../../.github/workflows/publish.yml) (Quality Gate + npmjs)
 3. **C4** confirm `npm view @toolfactory.dev/core version`
-4. **C5** both consumers: `npm run sync:core2ai-pin:npm` → **C6** commit lockfiles
-5. Then VSIX / CI use registry
+4. Consumer **CP1–CP5**: VSIX prep, manual test, release commit with `sync:core2ai-pin:npm`
+5. **CP6** consumer `git tag vX.Y.Z` + push → `.github/workflows/ci.yml` (Quality Gate)
+6. **CP7** `vsix:release` after CI green
+
+Branch pushes with link lockfile are fine during dev — no consumer CI on branches.
 
 Until step 4, keep **link mode** locally if still hacking core2ai.
 

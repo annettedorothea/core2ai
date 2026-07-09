@@ -1,8 +1,12 @@
 name: ci
 
+# Push to main: early feedback while hacking (core has no consumer link-pin issues).
+# Release quality gate (check + test before npm publish): publish.yml on tag v*.
+
 on:
     push:
-        branches: ['**']
+        branches: [main]
+    workflow_dispatch:
 
 jobs:
     check:
