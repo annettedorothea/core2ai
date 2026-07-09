@@ -1,5 +1,5 @@
 /** Shared stderr startup banner (catalog-style single-host card). */
-export function renderMcpHostStartupBannerSource(): string {
+export function renderMcpHostStartupBannerSource(describeUpstreamEnvField: string): string {
     return `
 function formatStartupFieldLine(label: string, value: string): string {
     const pad = ' '.repeat(Math.max(1, 10 - label.length));
@@ -30,22 +30,7 @@ function printMcpHostStartupBanner(options: {
     loggingAdapter.banner(lines);
 }
 
-function describeUpstreamEnvField(
-    generated: GeneratedHostModule,
-    hostConfig: { baseUrlEnvKey?: string }
-): { label: string; value: string } | undefined {
-    if (generated.connectionEnv) {
-        const key = generated.connectionEnv;
-        const set = Boolean(process.env[key]?.trim());
-        return { label: 'Database:', value: key + (set ? '' : ' (unset)') };
-    }
-    const key = hostConfig.baseUrlEnvKey?.trim();
-    if (!key) {
-        return undefined;
-    }
-    const set = Boolean(process.env[key]?.trim());
-    return { label: 'Upstream:', value: key + (set ? '' : ' (unset)') };
-}
+${describeUpstreamEnvField}
 
 function collectMissingEnvNote(keys: (string | undefined)[]): string | undefined {
     const missing = keys.filter((key): key is string => Boolean(key?.trim())).filter((key) => !process.env[key]?.trim());
@@ -58,11 +43,13 @@ function collectMissingEnvNote(keys: (string | undefined)[]): string | undefined
 function requireMcpServerDisplayName(generated: GeneratedHostModule): string {
     const { name } = requireMcpServerIdentity(generated);
     return name;
-}
-`.trim();
+}`.trim();
 }
 
-export function renderHttpMcpStartupBannerFn(profile: 'public' | 'passthrough'): string {
+export function renderHttpMcpStartupBannerFn(
+    profile: 'public' | 'passthrough',
+    startupBannerConnectionEnvNotePrefix: string
+): string {
     const authBlock =
         profile === 'public'
             ? `fields.push({ label: 'Auth:', value: 'None' });`
@@ -86,14 +73,14 @@ function printHttpMcpStartupBanner(
     const url =
         'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
     const fields: { label: string; value: string }[] = [{ label: 'URL:', value: url }];
+    fields.push(...formatMcpServerVersionFields(generated));
     ${authBlock}
     const upstream = describeUpstreamEnvField(generated, httpHostConfig);
     if (upstream) {
         fields.push(upstream);
     }
     const note = collectMissingEnvNote([
-        generated.connectionEnv,
-        httpHostConfig.baseUrlEnvKey,
+        ${startupBannerConnectionEnvNotePrefix}httpHostConfig.baseUrlEnvKey,
         httpHostConfig.authEnvKey
     ]);
     printMcpHostStartupBanner({
@@ -103,11 +90,10 @@ function printHttpMcpStartupBanner(
         note,
         fields
     });
-}
-`.trim();
+}`.trim();
 }
 
-export function renderOAuthHttpStartupBannerFn(): string {
+export function renderOAuthHttpStartupBannerFn(startupBannerConnectionEnvNotePrefix: string): string {
     return `
 function printOAuthHttpStartupBanner(
     generated: GeneratedHostModule,
@@ -121,11 +107,12 @@ function printOAuthHttpStartupBanner(
         { label: 'Scope:', value: httpHostConfig.oauthScope },
         { label: 'IdP URL:', value: httpHostConfig.oauthIdpUrl }
     ];
+    fields.push(...formatMcpServerVersionFields(generated));
     const upstream = describeUpstreamEnvField(generated, httpHostConfig);
     if (upstream) {
         fields.push(upstream);
     }
-    const note = collectMissingEnvNote([generated.connectionEnv, httpHostConfig.baseUrlEnvKey]);
+    const note = collectMissingEnvNote([${startupBannerConnectionEnvNotePrefix}httpHostConfig.baseUrlEnvKey]);
     printMcpHostStartupBanner({
         serverName: requireMcpServerDisplayName(generated),
         transport: 'oauth-http',
@@ -133,11 +120,10 @@ function printOAuthHttpStartupBanner(
         note,
         fields
     });
-}
-`.trim();
+}`.trim();
 }
 
-export function renderStdioMcpStartupBannerFn(): string {
+export function renderStdioMcpStartupBannerFn(startupBannerConnectionEnvNotePrefix: string): string {
     return `
 function printStdioMcpStartupBanner(
     generated: GeneratedHostModule,
@@ -146,6 +132,7 @@ function printStdioMcpStartupBanner(
     const fields: { label: string; value: string }[] = [
         { label: 'Transport:', value: 'stdio (stdin/stdout JSON-RPC)' }
     ];
+    fields.push(...formatMcpServerVersionFields(generated));
     const upstream = describeUpstreamEnvField(generated, hostConfig);
     if (upstream) {
         fields.push(upstream);
@@ -159,8 +146,7 @@ function printStdioMcpStartupBanner(
         });
     }
     const note = collectMissingEnvNote([
-        generated.connectionEnv,
-        hostConfig.baseUrlEnvKey,
+        ${startupBannerConnectionEnvNotePrefix}hostConfig.baseUrlEnvKey,
         hostConfig.authEnvKey
     ]);
     printMcpHostStartupBanner({
@@ -170,6 +156,5 @@ function printStdioMcpStartupBanner(
         note,
         fields
     });
-}
-`.trim();
+}`.trim();
 }

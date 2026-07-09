@@ -42,7 +42,7 @@ Optional sanity: `npm run check` in **core2ai** before switching to a consumer.
 
 | Change in core2ai | Consumer action |
 |-------------------|-----------------|
-| **codegen** (generator helpers, `renderStdioMcpServerSource`) | Regenerate demos if MCP bootstrap shape changed: `generate:all`, `build:generated`; **restart MCP** in Cursor |
+| **codegen** (MCP templates, snippets, auth helpers) | Rebuild **core2ai**; if MCP runtime output shape changed: `generate:all`, `build:generated` in consumer demos; **restart MCP** in Cursor |
 | **Extension / VSIX embed** | `npm run build` in `packages/extension` (re-runs `scripts/embed-cli-bundle.mjs`) — link alone does **not** update bundled `cli.cjs` |
 
 See [generated-output-do-not-edit.mdc](./generated-output-do-not-edit.mdc).

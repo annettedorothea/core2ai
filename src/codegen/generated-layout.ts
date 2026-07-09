@@ -1,5 +1,6 @@
 import * as path from 'node:path';
-import type { McpHostProduct } from './mcp-host-product-runtime.js';
+
+export type GeneratedProductId = 'api2ai' | 'db2ai';
 
 /** Relative `.js` import spec from one `.ts` file to another. */
 export function relativeJsImportPath(fromTsPath: string, toTsPath: string): string {
@@ -16,14 +17,14 @@ export function relativeJsImportPath(fromTsPath: string, toTsPath: string): stri
 /** `generated/{hostProduct}/tools/{basename}-tools.ts` */
 export function resolveGeneratedToolsPath(
     projectRoot: string,
-    hostProduct: McpHostProduct,
+    hostProduct: GeneratedProductId,
     dslBasename: string
 ): string {
     return path.join(projectRoot, 'generated', hostProduct, 'tools', `${dslBasename}-tools.ts`);
 }
 
 /** Host product segment from a tools module path (`generated/api2ai/tools/…`). */
-export function resolveHostProductFromGeneratedToolsPath(toolsModuleTsPath: string): McpHostProduct {
+export function resolveHostProductFromGeneratedToolsPath(toolsModuleTsPath: string): GeneratedProductId {
     const toolsDir = path.dirname(path.resolve(toolsModuleTsPath));
     if (path.basename(toolsDir) !== 'tools') {
         throw new Error(`Expected tools module under generated/<product>/tools/: ${toolsModuleTsPath}`);
@@ -51,7 +52,7 @@ export function resolveProjectRootFromGeneratedCliDir(cliDir: string): string {
 /** Fail when CLI destination path product segment does not match the generating CLI. */
 export function assertGeneratedToolsDestinationMatchesHostProduct(
     toolsModuleTsPath: string,
-    hostProduct: McpHostProduct
+    hostProduct: GeneratedProductId
 ): void {
     const actual = resolveHostProductFromGeneratedToolsPath(toolsModuleTsPath);
     if (actual !== hostProduct) {

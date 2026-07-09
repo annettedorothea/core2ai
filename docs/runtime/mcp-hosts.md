@@ -615,22 +615,31 @@ npm start
 
 ## Implementation Reference
 
-Host templates live inside `core2ai`:
+MCP host codegen is split between **core2ai** (product-neutral skeletons + snippets) and **api2ai/db2ai** (product fragments + runtime compose):
 
 ```text
-src/codegen/render-stdio-runtime.ts
-src/codegen/render-http-mcp-server.ts
-src/codegen/render-oauth-http-mcp-server.ts
-src/codegen/mcp-module-host.ts
-src/codegen/render-mcp-host-shared.ts
-src/codegen/mcp-host-product-runtime.ts
+core2ai/src/codegen/
+  compose.ts
+  snippets/*
+  templates/mcp-host-shared.template.ts
+  templates/stdio-runtime.template.ts
+  templates/http-runtime.template.ts
+  templates/oauth-http-runtime.template.ts
+  templates/mcp-server.template.ts
+  templates/write-mcp-runtimes.ts
+  templates/write-mcp-servers.ts
+
+api2ai/packages/cli/src/codegen/   (db2ai: mirror)
+  fragments/*
+  templates/*-runtime.compose.ts
+  auth-pipeline-render.ts
 ```
 
-After changing host templates:
+After changing host templates or consumer fragments:
 
-1. Rebuild `core2ai`
-2. Rebuild the consumer project
-3. Regenerate tool code
+1. Rebuild `core2ai` (`npm run build` or `npm run watch`)
+2. Rebuild the consumer (`npm run build` in api2ai/db2ai when CLI bundle changed)
+3. Regenerate tool code (`npm run generate:all`, `npm run build:generated`)
 4. Restart MCP clients
 
 ---

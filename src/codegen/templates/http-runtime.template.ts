@@ -1,27 +1,19 @@
-import { renderMcpHostSharedSource, type HttpMcpHostProfile } from './render-mcp-host-shared.js';
-import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
+import { compose } from '../compose.js';
 
-const PROFILE_LOG_LABEL: Record<HttpMcpHostProfile, string> = {
+type HttpProfile = 'public' | 'passthrough';
+
+const PROFILE_LOG_LABEL: Record<HttpProfile, string> = {
     public: 'public HTTP',
     passthrough: 'passthrough HTTP'
 };
 
-const PROFILE_RUN_EXPORT: Record<HttpMcpHostProfile, string> = {
+const PROFILE_RUN_EXPORT: Record<HttpProfile, string> = {
     public: 'runPublicHttpMcp',
     passthrough: 'runPassthroughHttpMcp'
 };
 
-function renderHttpMcpRuntimeSourceForProfile(
-    profile: HttpMcpHostProfile,
-    product: McpHostProduct = 'api2ai',
-    loggingImport: string
-): string {
-    const mode = profile === 'public' ? 'public-http' : 'passthrough-http';
-    const shared = renderMcpHostSharedSource(mode, product);
-    const logLabel = PROFILE_LOG_LABEL[profile];
-    const runExport = PROFILE_RUN_EXPORT[profile];
-    return `/**
- * Generated ${logLabel} MCP Streamable HTTP runtime (static tools import).
+const HTTP_RUNTIME_SKELETON = `/**
+ * Generated <<logLabel>> MCP Streamable HTTP runtime (static tools import).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -33,9 +25,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '${loggingImport}';
+import { loggingAdapter } from '<<loggingImport>>';
 
-${shared}
+<<sharedHost>>
 
 type SessionEntry = {
     transport: StreamableHTTPServerTransport;
@@ -74,8 +66,8 @@ async function createMcpServerForSession(
     sessionId: string,
     headers: Record<string, string | string[] | undefined>
 ): Promise<SessionEntry> {
-    const { name, version } = requireMcpServerIdentity(generated);
-    const server = new McpServer({ name, version });
+    const { name } = requireMcpServerIdentity(generated);
+    const server = new McpServer({ name, version: formatMcpDisplayVersion(generated) });
     sessionHeaders.set(sessionId, headers);
     await registerMcpTools(server, generated, {
         envDirs: httpHostConfig.envDirs,
@@ -135,7 +127,7 @@ async function handleHttpMcpRequest(
     try {
         await entry.transport.handleRequest(req, res, parsedBody);
     } catch (err) {
-        loggingAdapter.error('[mcp] ${logLabel} request failed', {
+        loggingAdapter.error('[mcp] <<logLabel>> request failed', {
             error: err instanceof Error ? err.message : String(err)
         });
         if (!res.headersSent) {
@@ -170,7 +162,7 @@ async function listenHttpMcp(
     });
 }
 
-export async function ${runExport}(
+export async function <<runExport>>(
     toolsModule: Record<string, unknown>,
     argv: string[],
     envDirs: string[] = defaultMcpEnvDirs()
@@ -178,20 +170,32 @@ export async function ${runExport}(
     loadLocalEnvFiles(envDirs);
     const generated = readGeneratedModule(toolsModule);
     const httpHostConfig = parseHttpMcpHostArgv(argv, envDirs);
-    ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
+    <<requireBaseUrlEnvArgvCheck>>
     validateHttpMcpHostAtStartup(httpHostConfig, generated);
     await listenHttpMcp(generated, httpHostConfig);
 }
 `;
+
+export type HttpRuntimeTemplateSlots = {
+    loggingImport: string;
+    sharedHost: string;
+    requireBaseUrlEnvArgvCheck: string;
+};
+
+function renderHttpRuntimeTemplate(profile: HttpProfile, slots: HttpRuntimeTemplateSlots): string {
+    return compose(HTTP_RUNTIME_SKELETON, {
+        loggingImport: slots.loggingImport,
+        logLabel: PROFILE_LOG_LABEL[profile],
+        runExport: PROFILE_RUN_EXPORT[profile],
+        sharedHost: slots.sharedHost,
+        requireBaseUrlEnvArgvCheck: slots.requireBaseUrlEnvArgvCheck
+    });
 }
 
-export function renderPublicHttpMcpRuntimeSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
-    return renderHttpMcpRuntimeSourceForProfile('public', product, loggingImport);
+export function renderPublicHttpRuntimeTemplate(slots: HttpRuntimeTemplateSlots): string {
+    return renderHttpRuntimeTemplate('public', slots);
 }
 
-export function renderPassthroughHttpMcpRuntimeSource(
-    product: McpHostProduct = 'api2ai',
-    loggingImport: string
-): string {
-    return renderHttpMcpRuntimeSourceForProfile('passthrough', product, loggingImport);
+export function renderPassthroughHttpRuntimeTemplate(slots: HttpRuntimeTemplateSlots): string {
+    return renderHttpRuntimeTemplate('passthrough', slots);
 }

@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { resolveModuleCredentialNames, resolveModuleTokenExchangeNames } from './auth-module-names.js';
+import { resolveModuleVerifyCredentialNames, resolveModuleTokenExchangeNames } from './auth-module-names.js';
 import { checkToolAccessExportName, prepareToolCallExportName } from './access-stubs.js';
 import { relativeJsImportPath, resolveHostProductFromGeneratedToolsPath } from './generated-layout.js';
 import { resolveBootstrapProjectRootFromSource } from './project-bootstrap.js';
@@ -30,7 +30,7 @@ function hookStubRelativePath(toolsModuleTsPath: string, exportName: string): st
 }
 
 function resolveVerifyStubRelPath(toolsModuleTsPath: string): string {
-    const names = resolveModuleCredentialNames(toolsModuleTsPath);
+    const names = resolveModuleVerifyCredentialNames(toolsModuleTsPath);
     return hookStubRelativePath(toolsModuleTsPath, names.fileBase);
 }
 
@@ -77,25 +77,6 @@ ${voidLines}
     throw new Error('Implement ${fn} in ${hookStubRelativePath(toolsModuleTsPath, fn)}');
 }
 `;
-}
-
-/** @deprecated Use renderCheckToolAccessStubFileContent / renderPrepareToolCallStubFileContent. */
-export function renderToolHookStubFileContent(
-    toolName: string,
-    spec: ToolHookStubSpec,
-    hookStubTsPath: string,
-    toolsModuleTsPath: string
-): string {
-    const parts: string[] = [];
-    if (spec.checkToolAccess) {
-        parts.push(renderCheckToolAccessStubFileContent(toolName, hookStubTsPath, toolsModuleTsPath).trimEnd());
-    }
-    if (spec.prepareToolCall) {
-        parts.push(
-            renderPrepareToolCallStubFileContent(toolName, spec.access, hookStubTsPath, toolsModuleTsPath).trimEnd()
-        );
-    }
-    return `${parts.join('\n\n')}\n`;
 }
 
 /** Map export name → absolute stub path (one file per hook function). */
@@ -150,7 +131,7 @@ export async function ensureToolHookStubsFromSource(
 }
 
 export function renderVerifyCredentialStubFileContent(toolsModuleTsPath: string): string {
-    const names = resolveModuleCredentialNames(toolsModuleTsPath);
+    const names = resolveModuleVerifyCredentialNames(toolsModuleTsPath);
     const verifyPath = resolveVerifyStubRelPath(toolsModuleTsPath);
     return `/**
  * MCP credential verification (write-once — implement ${names.verifyFunctionName}).
@@ -167,12 +148,9 @@ export { ${names.verifyFunctionName} as verifyCredential };
 
 export function resolveVerifyCredentialStubPath(projectRoot: string, toolsModuleTsPath: string): string {
     const hookDir = resolveHookStubDir(projectRoot, toolsModuleTsPath);
-    const names = resolveModuleCredentialNames(toolsModuleTsPath);
+    const names = resolveModuleVerifyCredentialNames(toolsModuleTsPath);
     return path.join(hookDir, `${names.fileBase}.ts`);
 }
-
-/** @deprecated Use `resolveVerifyCredentialStubPath`. */
-export const resolveVerifyCredentialsStubPath = resolveVerifyCredentialStubPath;
 
 /** Write-once \`src/hooks/{product}/<module>/verify*Credential.ts\` when DSL has auth. */
 export async function ensureVerifyCredentialStubAtProjectRoot(
@@ -335,4 +313,30 @@ export function renderPrepareToolCallHookImports(
         lines.push(`import { ${fn} } from '${rel}';`);
     }
     return lines.join('\n');
+}
+
+export function listCheckToolAccessToolNamesFromSpecs(specs: readonly ToolHookStubSpec[]): string[] {
+    return specs.filter((spec) => spec.checkToolAccess).map((spec) => spec.toolName);
+}
+
+export function listPrepareToolCallToolNamesFromSpecs(specs: readonly ToolHookStubSpec[]): string[] {
+    return specs.filter((spec) => spec.prepareToolCall).map((spec) => spec.toolName);
+}
+
+export function listPrepareToolCallHookEntriesFromSpecs(
+    specs: readonly ToolHookStubSpec[]
+): PrepareToolCallHookMapEntry[] {
+    return specs.filter((spec) => spec.prepareToolCall).map(({ toolName, access }) => ({ toolName, access }));
+}
+
+/** Writes write-once hook stubs from precomputed specs; returns stub paths for imports. */
+export async function renderCheckStubsFromSpecs(
+    source: string,
+    specs: readonly ToolHookStubSpec[],
+    toolsModuleTsPath: string
+): Promise<Map<string, string>> {
+    if (specs.length === 0) {
+        return new Map();
+    }
+    return ensureToolHookStubsFromSource(source, specs, toolsModuleTsPath);
 }

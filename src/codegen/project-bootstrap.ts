@@ -1,17 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { renderStdioMcpRuntimeSource } from './render-stdio-runtime.js';
-import { renderOAuthHttpMcpRuntimeSource } from './render-oauth-http-mcp-server.js';
-import { renderPassthroughHttpMcpRuntimeSource, renderPublicHttpMcpRuntimeSource } from './render-http-mcp-server.js';
-import { loggingAdapterImportForCliFile, resolveProjectRootFromGeneratedCliDir } from './generated-layout.js';
-import {
-    MCP_MODULE_HOST_KINDS,
-    moduleBasenameFromToolsPath,
-    moduleMcpServerFileName,
-    renderModuleMcpServerSource,
-    resolveGeneratedServersDir
-} from './mcp-module-host.js';
-import type { McpHostProduct } from './mcp-host-product-runtime.js';
+import type { GeneratedProductId } from './generated-layout.js';
+import { relativeJsImportPath } from './generated-layout.js';
 
 export {
     resolveGeneratedCliDir,
@@ -22,7 +12,7 @@ export {
 export type ProjectBootstrapConfig = {
     generatorImplementationDir: string;
     /** api2ai: HTTP/OpenAPI hosts only. db2ai: adds connectionEnv / database URL validation. Default api2ai. */
-    hostProduct?: McpHostProduct;
+    hostProduct?: GeneratedProductId;
     embedHomeEnv?: string;
     fallbackProjectName: string;
     requiredRuntimeDeps: readonly string[];
@@ -53,82 +43,6 @@ function resolveCliPackageRoot(config: ProjectBootstrapConfig): string {
 
 function resolveCliPackageJsonPathForVersions(config: ProjectBootstrapConfig): string {
     return path.join(resolveCliPackageRoot(config), 'package.json');
-}
-
-function resolveHostWriteContext(
-    cliDir: string,
-    config: ProjectBootstrapConfig | undefined,
-    projectRoot?: string
-): { product: McpHostProduct; root: string } {
-    const product = config?.hostProduct ?? 'api2ai';
-    const root = projectRoot ?? resolveProjectRootFromGeneratedCliDir(cliDir);
-    return { product, root };
-}
-
-/** Writes four MCP runtime modules under `generated/<product>/cli/` (overwrite on each generate). */
-export function writeGeneratedMcpRuntimes(
-    cliDir: string,
-    config?: ProjectBootstrapConfig,
-    projectRoot?: string
-): {
-    stdioRuntimePath: string;
-    publicHttpRuntimePath: string;
-    passthroughHttpRuntimePath: string;
-    oauthHttpRuntimePath: string;
-} {
-    if (!fs.existsSync(cliDir)) {
-        fs.mkdirSync(cliDir, { recursive: true });
-    }
-    const { product, root } = resolveHostWriteContext(cliDir, config, projectRoot);
-
-    const stdioRuntimePath = path.join(cliDir, 'stdio-runtime.ts');
-    fs.writeFileSync(
-        stdioRuntimePath,
-        renderStdioMcpRuntimeSource(product, loggingAdapterImportForCliFile(stdioRuntimePath, root)),
-        'utf-8'
-    );
-
-    const publicHttpRuntimePath = path.join(cliDir, 'public-http-runtime.ts');
-    fs.writeFileSync(
-        publicHttpRuntimePath,
-        renderPublicHttpMcpRuntimeSource(product, loggingAdapterImportForCliFile(publicHttpRuntimePath, root)),
-        'utf-8'
-    );
-
-    const passthroughHttpRuntimePath = path.join(cliDir, 'passthrough-http-runtime.ts');
-    fs.writeFileSync(
-        passthroughHttpRuntimePath,
-        renderPassthroughHttpMcpRuntimeSource(
-            product,
-            loggingAdapterImportForCliFile(passthroughHttpRuntimePath, root)
-        ),
-        'utf-8'
-    );
-
-    const oauthHttpRuntimePath = path.join(cliDir, 'oauth-http-runtime.ts');
-    fs.writeFileSync(
-        oauthHttpRuntimePath,
-        renderOAuthHttpMcpRuntimeSource(product, loggingAdapterImportForCliFile(oauthHttpRuntimePath, root)),
-        'utf-8'
-    );
-
-    return { stdioRuntimePath, publicHttpRuntimePath, passthroughHttpRuntimePath, oauthHttpRuntimePath };
-}
-
-/** Writes four per-module MCP servers under `generated/<product>/servers/`. */
-export function writeGeneratedModuleMcpServers(toolsModuleTsPath: string): string[] {
-    const serversDir = resolveGeneratedServersDir(toolsModuleTsPath);
-    if (!fs.existsSync(serversDir)) {
-        fs.mkdirSync(serversDir, { recursive: true });
-    }
-    const moduleBasename = moduleBasenameFromToolsPath(toolsModuleTsPath);
-    const written: string[] = [];
-    for (const hostKind of MCP_MODULE_HOST_KINDS) {
-        const serverPath = path.join(serversDir, moduleMcpServerFileName(moduleBasename, hostKind));
-        fs.writeFileSync(serverPath, renderModuleMcpServerSource(hostKind, toolsModuleTsPath, serverPath), 'utf-8');
-        written.push(serverPath);
-    }
-    return written;
 }
 
 function readCliPackageJson(config: ProjectBootstrapConfig): {
@@ -162,6 +76,66 @@ export function resolveMcpServerIdentityFromDestination(
         name: path.parse(destinationTsPath).name,
         version: pkg.version
     };
+}
+
+/** Env var set once by demos `generate-all.mjs` so every module shares the same build stamp. */
+export const CODEGEN_BUILD_TIMESTAMP_ENV = 'TF_BUILD_GENERATED_AT';
+
+/** Local readable build stamp, e.g. `2026-07-09 06:43 (UTC+2)`. */
+export function formatCodegenBuildTimestamp(date: Date = new Date()): string {
+    const offsetMinutes = -date.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absOffset = Math.abs(offsetMinutes);
+    const offsetHours = Math.floor(absOffset / 60);
+    const offsetMins = absOffset % 60;
+    const tzLabel =
+        offsetMins === 0
+            ? `UTC${sign}${offsetHours}`
+            : `UTC${sign}${offsetHours}:${String(offsetMins).padStart(2, '0')}`;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d} ${h}:${min} (${tzLabel})`;
+}
+
+export function resolveCodegenBuildTimestamp(): string {
+    const fromEnv = process.env[CODEGEN_BUILD_TIMESTAMP_ENV]?.trim();
+    if (fromEnv) {
+        return fromEnv;
+    }
+    return formatCodegenBuildTimestamp();
+}
+
+/** Basename (no ext) of the shared gitignored MCP build stamp next to `generated/{product}/tools/`. */
+export const MCP_BUILD_GENERATED_AT_BASENAME = 'mcp-build-generated-at';
+
+/** `generated/{product}/mcp-build-generated-at.ts` for a tools module under `generated/{product}/tools/*.ts`. */
+export function resolveMcpBuildGeneratedAtTsPathFromToolsModule(toolsModuleTsPath: string): string {
+    const toolsDir = path.dirname(path.resolve(toolsModuleTsPath));
+    return path.join(path.dirname(toolsDir), `${MCP_BUILD_GENERATED_AT_BASENAME}.ts`);
+}
+
+export function renderMcpBuildGeneratedAtModuleSource(buildGeneratedAt: string): string {
+    return `/** Written by codegen — gitignored in demo workspaces. Do not edit. */
+export const mcpBuildGeneratedAt = ${JSON.stringify(buildGeneratedAt)};
+`;
+}
+
+export function renderMcpBuildGeneratedAtReExport(toolsModuleTsPath: string): string {
+    const buildModuleTsPath = resolveMcpBuildGeneratedAtTsPathFromToolsModule(toolsModuleTsPath);
+    const rel = relativeJsImportPath(toolsModuleTsPath, buildModuleTsPath);
+    return `export { mcpBuildGeneratedAt } from '${rel}';`;
+}
+
+/** Writes or updates the shared build stamp module (typically gitignored). */
+export function writeMcpBuildGeneratedAtModule(toolsModuleTsPath: string, buildGeneratedAt?: string): string {
+    const outPath = resolveMcpBuildGeneratedAtTsPathFromToolsModule(toolsModuleTsPath);
+    ensureParentDir(outPath);
+    const stamp = buildGeneratedAt ?? resolveCodegenBuildTimestamp();
+    fs.writeFileSync(outPath, renderMcpBuildGeneratedAtModuleSource(stamp), 'utf-8');
+    return outPath;
 }
 
 function warnIfPackageJsonMissingMcpDeps(packageJsonDir: string, config: ProjectBootstrapConfig): void {

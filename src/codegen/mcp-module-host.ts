@@ -4,25 +4,6 @@ import { relativeJsImportPath } from './generated-layout.js';
 /** Host kinds for per-module MCP server entrypoints under `generated/<product>/servers/`. */
 export type McpModuleHostKind = 'stdio' | 'public-http' | 'passthrough-http' | 'oauth-http';
 
-const HOST_KIND_CONFIG: Record<McpModuleHostKind, { fileStem: string; runtimeFile: string; runExport: string }> = {
-    stdio: { fileStem: 'stdio-mcp-server', runtimeFile: 'stdio-runtime', runExport: 'runStdioMcp' },
-    'public-http': {
-        fileStem: 'public-http-mcp-server',
-        runtimeFile: 'public-http-runtime',
-        runExport: 'runPublicHttpMcp'
-    },
-    'passthrough-http': {
-        fileStem: 'passthrough-http-mcp-server',
-        runtimeFile: 'passthrough-http-runtime',
-        runExport: 'runPassthroughHttpMcp'
-    },
-    'oauth-http': {
-        fileStem: 'oauth-http-mcp-server',
-        runtimeFile: 'oauth-http-runtime',
-        runExport: 'runOAuthHttpMcp'
-    }
-};
-
 /** `github-tools.ts` → `github`. */
 export function moduleBasenameFromToolsPath(toolsModuleTsPath: string): string {
     const base = path.parse(toolsModuleTsPath).name;
@@ -38,29 +19,13 @@ export function resolveGeneratedServersDir(toolsModuleTsPath: string): string {
 }
 
 export function moduleMcpServerFileName(moduleBasename: string, hostKind: McpModuleHostKind): string {
-    const stem = HOST_KIND_CONFIG[hostKind].fileStem;
-    return `${moduleBasename}-${stem}.ts`;
-}
-
-export function renderModuleMcpServerSource(
-    hostKind: McpModuleHostKind,
-    toolsModuleTsPath: string,
-    serverTsPath: string
-): string {
-    const cfg = HOST_KIND_CONFIG[hostKind];
-    const toolsImport = relativeJsImportPath(serverTsPath, toolsModuleTsPath);
-    const runtimeTsPath = path.join(path.dirname(serverTsPath), '..', 'cli', `${cfg.runtimeFile}.ts`);
-    const runtimeImport = relativeJsImportPath(serverTsPath, runtimeTsPath);
-    const moduleBasename = moduleBasenameFromToolsPath(toolsModuleTsPath);
-    return `#!/usr/bin/env node
-/**
- * Generated MCP ${hostKind} host for ${moduleBasename} (static tools import).
- */
-import * as tools from '${toolsImport}';
-import { ${cfg.runExport} } from '${runtimeImport}';
-
-await ${cfg.runExport}(tools, process.argv.slice(2));
-`;
+    const stemByKind: Record<McpModuleHostKind, string> = {
+        stdio: 'stdio-mcp-server',
+        'public-http': 'public-http-mcp-server',
+        'passthrough-http': 'passthrough-http-mcp-server',
+        'oauth-http': 'oauth-http-mcp-server'
+    };
+    return `${moduleBasename}-${stemByKind[hostKind]}.ts`;
 }
 
 export const MCP_MODULE_HOST_KINDS: readonly McpModuleHostKind[] = [
@@ -69,3 +34,5 @@ export const MCP_MODULE_HOST_KINDS: readonly McpModuleHostKind[] = [
     'passthrough-http',
     'oauth-http'
 ];
+
+export { relativeJsImportPath };

@@ -1,12 +1,6 @@
-import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
-import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
+import { compose } from '../compose.js';
 
-/**
- * Generated `cli/stdio-runtime.ts` — import tools module, call `runStdioMcp(tools, argv)`.
- */
-export function renderStdioMcpRuntimeSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
-    const shared = renderMcpHostSharedSource('stdio', product);
-    return `/**
+const STDIO_RUNTIME_SKELETON = `/**
  * Generated MCP stdio runtime (static tools import — no @toolfactory.dev/core).
  */
 import * as fs from 'node:fs';
@@ -16,9 +10,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '${loggingImport}';
+import { loggingAdapter } from '<<loggingImport>>';
 
-${shared}
+<<sharedHost>>
 
 function defaultMcpEnvDirs(): string[] {
     const runtimeDir = path.dirname(fileURLToPath(import.meta.url));
@@ -29,8 +23,8 @@ async function runStdioMcpServer(
     generated: ReturnType<typeof readGeneratedModule>,
     hostConfig: HostRuntimeConfig
 ): Promise<void> {
-    const { name, version } = requireMcpServerIdentity(generated);
-    const server = new McpServer({ name, version });
+    const { name } = requireMcpServerIdentity(generated);
+    const server = new McpServer({ name, version: formatMcpDisplayVersion(generated) });
     await registerMcpTools(server, generated, {
         envDirs: hostConfig.envDirs,
         resolveContext: () => resolveHostContextForCall(hostConfig, generated)
@@ -47,10 +41,19 @@ export async function runStdioMcp(
     loadLocalEnvFiles(envDirs);
     const generated = readGeneratedModule(toolsModule);
     const hostConfig = parseHostArgv(argv, envDirs);
-    ${requireBaseUrlEnvArgvCheck(product, 'hostConfig.baseUrlEnvKey')}
+    <<requireBaseUrlEnvArgvCheck>>
     validateHostAtStartup(hostConfig, generated);
     printStdioMcpStartupBanner(generated, hostConfig);
     await runStdioMcpServer(generated, hostConfig);
 }
 `;
+
+export type StdioRuntimeTemplateSlots = {
+    loggingImport: string;
+    sharedHost: string;
+    requireBaseUrlEnvArgvCheck: string;
+};
+
+export function renderStdioRuntimeTemplate(slots: StdioRuntimeTemplateSlots): string {
+    return compose(STDIO_RUNTIME_SKELETON, slots);
 }

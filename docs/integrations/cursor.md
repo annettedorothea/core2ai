@@ -420,14 +420,16 @@ api2ai /test:all
 
 ## Troubleshooting
 
-| Problem               | Check                                     |
-| --------------------- | ----------------------------------------- |
-| No tools available    | Generated `.js` files exist? MCP enabled? |
-| Connection refused    | MCP host running? Port correct?           |
-| 401 on GitHub or TMDB | Token configured in `.env`?               |
-| OAuth login fails     | IdP running? Redirect URI configured?     |
-| Stale tools           | Restart the MCP server                    |
-| Agent ignores tools   | Agent mode enabled? Server active?        |
+| Problem                   | Check                                                                                                                                                                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No tools available        | Generated `.js` files exist? MCP enabled?                                                                                                                                                                                                                   |
+| Connection refused        | MCP host running? Port correct?                                                                                                                                                                                                                             |
+| 401 on GitHub or TMDB     | Token configured in `.env`?                                                                                                                                                                                                                                 |
+| OAuth login fails         | IdP running? Redirect URI configured?                                                                                                                                                                                                                       |
+| Stale HTTP MCP            | Old Node on port — `npm run start:mcp` in demos                                                                                                                                                                                                             |
+| Stale stdio MCP           | Toggle MCP server off/on or Reload Window after `build:generated`                                                                                                                                                                                           |
+| Stale tools / wrong build | **Tool calls** use the live MCP server. Build check: `start:mcp`/`start:all` terminal banner (see `/test-all` skill). Settings tooltip and `mcps/` cache may lag — not used for build proof. After codegen: `start:mcp`, stdio MCP toggle or Reload Window. |
+| Agent ignores tools       | Agent mode enabled? Server active?                                                                                                                                                                                                                          |
 
 ---
 

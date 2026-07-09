@@ -1,12 +1,6 @@
-import { renderMcpHostSharedSource } from './render-mcp-host-shared.js';
-import { requireBaseUrlEnvArgvCheck, type McpHostProduct } from './mcp-host-product-runtime.js';
+import { compose } from '../compose.js';
 
-/**
- * Generated `cli/oauth-http-runtime.ts` — import tools module, call `runOAuthHttpMcp(tools, argv)`.
- */
-export function renderOAuthHttpMcpRuntimeSource(product: McpHostProduct = 'api2ai', loggingImport: string): string {
-    const shared = renderMcpHostSharedSource('oauth-http', product);
-    return `/**
+const OAUTH_HTTP_RUNTIME_SKELETON = `/**
  * Generated OAuth + stateful MCP Streamable HTTP runtime (static tools import).
  */
 import { randomUUID } from 'node:crypto';
@@ -19,9 +13,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '${loggingImport}';
+import { loggingAdapter } from '<<loggingImport>>';
 
-${shared}
+<<sharedHost>>
 
 type SessionEntry = {
     transport: StreamableHTTPServerTransport;
@@ -65,8 +59,8 @@ async function createMcpServerForSession(
     sessionId: string,
     headers: Record<string, string | string[] | undefined>
 ): Promise<SessionEntry> {
-    const { name, version } = requireMcpServerIdentity(generated);
-    const server = new McpServer({ name, version });
+    const { name } = requireMcpServerIdentity(generated);
+    const server = new McpServer({ name, version: formatMcpDisplayVersion(generated) });
     const session: McpOAuthSession = {
         sessionId,
         createdAt: Date.now()
@@ -222,9 +216,18 @@ export async function runOAuthHttpMcp(
     loadLocalEnvFiles(envDirs);
     const generated = readGeneratedModule(toolsModule);
     const httpHostConfig = parseOAuthHttpHostArgv(argv, envDirs);
-    ${requireBaseUrlEnvArgvCheck(product, 'httpHostConfig.baseUrlEnvKey')}
+    <<requireBaseUrlEnvArgvCheck>>
     await validateOAuthHttpHostAtStartup(httpHostConfig, generated);
     await listenOAuthHttpMcp(generated, httpHostConfig);
 }
 `;
+
+export type OAuthHttpRuntimeTemplateSlots = {
+    loggingImport: string;
+    sharedHost: string;
+    requireBaseUrlEnvArgvCheck: string;
+};
+
+export function renderOAuthHttpRuntimeTemplate(slots: OAuthHttpRuntimeTemplateSlots): string {
+    return compose(OAUTH_HTTP_RUNTIME_SKELETON, slots);
 }
