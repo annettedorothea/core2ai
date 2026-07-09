@@ -10,6 +10,7 @@ import {
 } from '../src/codegen/auth-stub-bootstrap.js';
 import {
     formatCodegenBuildTimestamp,
+    renderMcpBuildGeneratedAtModuleSource,
     renderMcpBuildGeneratedAtReExport,
     resolveCodegenBuildTimestamp,
     resolveMcpBuildGeneratedAtTsPathFromToolsModule
@@ -121,6 +122,14 @@ describe('mcp build stamp module', () => {
         const toolsPath = '/proj/generated/api2ai/tools/open-meteo-tools.ts';
         expect(renderMcpBuildGeneratedAtReExport(toolsPath)).toBe(
             "export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';"
+        );
+    });
+
+    test('renderMcpBuildGeneratedAtModuleSource uses single quotes (Prettier singleQuote)', () => {
+        expect(renderMcpBuildGeneratedAtModuleSource('2026-07-09 06:43 (UTC+2)')).toBe(
+            `/** Written by codegen — gitignored in demo workspaces. Do not edit. */
+export const mcpBuildGeneratedAt = '2026-07-09 06:43 (UTC+2)';
+`
         );
     });
 });

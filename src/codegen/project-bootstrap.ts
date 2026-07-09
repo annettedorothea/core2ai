@@ -118,8 +118,9 @@ export function resolveMcpBuildGeneratedAtTsPathFromToolsModule(toolsModuleTsPat
 }
 
 export function renderMcpBuildGeneratedAtModuleSource(buildGeneratedAt: string): string {
+    const quoted = buildGeneratedAt.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     return `/** Written by codegen — gitignored in demo workspaces. Do not edit. */
-export const mcpBuildGeneratedAt = ${JSON.stringify(buildGeneratedAt)};
+export const mcpBuildGeneratedAt = '${quoted}';
 `;
 }
 

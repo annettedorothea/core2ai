@@ -12,6 +12,14 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.0.0-rc.6] - 2026-07-09
+
+### Fixed
+
+- **Build stamp:** `mcp-build-generated-at.ts` uses single-quoted strings (Prettier `singleQuote`) instead of `JSON.stringify` double quotes — fixes consumer `format:check` / `vsix:prepare` after `generate:all`
+
+---
+
 ## [1.0.0-rc.5] - 2026-07-09
 
 ### Changed
@@ -27,6 +35,8 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 - After publish: `npm run sync:core2ai-pin:npm` in consumers before VSIX release
 
 ---
+
+## [1.0.0-rc.4] - 2026-07-07
 
 ### Changed
 
