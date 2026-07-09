@@ -12,7 +12,21 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
-## [1.0.0-rc.4] - 2026-07-07
+## [1.0.0-rc.5] - 2026-07-09
+
+### Changed
+
+- **MCP codegen:** monolith renderers replaced with `compose` + `templates/` + `snippets/`; auth pipeline fragments stay in consumers
+- **Build stamp:** central `mcp-build-generated-at.ts` writer; `serverInfo.version` / tool description footer use generated-at fingerprint
+- **Hook stubs:** `ToolHookStubSpec` helpers in `auth-stub-bootstrap`; token-exchange hook authoring support
+- **Release / CI:** guided-release skill (tag-only consumer quality gate); core `ci.yml` on `main`, `publish.yml` on tag
+
+### Upgrade notes
+
+- Rebuild core2ai, then `generate:all` + `build:generated` in api2ai/db2ai; restart MCP
+- After publish: `npm run sync:core2ai-pin:npm` in consumers before VSIX release
+
+---
 
 ### Changed
 
