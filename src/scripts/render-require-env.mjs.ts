@@ -47,5 +47,22 @@ export function warnEnvIfMissing(name, env = process.env) {
     }
     return value;
 }
+
+/**
+ * @param {string} name
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {number | undefined}
+ */
+export function optionalEnvInt(name, env = process.env) {
+    const value = env[name]?.trim();
+    if (!value) {
+        return undefined;
+    }
+    const port = Number.parseInt(value, 10);
+    if (!Number.isFinite(port) || port <= 0) {
+        return undefined;
+    }
+    return port;
+}
 `;
 }

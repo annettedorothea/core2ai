@@ -74,7 +74,7 @@ npm run sync:core2ai-pin:npm
 
 **Verify:** lockfile `registry.npmjs.org`, **no** `"link": true`.
 
-Commit `packages/cli/package.json` + `package-lock.json` in the **release commit (CP5)** before pushing tag **CP6** — consumer CI runs on **`v*` tags only**, not on branch push.
+Commit `packages/cli/package.json`, root `package-lock.json`, `packages/extension/demos/package.json`, and `packages/extension/demos/package-lock.json` in the **release commit (CP5)** before pushing tag **CP6** — consumer CI runs on **`v*` tags only**, not on branch push.
 
 ## After core2ai changes (link mode)
 

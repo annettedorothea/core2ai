@@ -12,6 +12,18 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.0.0-rc.7] - 2026-07-10
+
+### Added
+
+- **Demo scripts:** `optionalEnvInt` in generated `require-env.mjs` — kill scripts skip missing port env vars instead of aborting
+
+### Upgrade notes
+
+- Run `generate:all` or `sync:generated-scripts` in api2ai/db2ai demos after pin refresh
+
+---
+
 ## [1.0.0-rc.6] - 2026-07-09
 
 ### Fixed

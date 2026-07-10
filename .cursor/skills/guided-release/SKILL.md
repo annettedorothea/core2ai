@@ -152,7 +152,7 @@ From the **releasing consumer** root:
     # optional: node scripts/sync-core2ai-pin.mjs --npm X.Y.Z
     ```
 
-    Confirm: `packages/cli/package.json` + `package-lock.json` → `registry.npmjs.org/.../core-X.Y.Z.tgz`, **no** `"link": true` on core.
+    Confirm: `packages/cli/package.json` + root `package-lock.json` + `packages/extension/demos/package.json` + `packages/extension/demos/package-lock.json` → `registry.npmjs.org/.../core-X.Y.Z.tgz`, **no** `"link": true` on core.
 
 2. **CHANGELOG** — add `## [VSIX.X.Y.Z] - YYYY-MM-DD` with user-facing changes (features on `main`, pin note if useful). Clear `[Unreleased]`.
 
@@ -226,6 +226,8 @@ If test fails: fix locally, re-run **CP2** (if codegen) or **CP3** (if extension
 - All feature / demo / generator changes from the release
 - `packages/cli/package.json` (core pin)
 - `package-lock.json`
+- `packages/extension/demos/package.json` (core pin for MCP runtime)
+- `packages/extension/demos/package-lock.json`
 - `CHANGELOG.md`
 - root + `packages/cli` + `packages/language` + `packages/extension` `package.json` (VSIX version)
 - `packages/extension/demos/generated/**/*.ts` (and `scripts/generated/**` if prepare rewrote them)
