@@ -12,6 +12,24 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.0.0-rc.8] - 2026-07-10
+
+### Changed
+
+- **Zod codegen:** strict `integer` / `number` / `boolean` MCP args (no string unions for numeric types)
+- **MCP descriptions:** `(type: …)` and `(example: …)` suffixes via `enrichJsonSchemaPropertyDescription` and `formatMcpParameterDescriptionLine`
+
+### Documentation
+
+- **mcp-inspector:** `mcp:inspect` connects to a running host only — no `--with-deps` / host startup in the wrapper script
+
+### Upgrade notes
+
+- Regenerate consumer demos after pin refresh (`generate:all`, `build:generated`)
+- api2ai/db2ai: remove runtime invoke coercion and align MySQL string params in separate consumer releases
+
+---
+
 ## [1.0.0-rc.7] - 2026-07-10
 
 ### Added
