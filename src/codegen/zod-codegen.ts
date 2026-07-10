@@ -52,11 +52,11 @@ export function emitZodExpression(schema: JsonSchemaDict): string {
     }
 
     if (schema.type === 'number' || schema.type === 'integer') {
-        return emitLlmTolerantNumber(schema, schema.type === 'integer');
+        return emitStrictNumber(schema, schema.type === 'integer');
     }
 
     if (schema.type === 'boolean') {
-        return withDescribe('z.union([z.boolean(), z.literal("true"), z.literal("false")])', schema);
+        return withDescribe('z.boolean()', schema);
     }
 
     if (schema.type === 'object' && schema.additionalProperties === true) {
@@ -96,6 +96,65 @@ function firstJsonSchemaExampleValue(schema: JsonSchemaDict): unknown | undefine
     return undefined;
 }
 
+/** Type label for MCP tool/input descriptions (LLM-facing prose), e.g. `integer`, `array of string`. */
+export function formatJsonSchemaTypeHint(schema: JsonSchemaDict): string | undefined {
+    if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) {
+        return undefined;
+    }
+
+    if (schema.type === 'array') {
+        const items =
+            schema.items !== undefined && typeof schema.items === 'object' && !Array.isArray(schema.items)
+                ? formatJsonSchemaTypeHint(schema.items as JsonSchemaDict)
+                : undefined;
+        return items ? `array of ${items}` : 'array';
+    }
+
+    if (schema.type === 'integer') {
+        return 'integer';
+    }
+    if (schema.type === 'number') {
+        return 'number';
+    }
+    if (schema.type === 'string') {
+        return 'string';
+    }
+    if (schema.type === 'boolean') {
+        return 'boolean';
+    }
+
+    return undefined;
+}
+
+function appendDescriptionSuffix(description: string, suffix: string): string {
+    return description.length > 0 ? `${description} ${suffix}` : suffix;
+}
+
+/** Append `(type: …)` when JSON Schema carries a known type and text does not already mention it. */
+export function mergeJsonSchemaTypeIntoDescription(
+    description: string | undefined,
+    schema: JsonSchemaDict
+): string | undefined {
+    const trimmed = description?.trim() ?? '';
+    if (trimmed.includes('(type:')) {
+        return trimmed.length > 0 ? trimmed : undefined;
+    }
+    const hint = formatJsonSchemaTypeHint(schema);
+    if (!hint) {
+        return trimmed.length > 0 ? trimmed : undefined;
+    }
+    return appendDescriptionSuffix(trimmed, `(type: ${hint})`);
+}
+
+/** Parameter prose for MCP tool descriptions — always includes `(type: …)` when known. */
+export function formatMcpParameterDescriptionLine(
+    description: string | undefined,
+    schema: JsonSchemaDict
+): string | undefined {
+    const withType = mergeJsonSchemaTypeIntoDescription(description, schema);
+    return mergeJsonSchemaExampleIntoDescription(withType, schema);
+}
+
 /** Append `(example: …)` to a description when JSON Schema carries example(s) and text does not already. */
 export function mergeJsonSchemaExampleIntoDescription(
     description: string | undefined,
@@ -110,11 +169,22 @@ export function mergeJsonSchemaExampleIntoDescription(
         return trimmed.length > 0 ? trimmed : undefined;
     }
     const suffix = `(example: ${formatExampleForDescription(exampleValue)})`;
-    return trimmed.length > 0 ? `${trimmed} ${suffix}` : suffix;
+    return appendDescriptionSuffix(trimmed, suffix);
+}
+
+/** Merge type and example suffixes onto a JSON Schema property description for MCP input schemas. */
+export function enrichJsonSchemaPropertyDescription(
+    description: string | undefined,
+    schema: JsonSchemaDict
+): string | undefined {
+    const trimmed = description?.trim() ?? '';
+    const withType = trimmed.length > 0 ? mergeJsonSchemaTypeIntoDescription(trimmed, schema) : trimmed;
+    const base = withType !== undefined && withType.length > 0 ? withType : undefined;
+    return mergeJsonSchemaExampleIntoDescription(base, schema);
 }
 
 function withDescribe(expr: string, schema: JsonSchemaDict): string {
-    const desc = mergeJsonSchemaExampleIntoDescription(
+    const desc = enrichJsonSchemaPropertyDescription(
         typeof schema.description === 'string' ? schema.description : undefined,
         schema
     );
@@ -145,20 +215,17 @@ function emitStringPicklist(strings: readonly string[]): string {
     return `z.union([${strings.map((v) => `z.literal(${JSON.stringify(v)})`).join(', ')}])`;
 }
 
-/** MCP tool args: models often pass OpenAPI numbers/booleans as JSON strings. */
-function emitLlmTolerantNumber(schema: JsonSchemaDict, integer: boolean): string {
+/** Strict OpenAPI number/integer for MCP tool args (invalid types fail at MCP validation). */
+function emitStrictNumber(schema: JsonSchemaDict, integer: boolean): string {
     if (Array.isArray(schema.enum) && schema.enum.length >= 1 && schema.enum.every(isFiniteNumber)) {
-        const literals = (schema.enum as number[]).flatMap((v) => [
-            `z.literal(${v})`,
-            `z.literal(${JSON.stringify(String(v))})`
-        ]);
+        const literals = (schema.enum as number[]).map((v) => `z.literal(${v})`);
         if (literals.length === 1) {
             return withDescribe(literals[0]!, schema);
         }
         return withDescribe(`z.union([${literals.join(', ')}])`, schema);
     }
     const numberBranch = integer ? 'z.number().int()' : 'z.number()';
-    return withDescribe(`z.union([${numberBranch}, z.string()])`, schema);
+    return withDescribe(numberBranch, schema);
 }
 
 function isFiniteNumber(value: unknown): value is number {

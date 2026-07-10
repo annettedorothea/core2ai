@@ -1,5 +1,41 @@
 import { describe, expect, test } from 'vitest';
-import { emitZodExpression, mergeJsonSchemaExampleIntoDescription } from '../src/codegen/zod-codegen.js';
+import {
+    emitZodExpression,
+    enrichJsonSchemaPropertyDescription,
+    formatJsonSchemaTypeHint,
+    mergeJsonSchemaExampleIntoDescription,
+    mergeJsonSchemaTypeIntoDescription
+} from '../src/codegen/zod-codegen.js';
+
+describe('formatJsonSchemaTypeHint', () => {
+    test('formats primitive and array types', () => {
+        expect(formatJsonSchemaTypeHint({ type: 'integer' })).toBe('integer');
+        expect(formatJsonSchemaTypeHint({ type: 'array', items: { type: 'string' } })).toBe('array of string');
+    });
+});
+
+describe('mergeJsonSchemaTypeIntoDescription', () => {
+    test('appends type suffix when description is set', () => {
+        expect(mergeJsonSchemaTypeIntoDescription('max rows', { type: 'integer' })).toBe('max rows (type: integer)');
+    });
+
+    test('does not duplicate when description already mentions type', () => {
+        expect(mergeJsonSchemaTypeIntoDescription('max rows (type: integer)', { type: 'integer' })).toBe(
+            'max rows (type: integer)'
+        );
+    });
+});
+
+describe('enrichJsonSchemaPropertyDescription', () => {
+    test('appends type before example', () => {
+        expect(
+            enrichJsonSchemaPropertyDescription('max rows', {
+                type: 'integer',
+                examples: [100]
+            })
+        ).toBe('max rows (type: integer) (example: 100)');
+    });
+});
 
 describe('mergeJsonSchemaExampleIntoDescription', () => {
     test('appends example suffix when description is set', () => {
@@ -41,18 +77,20 @@ describe('emitZodExpression', () => {
             required: ['limit'],
             additionalProperties: false
         });
-        expect(source).toContain('.describe("max rows per page (example: 100)")');
+        expect(source).toContain('.describe("max rows per page (type: integer) (example: 100)")');
     });
 
-    test('emits number fields as union with string for LLM tool callers', () => {
-        expect(emitZodExpression({ type: 'number' })).toBe('z.union([z.number(), z.string()])');
-        expect(emitZodExpression({ type: 'integer' })).toBe('z.union([z.number().int(), z.string()])');
+    test('emits number fields as strict Zod types', () => {
+        expect(emitZodExpression({ type: 'number' })).toBe('z.number()');
+        expect(emitZodExpression({ type: 'integer' })).toBe('z.number().int()');
     });
 
-    test('emits numeric enums with string literal counterparts', () => {
-        expect(emitZodExpression({ type: 'integer', enum: [1, 2] })).toBe(
-            'z.union([z.literal(1), z.literal("1"), z.literal(2), z.literal("2")])'
-        );
+    test('emits numeric enums as number literals only', () => {
+        expect(emitZodExpression({ type: 'integer', enum: [1, 2] })).toBe('z.union([z.literal(1), z.literal(2)])');
+    });
+
+    test('emits boolean fields as strict Zod boolean', () => {
+        expect(emitZodExpression({ type: 'boolean' })).toBe('z.boolean()');
     });
 
     test('emits array fields as union with string for LLM tool callers', () => {

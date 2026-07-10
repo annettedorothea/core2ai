@@ -94,7 +94,7 @@ Environment configuration must exist and contain valid:
 
 ## Using mcp:inspect
 
-Demo workspaces provide:
+Start the demo stack first (`npm run start:all`, or `npm run start:mcp` when databases and mocks are already up). Then open the Inspector:
 
 ```bash
 npm run mcp:inspect -- <demo-name>
@@ -103,26 +103,23 @@ npm run mcp:inspect -- <demo-name>
 The wrapper script:
 
 - loads `.env`
-- starts required dependencies
-- starts MCP hosts if necessary
-- reads configuration from `.cursor/mcp.json`
-- launches the MCP Inspector
-- cleans up processes on shutdown
+- reads the server URL and headers from `.cursor/mcp.json`
+- prints auth hints for the chosen demo
+- launches the MCP Inspector (Streamable HTTP)
+
+It does **not** start MCP hosts, databases, or mock APIs — use `npm run start:all` for that.
 
 ---
 
 ### api2ai Examples
 
 ```bash
+npm run start:all
 npm run mcp:inspect -- open-meteo
 ```
 
 ```bash
-npm run mcp:inspect -- todo --with-deps
-```
-
-```bash
-npm run mcp:inspect -- todo --no-start
+npm run mcp:inspect -- todo
 ```
 
 ---
@@ -130,6 +127,7 @@ npm run mcp:inspect -- todo --no-start
 ### db2ai Examples
 
 ```bash
+npm run start:all
 npm run mcp:inspect -- pagila-postgresql
 ```
 
@@ -138,7 +136,7 @@ npm run mcp:inspect -- orders-postgresql
 ```
 
 ```bash
-npm run mcp:inspect -- sakila-mysql --no-start
+npm run mcp:inspect -- sakila-mysql
 ```
 
 ---
