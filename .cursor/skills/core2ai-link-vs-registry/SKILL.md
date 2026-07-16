@@ -86,11 +86,15 @@ Commit `packages/cli/package.json`, root `package-lock.json`, `packages/extensio
 
 See [core2ai-build.mdc](../../rules/core2ai-build.mdc).
 
-## Demos generate: explicit cliPath
+## Demos generate: two paths (no mixing)
 
-`project-generate.config.json` sets **`cliPath`** (monorepo default: `../../cli/bin/cli.js`). `generate.mjs` uses that path or `${CLI_ENV_VAR}` — no extension-folder scan.
+**Monorepo (api2ai/db2ai repo development):** from repo root, `npm run generate:all` → `scripts/monorepo-generate-all.mjs` → hardcoded `packages/cli/bin/cli.js`. Never extension scan.
 
-`createDemoWorkspace` overwrites `cliPath` with the installed VSIX embed (`out/embed-*/cli.cjs`). Hand-copied demo folders: set `cliPath` manually or recreate via the extension command.
+**Author / demos package (VSIX):** `npm run generate:all` in the demo workspace → `generated/{product}/scripts/generate-all-vsix.mjs` → newest installed extension embed only. No env / monorepo fallback.
+
+Utility scripts live under `generated/{product}/scripts/` (product-scoped; mixed `.api2ai` + `.db2ai` workspaces supported).
+
+Live MCP during monorepo Preview testing: IDE Run and Debug / launch config — not demos `start:all` for local CLI.
 
 ## Release coordination
 

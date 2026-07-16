@@ -21,6 +21,15 @@ export {
 } from './render-mcp-host-startup-banner.js';
 export * from './mcp-module-host.js';
 export { writeGeneratedDemosTestSupport } from './write-demos-test-support.js';
-export { writeGeneratedScripts } from '../scripts/write-generated-scripts.js';
+export {
+    writeGeneratedScripts,
+    runGenerateBatch,
+    listRootDslFiles,
+    productScriptsMeta,
+    generatedScriptsDirRelative,
+    PROJECT_META_SCRIPT,
+    PROJECT_GENERATE_CONFIG
+} from '../scripts/write-generated-scripts.js';
+export type { ScriptsProduct } from '../scripts/write-generated-scripts.js';
 export * from './templates/index.js';
 export * from './zod-codegen.js';

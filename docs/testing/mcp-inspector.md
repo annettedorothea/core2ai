@@ -56,12 +56,14 @@ The Inspector can:
 
 ## Role in the Testing Strategy
 
-The Inspector complements but does not replace automated tests.
+`npm run mcp:inspect` is the **standard manual verify** for generated HTTP MCP tools in a demo / author workspace (alongside Cursor `/test-all` for end-to-end smoke). Shared Inspector helpers ship under `generated/{product}/scripts/mcp-inspect-lib.mjs`; demo-specific auth hints stay in hand-maintained `scripts/mcp-inspect.mjs`.
+
+The Inspector complements but does not replace automated tests or `/test-all`.
 
 | Layer         | Purpose                                 | Typical Usage   |
 | ------------- | --------------------------------------- | --------------- |
 | CI tests      | DSL parsing, code generation, snapshots | Every commit    |
-| MCP Inspector | Interactive debugging                   | Development     |
+| MCP Inspector | Interactive verify / debugging          | Development     |
 | `/test-all`   | End-to-end smoke tests                  | Before releases |
 
 The Inspector is particularly useful for:
@@ -71,6 +73,7 @@ The Inspector is particularly useful for:
 - schema validation
 - OAuth flows
 - transport debugging
+- checking `tools/list` and `tools/call` against a freshly generated host
 
 ---
 

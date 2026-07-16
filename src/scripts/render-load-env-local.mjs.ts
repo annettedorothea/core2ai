@@ -9,7 +9,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+/** Workspace root: generated/{product}/scripts/ → ../../.. */
+const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 function stripOptionalQuotes(value) {
     if (value.length < 2) {
@@ -59,7 +60,7 @@ function loadEnvFile(filePath, options) {
     return true;
 }
 
-/** @param {string} [root] defaults to project root (parent of scripts/) */
+/** @param {string} [root] defaults to demo workspace root (parent of generated/) */
 export function loadProjectEnvLocal(root = defaultRoot) {
     loadEnvFile(path.join(root, '.env'));
     loadEnvFile(path.join(root, '.env.local'), { overrideExisting: true });

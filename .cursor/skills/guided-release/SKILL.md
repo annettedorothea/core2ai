@@ -209,7 +209,7 @@ Filename must match **CP1** version (nothing committed yet — that is OK).
 ## CP4 — Manual preview (user)
 
 1. Install **`.vsix`** from **CP3** (Run and Debug or **Install from VSIX**); reload window.
-2. Demo workspace: `npm run start:all`, MCP smoke-test.
+2. Monorepo root: `npm run start:all:demos`, MCP smoke-test (`/test-all`). Author demos workspace uses `npm run start:all` (VSIX CLI).
 3. **db2ai:** Docker for DB demos.
 4. Optional but recommended: **`/test-all`** before **CP5**.
 

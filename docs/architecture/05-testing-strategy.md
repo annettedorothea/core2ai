@@ -75,6 +75,8 @@ npm run build
 - End-to-end MCP protocol in CI (replaced by `/test-all`)
 - Live database EXPLAIN (db2ai uses mocked driver probes in unit tests)
 
+Manual HTTP host verify (not CI): `npm run mcp:inspect -- <demo>` after hosts are running — see [MCP Inspector](../testing/mcp-inspector.md).
+
 ---
 
 ## Release checklist

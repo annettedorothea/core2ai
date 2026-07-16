@@ -60,7 +60,7 @@ Although a watch mode exists, rebuilding after changes is currently the recommen
 
 ## Feedback
 
-**1.0.0-rc** — we welcome feedback on onboarding, documentation, DSL ergonomics, and MCP integration across the ecosystem. Share your experience in [GitHub Discussions](https://github.com/annettedorothea/core2ai/discussions/1). For bugs, open an [Issue](https://github.com/annettedorothea/core2ai/issues).
+We welcome feedback on onboarding, documentation, DSL ergonomics, and MCP integration across the ecosystem. Share your experience in [GitHub Discussions](https://github.com/annettedorothea/core2ai/discussions/1). For bugs, open an [Issue](https://github.com/annettedorothea/core2ai/issues).
 
 Product-specific feedback is also welcome in [api2ai Discussions](https://github.com/annettedorothea/api2ai/discussions/3) and [db2ai Discussions](https://github.com/annettedorothea/db2ai/discussions/1).
 
