@@ -12,6 +12,23 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.0.0] - 2026-07-16
+
+### Added
+
+- **Demo scripts:** `writeGeneratedScripts` emits VSIX/demo utilities under `generated/{product}/scripts/` (generate/vsix helpers, mcp-inspect lib, start-service lib, ensure-mcp-build-stamp, kill-mcp-ports, and related modules)
+
+### Documentation
+
+- README: remove pre-release / `1.0.0-rc` feedback label for the stable release
+
+### Upgrade notes
+
+- Regenerate consumer demos after pin refresh (`generate:all`, `build:generated`) so `generated/{product}/scripts/**` is rewritten
+- api2ai/db2ai: hand-maintained copies under `demos/scripts/generated/` are obsolete — sync from core templates
+
+---
+
 ## [1.0.0-rc.8] - 2026-07-10
 
 ### Changed
