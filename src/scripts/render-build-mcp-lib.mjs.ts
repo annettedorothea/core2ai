@@ -42,7 +42,7 @@ export function db2aiExtraRuntimeDeps(moduleName, rootDeps) {
     return `${GENERATED_SCRIPTS_BANNER}/**
  * Shared helpers for bundling generated servers/* MCP hosts into dist/mcp/.
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs';
 import path from 'node:path';
 import * as esbuild from 'esbuild';
 
@@ -204,6 +204,9 @@ export function buildDistServerArgv(moduleName, hostKind, examplePort, envExampl
         }
         argv.push('--oauth-scope', demo.oauthScope ?? moduleName);
         argv.push('--port', examplePort, '--path', '/mcp');
+        if (demo.icon) {
+            argv.push('--icon', './icon.png');
+        }
         return argv;
     }
     if (hostKind === 'stdio') {
@@ -213,6 +216,9 @@ export function buildDistServerArgv(moduleName, hostKind, examplePort, envExampl
         }
         if (demo?.authEnv) {
             argv.push('--auth-env', demo.authEnv);
+        }
+        if (demo?.icon) {
+            argv.push('--icon', './icon.png');
         }
         return argv;
     }
@@ -227,6 +233,9 @@ export function buildDistServerArgv(moduleName, hostKind, examplePort, envExampl
         argv.push('--auth-env', demo.authEnv);
     }
     argv.push('--port', examplePort, '--path', '/mcp');
+    if (demo.icon) {
+        argv.push('--icon', './icon.png');
+    }
     return argv;
 }
 
@@ -332,6 +341,17 @@ export async function buildMcpPackage({
     const startScript = renderDistStartScript(serverArgv);
     const outDir = path.join(demosRoot, 'dist', 'mcp', \`\${moduleName}-\${hostKind}\`);
     mkdirSync(outDir, { recursive: true });
+
+    const demoForIcon =
+        hostKind === 'oauth-http' ? oauthDemos[moduleName] : httpDemos[moduleName];
+    const iconRel = demoForIcon?.icon?.trim();
+    if (iconRel) {
+        const iconSrc = path.resolve(demosRoot, iconRel);
+        if (!existsSync(iconSrc)) {
+            throw new Error(\`MCP icon not found for \${moduleName}: \${iconSrc}\`);
+        }
+        copyFileSync(iconSrc, path.join(outDir, 'icon.png'));
+    }
 
     writeFileSync(
         path.join(outDir, 'package.json'),

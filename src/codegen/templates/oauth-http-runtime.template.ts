@@ -60,7 +60,11 @@ async function createMcpServerForSession(
     headers: Record<string, string | string[] | undefined>
 ): Promise<SessionEntry> {
     const { name } = requireMcpServerIdentity(generated);
-    const server = new McpServer({ name, version: formatMcpDisplayVersion(generated) });
+    const server = new McpServer({
+        name,
+        version: formatMcpDisplayVersion(generated),
+        icons: resolveMcpServerIcons(httpHostConfig.iconPath)
+    });
     const session: McpOAuthSession = {
         sessionId,
         createdAt: Date.now()

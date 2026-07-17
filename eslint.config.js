@@ -27,7 +27,8 @@ export default [
             '**/*.js',
             '**/*.cjs',
             '**/*.mjs',
-            '**/syntaxes/**'
+            '**/syntaxes/**',
+            'src/codegen/assets/mcp-fallback-icon-b64.ts'
         ]
     },
     js.configs.recommended,

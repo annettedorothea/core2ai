@@ -24,7 +24,11 @@ async function runStdioMcpServer(
     hostConfig: HostRuntimeConfig
 ): Promise<void> {
     const { name } = requireMcpServerIdentity(generated);
-    const server = new McpServer({ name, version: formatMcpDisplayVersion(generated) });
+    const server = new McpServer({
+        name,
+        version: formatMcpDisplayVersion(generated),
+        icons: resolveMcpServerIcons(hostConfig.iconPath)
+    });
     await registerMcpTools(server, generated, {
         envDirs: hostConfig.envDirs,
         resolveContext: () => resolveHostContextForCall(hostConfig, generated)

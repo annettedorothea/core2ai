@@ -12,3 +12,6 @@ package-lock.json
 
 # Langium grammar JSON (copied, not hand-edited)
 **/syntaxes/
+
+# Generated binary-as-base64 (single long line)
+src/codegen/assets/mcp-fallback-icon-b64.ts

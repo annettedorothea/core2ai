@@ -67,7 +67,11 @@ async function createMcpServerForSession(
     headers: Record<string, string | string[] | undefined>
 ): Promise<SessionEntry> {
     const { name } = requireMcpServerIdentity(generated);
-    const server = new McpServer({ name, version: formatMcpDisplayVersion(generated) });
+    const server = new McpServer({
+        name,
+        version: formatMcpDisplayVersion(generated),
+        icons: resolveMcpServerIcons(httpHostConfig.iconPath)
+    });
     sessionHeaders.set(sessionId, headers);
     await registerMcpTools(server, generated, {
         envDirs: httpHostConfig.envDirs,

@@ -10,6 +10,7 @@ import {
     registerMcpToolsSnippet,
     requireMcpServerIdentitySnippet,
     formatMcpDisplayVersionSnippet,
+    resolveMcpServerIconsSnippet,
     sendOAuthUnauthorizedSnippet
 } from '../snippets/index.js';
 import {
@@ -51,6 +52,8 @@ ${requireMcpServerIdentitySnippet()}
 
 ${formatMcpDisplayVersionSnippet()}
 
+${resolveMcpServerIconsSnippet()}
+
 ${registerMcpToolsSnippet()}
 
 ${renderMcpHostStartupBannerSource(fragments.describeUpstreamEnvField)}
@@ -60,12 +63,14 @@ ${renderMcpHostStartupBannerSource(fragments.describeUpstreamEnvField)}
 type HostRuntimeConfig = {
     baseUrlEnvKey?: string;
     authEnvKey?: string;
+    iconPath?: string;
     envDirs: string[];
 };
 
 function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
     let baseUrlEnv: string | undefined;
     let authEnv: string | undefined;
+    let iconPath: string | undefined;
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--base-url-env') {
@@ -82,6 +87,13 @@ function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
             }
             continue;
         }
+        if (arg === '--icon') {
+            iconPath = argv[++i];
+            if (!iconPath) {
+                throw new Error('Missing value after --icon');
+            }
+            continue;
+        }
         if (arg.startsWith('-')) {
             throw new Error('Unknown option: ' + arg);
         }
@@ -90,6 +102,7 @@ function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
     return {
         baseUrlEnvKey: baseUrlEnv,
         authEnvKey: authEnv,
+        iconPath,
         envDirs
     };
 }
@@ -115,6 +128,7 @@ ${renderStdioMcpStartupBannerFn(fragments.startupBannerConnectionEnvNotePrefix)}
 type HttpMcpHostRuntimeConfig = {
     baseUrlEnvKey?: string;
     authEnvKey?: string;
+    iconPath?: string;
     envDirs: string[];
     listenHost: string;
     port: number;
@@ -124,6 +138,7 @@ type HttpMcpHostRuntimeConfig = {
 function parseHttpMcpHostArgv(argv: string[], envDirs: string[]): HttpMcpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
     let authEnv: string | undefined;
+    let iconPath: string | undefined;
     let listenHost = '127.0.0.1';
     let port: number | undefined;
     let mcpPath = '/mcp';
@@ -140,6 +155,13 @@ function parseHttpMcpHostArgv(argv: string[], envDirs: string[]): HttpMcpHostRun
             authEnv = argv[++i];
             if (!authEnv) {
                 throw new Error('Missing value after --auth-env');
+            }
+            continue;
+        }
+        if (arg === '--icon') {
+            iconPath = argv[++i];
+            if (!iconPath) {
+                throw new Error('Missing value after --icon');
             }
             continue;
         }
@@ -182,6 +204,7 @@ function parseHttpMcpHostArgv(argv: string[], envDirs: string[]): HttpMcpHostRun
     return {
         baseUrlEnvKey: baseUrlEnv,
         authEnvKey: authEnv,
+        iconPath,
         envDirs,
         listenHost,
         port,
@@ -231,6 +254,7 @@ ${renderHttpMcpStartupBannerFn(httpMcpProfile, fragments.startupBannerConnection
     const oauthExtras = `
 type OAuthHttpHostRuntimeConfig = {
     baseUrlEnvKey?: string;
+    iconPath?: string;
     envDirs: string[];
     listenHost: string;
     port: number;
@@ -253,6 +277,7 @@ const oauthCredentialByInbound = new Map<string, string>();
 
 function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
+    let iconPath: string | undefined;
     let listenHost = '127.0.0.1';
     let port: number | undefined;
     let mcpPath = '/mcp';
@@ -264,6 +289,13 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
             baseUrlEnv = argv[++i];
             if (!baseUrlEnv) {
                 throw new Error('Missing value after --base-url-env');
+            }
+            continue;
+        }
+        if (arg === '--icon') {
+            iconPath = argv[++i];
+            if (!iconPath) {
+                throw new Error('Missing value after --icon');
             }
             continue;
         }
@@ -322,6 +354,7 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
     }
     return {
         baseUrlEnvKey: baseUrlEnv,
+        iconPath,
         envDirs,
         listenHost,
         port,
