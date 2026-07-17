@@ -10,6 +10,10 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ## [Unreleased]
 
+---
+
+## [1.0.1] - 2026-07-17
+
 ### Added
 
 - **MCP server icons:** hosts accept `--icon <path>` (PNG/JPEG/WebP ≤ 200 KiB → `serverInfo.icons`; SVG rejected); omit for Tool Factory fallback (`src/codegen/assets/mcp-fallback-icon.png`)
