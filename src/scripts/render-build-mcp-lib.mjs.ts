@@ -260,6 +260,7 @@ export function renderDistPackageJson(moduleName, hostKind, rootDeps, extraDeps 
  * @param {Record<string, object>} options.httpDemos
  * @param {Record<string, object>} options.oauthDemos
  * @param {(moduleName: string) => Record<string, string>} [options.extraRuntimeDeps]
+ * @param {(moduleName: string, outDir: string, demosRoot: string) => void} [options.copyDistAssets]
  */
 export async function buildMcpPackage({
     demosRoot,
@@ -268,7 +269,8 @@ export async function buildMcpPackage({
     hostKind,
     httpDemos,
     oauthDemos,
-    extraRuntimeDeps = () => ({})
+    extraRuntimeDeps = () => ({}),
+    copyDistAssets = () => {}
 }) {
     if (!VALID_HOST_KINDS.has(hostKind)) {
         throw new Error(\`Invalid --host \${hostKind}. Use: \${[...VALID_HOST_KINDS].join(', ')}\`);
@@ -310,6 +312,7 @@ export async function buildMcpPackage({
     const startScript = renderDistStartScript(serverArgv);
     const outDir = path.join(demosRoot, 'dist', 'mcp', \`\${moduleName}-\${hostKind}\`);
     mkdirSync(outDir, { recursive: true });
+    copyDistAssets(moduleName, outDir, demosRoot);
 
     const demoForIcon =
         hostKind === 'oauth-http' ? oauthDemos[moduleName] : httpDemos[moduleName];

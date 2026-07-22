@@ -10,6 +10,10 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ## [Unreleased]
 
+### Changed
+
+- **Dist pack:** `buildMcpPackage` accepts optional `copyDistAssets(moduleName, outDir, demosRoot)` so consumers can copy DuckDB CSV/Excel (or other) data beside `server.mjs`
+
 ---
 
 ## [1.0.1] - 2026-07-17
