@@ -10,9 +10,14 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ## [Unreleased]
 
+---
+
+## [1.0.2] - 2026-07-22
+
 ### Changed
 
 - **Dist pack:** `buildMcpPackage` accepts optional `copyDistAssets(moduleName, outDir, demosRoot)` so consumers can copy DuckDB CSV/Excel (or other) data beside `server.mjs`
+- **Dist / demos scripts:** `build-mcp-lib` without db2ai driver-name heuristics; default MCP ports via `product-scripts-meta`; bookings-specific inspect copy removed from shared templates
 
 ---
 
