@@ -1,5 +1,5 @@
 import * as fs from 'node:fs';
-import { MCP_FALLBACK_ICON_PNG_BASE64 } from '../codegen/assets/mcp-fallback-icon-b64.js';
+import { MCP_FALLBACK_ICON_PNG_BASE64 } from '../../codegen/assets/mcp-fallback-icon-b64.js';
 
 type McpServerIcon = { src: string; mimeType: string };
 

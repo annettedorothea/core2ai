@@ -1,20 +1,23 @@
-import { loggingAdapter } from '../logging/index.js';
-import { describeUpstreamEnvField } from './host-context.js';
+import { loggingAdapter } from '../../logging/index.js';
+import { describeUpstreamEnvField } from '../context/host-context.js';
+import type { GeneratedHostModule, HostRuntimeConfig } from '../types.js';
 import { formatMcpServerVersionFields, requireMcpServerIdentity } from './identity.js';
-import type { GeneratedHostModule, HostRuntimeConfig } from './types.js';
 
 function formatStartupFieldLine(label: string, value: string): string {
     const pad = ' '.repeat(Math.max(1, 10 - label.length));
     return '     ' + label + pad + value;
 }
 
-function printMcpHostStartupBanner(options: {
+export type McpHostStartupBannerOptions = {
     serverName: string;
     transport: string;
     status?: 'ready' | 'warning';
     note?: string;
     fields: { label: string; value: string }[];
-}): void {
+};
+
+/** Shared banner chrome for stdio and HTTP hosts (transport label + fields only differ). */
+export function printMcpHostStartupBanner(options: McpHostStartupBannerOptions): void {
     const status = options.status ?? 'ready';
     const glyph = status === 'warning' ? '▲' : '●';
     const lines = ['', '  ┌─ ' + options.serverName + ' (' + options.transport + ') ' + glyph + ' ' + status + ' ─'];
@@ -29,7 +32,8 @@ function printMcpHostStartupBanner(options: {
     loggingAdapter.banner(lines);
 }
 
-function collectMissingEnvNote(keys: (string | undefined)[]): string | undefined {
+/** Note when listed env keys are missing/empty. */
+export function collectMissingEnvNote(keys: (string | undefined)[]): string | undefined {
     const missing = keys
         .filter((key): key is string => Boolean(key?.trim()))
         .filter((key) => !process.env[key]?.trim());
@@ -37,11 +41,6 @@ function collectMissingEnvNote(keys: (string | undefined)[]): string | undefined
         return undefined;
     }
     return missing.join(', ') + ' unset — tool calls may fail until set in .env';
-}
-
-function requireMcpServerDisplayName(generated: GeneratedHostModule): string {
-    const { name } = requireMcpServerIdentity(generated);
-    return name;
 }
 
 export function printStdioMcpStartupBanner(generated: GeneratedHostModule, hostConfig: HostRuntimeConfig): void {
@@ -62,8 +61,9 @@ export function printStdioMcpStartupBanner(generated: GeneratedHostModule, hostC
         });
     }
     const note = collectMissingEnvNote([generated.connectionEnv, hostConfig.baseUrlEnvKey, hostConfig.authEnvKey]);
+    const { name } = requireMcpServerIdentity(generated);
     printMcpHostStartupBanner({
-        serverName: requireMcpServerDisplayName(generated),
+        serverName: name,
         transport: 'stdio',
         status: note ? 'warning' : 'ready',
         note,

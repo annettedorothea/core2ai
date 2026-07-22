@@ -1,7 +1,7 @@
-/** Product-neutral credential relay for stdio/passthrough HTTP hosts. */
-export function credentialRelaySnippet(): string {
+/** Trim a credential string, or omit when empty/missing (stdio / public / passthrough hosts). */
+export function normalizeHostCredentialSnippet(): string {
     return `
-function resolveRelayHostCredential(
+function normalizeHostCredential(
     rawCredential: string | undefined
 ): { credential?: string } {
     if (!rawCredential?.trim()) {

@@ -1,5 +1,5 @@
-import { parseDatabaseDialect } from './database.js';
-import type { GeneratedHostModule, TokenExchangeFn, VerifyCredentialFn } from './types.js';
+import { parseDatabaseDialect } from '../support/database.js';
+import type { GeneratedHostModule, TokenExchangeFn, VerifyCredentialFn } from '../types.js';
 
 /** Validate and normalize a generated tools module import for MCP hosts. */
 export function readGeneratedModule(imported: Record<string, unknown>): GeneratedHostModule {

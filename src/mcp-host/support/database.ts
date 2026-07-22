@@ -1,4 +1,9 @@
-import type { DatabaseDialect } from './types.js';
+import type { DatabaseDialect } from '../types.js';
+
+/**
+ * Dialect / connection-string checks for the `connectionEnv` host path.
+ * Transitional in core — Phase 4 moves this into the db2ai Host-Facade (`createHostContext`); not a shared host concern.
+ */
 
 export function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
     return value === 'postgres' ||

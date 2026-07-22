@@ -1,10 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import type * as z from 'zod/v4';
-import { loggingAdapter } from '../logging/index.js';
-import { loadLocalEnvFiles } from './env-loading.js';
+import { loggingAdapter } from '../../logging/index.js';
+import { loadLocalEnvFiles } from '../cli/env-loading.js';
+import type { ApiLikeHostContext, GeneratedHostModule } from '../types.js';
 import { formatMcpBuildLine } from './identity.js';
-import type { ApiLikeHostContext, GeneratedHostModule } from './types.js';
 
 function formatToolError(err: unknown): string {
     if (err instanceof Error) {

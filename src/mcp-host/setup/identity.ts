@@ -1,4 +1,4 @@
-import type { GeneratedHostModule } from './types.js';
+import type { GeneratedHostModule } from '../types.js';
 
 export function requireMcpServerIdentity(generated: GeneratedHostModule): { name: string; version: string } {
     const name = generated.mcpServerName?.trim();

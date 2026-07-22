@@ -1,5 +1,5 @@
 export { localEnvFilesConstSnippet, envLoadingFunctionsSnippet } from './env-loading.js';
-export { credentialRelaySnippet } from './credential-relay.js';
+export { normalizeHostCredentialSnippet } from './normalize-credential.js';
 export {
     readGeneratedModulePrefixSnippet,
     requireMcpServerIdentitySnippet,

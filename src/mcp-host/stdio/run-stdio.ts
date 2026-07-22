@@ -2,15 +2,19 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { parseHostArgv } from './argv.js';
-import { loadLocalEnvFiles } from './env-loading.js';
-import { requireBaseUrlEnvArgvCheck, resolveHostContextForCall, validateHostAtStartup } from './host-context.js';
-import { formatMcpDisplayVersion, requireMcpServerIdentity } from './identity.js';
-import { resolveMcpServerIcons } from './icons.js';
-import { readGeneratedModule } from './read-generated-module.js';
-import { registerMcpTools } from './register-mcp-tools.js';
-import { printStdioMcpStartupBanner } from './startup-banner.js';
-import type { GeneratedHostModule, HostRuntimeConfig } from './types.js';
+import { parseHostArgv } from '../cli/argv.js';
+import { loadLocalEnvFiles } from '../cli/env-loading.js';
+import {
+    requireBaseUrlEnvArgvCheck,
+    resolveHostContextForCall,
+    validateHostAtStartup
+} from '../context/host-context.js';
+import { formatMcpDisplayVersion, requireMcpServerIdentity } from '../setup/identity.js';
+import { resolveMcpServerIcons } from '../setup/icons.js';
+import { readGeneratedModule } from '../setup/read-generated-module.js';
+import { registerMcpTools } from '../setup/register-mcp-tools.js';
+import { printStdioMcpStartupBanner } from '../setup/startup-banner.js';
+import type { GeneratedHostModule, HostRuntimeConfig } from '../types.js';
 
 /**
  * Env search roots relative to a generated server stub (`servers/*.ts`) or cli runtime.

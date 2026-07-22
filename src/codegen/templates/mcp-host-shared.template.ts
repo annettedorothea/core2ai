@@ -1,5 +1,5 @@
 import {
-    credentialRelaySnippet,
+    normalizeHostCredentialSnippet,
     envLoadingFunctionsSnippet,
     formatToolErrorSnippet,
     httpCorsSnippet,
@@ -40,7 +40,7 @@ ${localEnvFilesConstSnippet()}
 ${fragments.hostCoreTypes}
 
 ${envLoadingFunctionsSnippet()}${fragments.envLoadingToCredentialGap}
-${mode === 'oauth-http' ? '' : credentialRelaySnippet()}
+${mode === 'oauth-http' ? '' : normalizeHostCredentialSnippet()}
 
 ${formatToolErrorSnippet()}
 

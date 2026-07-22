@@ -1,4 +1,4 @@
-import type { HostRuntimeConfig } from './types.js';
+import type { HostRuntimeConfig } from '../types.js';
 
 export function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
     let baseUrlEnv: string | undefined;

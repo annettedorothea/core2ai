@@ -27,7 +27,7 @@ export type GeneratedHostModule = {
     mcpServerVersion?: string;
     mcpBuildGeneratedAt?: string;
     requiresAuth: boolean;
-    /** db2ai: env var name for the database URL (from .db2ai). */
+    /** Env var name for a database URL when the tools module uses connection-string upstream (not HTTP baseUrl). */
     connectionEnv?: string;
     databaseDialect?: DatabaseDialect;
     verifyCredential?: VerifyCredentialFn;

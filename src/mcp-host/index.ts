@@ -8,24 +8,31 @@ export type {
     VerifyCredentialFn
 } from './types.js';
 
-export { parseHostArgv, readCredentialFromEnv } from './argv.js';
-export { resolveRelayHostCredential } from './credential-relay.js';
-export { isExpectedDatabaseUrl, parseDatabaseDialect } from './database.js';
-export { loadLocalEnvFiles } from './env-loading.js';
+export { parseHostArgv, readCredentialFromEnv } from './cli/argv.js';
+export { loadLocalEnvFiles } from './cli/env-loading.js';
 export {
     describeUpstreamEnvField,
     requireBaseUrlEnvArgvCheck,
+    resolveApiLikeHostContext,
     resolveHostContextForCall,
+    validateBaseUrlOrConnectionEnvAtStartup,
     validateHostAtStartup
-} from './host-context.js';
+} from './context/host-context.js';
 export {
     formatMcpBuildLine,
     formatMcpDisplayVersion,
     formatMcpServerVersionFields,
     requireMcpServerIdentity
-} from './identity.js';
-export { resolveMcpServerIcons } from './icons.js';
-export { readGeneratedModule } from './read-generated-module.js';
-export { registerMcpTools } from './register-mcp-tools.js';
-export { defaultMcpEnvDirsFromMetaUrl, runStdioMcp } from './run-stdio.js';
-export { printStdioMcpStartupBanner } from './startup-banner.js';
+} from './setup/identity.js';
+export { resolveMcpServerIcons } from './setup/icons.js';
+export { readGeneratedModule } from './setup/read-generated-module.js';
+export { registerMcpTools } from './setup/register-mcp-tools.js';
+export {
+    collectMissingEnvNote,
+    printMcpHostStartupBanner,
+    printStdioMcpStartupBanner,
+    type McpHostStartupBannerOptions
+} from './setup/startup-banner.js';
+export { defaultMcpEnvDirsFromMetaUrl, runStdioMcp } from './stdio/run-stdio.js';
+export { normalizeHostCredential } from './support/normalize-credential.js';
+export { isExpectedDatabaseUrl, parseDatabaseDialect } from './support/database.js';
