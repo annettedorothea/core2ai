@@ -17,6 +17,8 @@ const RUNTIME_FILE_BY_KIND: Record<McpModuleHostKind, string> = {
     'oauth-http': 'oauth-http-runtime'
 };
 
+const CORE_STDIO_RUNTIME_IMPORT = '@toolfactory.dev/core/mcp-host';
+
 /** Writes four per-module MCP servers under `generated/<product>/servers/`. */
 export function writeMcpServers(toolsModuleTsPath: string): string[] {
     const serversDir = resolveGeneratedServersDir(toolsModuleTsPath);
@@ -27,14 +29,20 @@ export function writeMcpServers(toolsModuleTsPath: string): string[] {
     const written: string[] = [];
     for (const hostKind of MCP_MODULE_HOST_KINDS) {
         const serverPath = path.join(serversDir, moduleMcpServerFileName(moduleBasename, hostKind));
-        const runtimeTsPath = path.join(path.dirname(serverPath), '..', 'cli', `${RUNTIME_FILE_BY_KIND[hostKind]}.ts`);
+        const runtimeImport =
+            hostKind === 'stdio'
+                ? CORE_STDIO_RUNTIME_IMPORT
+                : relativeJsImportPath(
+                      serverPath,
+                      path.join(path.dirname(serverPath), '..', 'cli', `${RUNTIME_FILE_BY_KIND[hostKind]}.ts`)
+                  );
         fs.writeFileSync(
             serverPath,
             renderMcpServerTemplate({
                 hostKind,
                 moduleBasename,
                 toolsImport: relativeJsImportPath(serverPath, toolsModuleTsPath),
-                runtimeImport: relativeJsImportPath(serverPath, runtimeTsPath)
+                runtimeImport
             }),
             'utf-8'
         );

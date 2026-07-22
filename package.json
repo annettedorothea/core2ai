@@ -22,6 +22,14 @@
         "./codegen": {
             "types": "./out/codegen/index.d.ts",
             "default": "./out/codegen/index.js"
+        },
+        "./logging": {
+            "types": "./out/logging/index.d.ts",
+            "default": "./out/logging/index.js"
+        },
+        "./mcp-host": {
+            "types": "./out/mcp-host/index.d.ts",
+            "default": "./out/mcp-host/index.js"
         }
     },
     "scripts": {
