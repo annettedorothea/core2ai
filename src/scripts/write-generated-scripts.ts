@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { renderBuildMcpLibMjsSource, type McpScriptsProduct } from './render-build-mcp-lib.mjs.js';
+import { renderBuildMcpLibMjsSource } from './render-build-mcp-lib.mjs.js';
 import { renderEnsureMcpBuildStampMjsSource } from './render-ensure-mcp-build-stamp.mjs.js';
 import { renderForegroundLifecycleMjsSource } from './render-foreground-lifecycle.mjs.js';
 import { renderGenerateAllVsixMjsSource } from './render-generate-all-vsix.mjs.js';
@@ -15,7 +15,7 @@ import { renderProjectMetaMjsSource } from './render-project-meta.mjs.js';
 import { renderRequireEnvMjsSource } from './render-require-env.mjs.js';
 import { renderResolveCliVsixMjsSource } from './render-resolve-cli-vsix.mjs.js';
 import { renderStartServiceLibMjsSource } from './render-start-service-lib.mjs.js';
-import type { ScriptsProduct } from './product-scripts-meta.js';
+import { productScriptsMeta, type ScriptsProduct } from './product-scripts-meta.js';
 
 export type { ScriptsProduct } from './product-scripts-meta.js';
 export { productScriptsMeta, generatedScriptsDirRelative } from './product-scripts-meta.js';
@@ -32,7 +32,8 @@ export const PROJECT_META_SCRIPT = 'project-meta.mjs';
  * Does not touch other products' trees.
  */
 export function writeGeneratedScripts(projectRoot: string, product: ScriptsProduct): void {
-    const resolved: McpScriptsProduct = product === 'db2ai' ? 'db2ai' : 'api2ai';
+    const resolved: ScriptsProduct = product === 'db2ai' ? 'db2ai' : 'api2ai';
+    const meta = productScriptsMeta(resolved);
     const outDir = path.join(projectRoot, 'generated', resolved, 'scripts');
     fs.mkdirSync(outDir, { recursive: true });
 
@@ -46,7 +47,10 @@ export function writeGeneratedScripts(projectRoot: string, product: ScriptsProdu
         { fileName: 'kill-listeners-on-port.mjs', source: renderKillListenersOnPortMjsSource() },
         { fileName: 'require-env.mjs', source: renderRequireEnvMjsSource() },
         { fileName: 'print-mcp-catalog.mjs', source: renderPrintMcpCatalogMjsSource() },
-        { fileName: 'build-mcp-lib.mjs', source: renderBuildMcpLibMjsSource(resolved) },
+        {
+            fileName: 'build-mcp-lib.mjs',
+            source: renderBuildMcpLibMjsSource({ defaultPort: meta.defaultMcpPort })
+        },
         { fileName: 'kill-mcp-ports.mjs', source: renderKillMcpPortsMjsSource() },
         { fileName: 'foreground-lifecycle.mjs', source: renderForegroundLifecycleMjsSource() },
         { fileName: 'start-service-lib.mjs', source: renderStartServiceLibMjsSource() },

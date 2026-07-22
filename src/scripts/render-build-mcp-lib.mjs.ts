@@ -2,42 +2,11 @@ import { GENERATED_SCRIPTS_BANNER } from './generated-scripts-banner.js';
 
 export type McpScriptsProduct = 'api2ai' | 'db2ai';
 
-export function renderBuildMcpLibMjsSource(product: McpScriptsProduct): string {
-    const defaultPort = product === 'db2ai' ? '4853' : '3854';
-    const collectEnvKeysHttpTail =
-        product === 'db2ai'
-            ? `
-    if (demo.mcpAuthHeaderEnv === 'MCP_AUTH_HEADER') {
-        keys.push('MCP_AUTH_EXPECTED');
-    }`
-            : '';
-    const db2aiExtraRuntimeDepsBlock =
-        product === 'db2ai'
-            ? `
 /**
- * @param {string} moduleName
- * @param {Record<string, string>} rootDeps
+ * @param {{ defaultPort: string }} options — fallback when `.env.example` has no port line
  */
-export function db2aiExtraRuntimeDeps(moduleName, rootDeps) {
-    if (moduleName.includes('postgresql')) {
-        return { pg: rootDeps.pg ?? '^8.21.0' };
-    }
-    if (moduleName.includes('mysql')) {
-        return { mysql2: rootDeps.mysql2 ?? '^3.22.5' };
-    }
-    if (moduleName.includes('mariadb')) {
-        return { mysql2: rootDeps.mysql2 ?? '^3.22.5' };
-    }
-    if (moduleName.includes('sqlserver')) {
-        return { mssql: rootDeps.mssql ?? '^11.0.1' };
-    }
-    if (moduleName.includes('oracle')) {
-        return { oracledb: rootDeps.oracledb ?? '^6.10.0' };
-    }
-    return {};
-}
-`
-            : '';
+export function renderBuildMcpLibMjsSource(options: { defaultPort: string }): string {
+    const { defaultPort } = options;
 
     return `${GENERATED_SCRIPTS_BANNER}/**
  * Shared helpers for bundling generated servers/* MCP hosts into dist/mcp/.
@@ -73,7 +42,7 @@ export function collectEnvKeys(moduleName, hostKind, httpDemos, oauthDemos) {
     }
     const keys = [demo.baseUrlEnv, demo.connectionEnv, demo.authEnv, demo.portEnv, demo.mcpAuthHeaderEnv, demo.authExpectedEnv].filter(
         Boolean
-    );${collectEnvKeysHttpTail}
+    );
     return [...new Set(keys)];
 }
 
@@ -281,7 +250,7 @@ export function renderDistPackageJson(moduleName, hostKind, rootDeps, extraDeps 
     }
     return JSON.stringify(pkg, null, 4);
 }
-${db2aiExtraRuntimeDepsBlock}
+
 /**
  * @param {object} options
  * @param {string} options.demosRoot

@@ -87,7 +87,6 @@ export function renderMcpInspectLibMjsSource(): string {
         `    printAuthField('Scope:', scope);`,
         `    printAuthField('Redirect URL:', \`\${INSPECTOR_REDIRECT_URL}  (read-only in Inspector)\`);`,
         `    warnIfInspectorRedirectMissing(env);`,
-        `    console.log('  Note: do not use JWT secrets (e.g. BOOKINGS_API_JWT_SECRET) as Client ID.');`,
         `    console.log('');`,
         `}`,
         ``,

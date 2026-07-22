@@ -8,6 +8,8 @@ export type ProductScriptsMeta = {
     embedHomeEnvVar: string;
     embedDirName: string;
     extensionIdPrefix: string;
+    /** Fallback MCP HTTP port when `.env.example` has no matching portEnv line. */
+    defaultMcpPort: string;
 };
 
 export function productScriptsMeta(product: ScriptsProduct): ProductScriptsMeta {
@@ -17,7 +19,8 @@ export function productScriptsMeta(product: ScriptsProduct): ProductScriptsMeta 
             dslExtension: '.db2ai',
             embedHomeEnvVar: 'DB2AI_EMBED_HOME',
             embedDirName: 'embed-db2ai',
-            extensionIdPrefix: 'toolfactory-dev.vscode-db2ai-'
+            extensionIdPrefix: 'toolfactory-dev.vscode-db2ai-',
+            defaultMcpPort: '4853'
         };
     }
     return {
@@ -25,7 +28,8 @@ export function productScriptsMeta(product: ScriptsProduct): ProductScriptsMeta 
         dslExtension: '.api2ai',
         embedHomeEnvVar: 'API2AI_EMBED_HOME',
         embedDirName: 'embed-api2ai',
-        extensionIdPrefix: 'toolfactory-dev.vscode-api2ai-'
+        extensionIdPrefix: 'toolfactory-dev.vscode-api2ai-',
+        defaultMcpPort: '3854'
     };
 }
 
