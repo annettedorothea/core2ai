@@ -1,0 +1,14 @@
+---
+description: >-
+    When the user asks for commit messages (not to run git commit), follow the
+    commit-messages skill — propose messages and warnings; user commits in the IDE.
+alwaysApply: true
+---
+
+# Commit messages (IDE)
+
+If the user asks for a **commit message** / messages / „gib commit“ / „dann committen“ **without** explicitly asking you to run `git commit`:
+
+1. Read and follow [commit-messages skill](../skills/commit-messages/SKILL.md).
+2. Propose messages for **staged + unstaged** changes; warn what not to commit.
+3. **Do not** commit or push unless they clearly ask you to execute git commit/push.
