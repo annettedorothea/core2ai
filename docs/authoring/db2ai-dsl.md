@@ -40,7 +40,7 @@ SQL {
 }
 ```
 
-1. **`database` line** — dialect + env var name holding the connection URL.
+1. **`database` line** — dialect + env var for the connection URL (omit `env` for DuckDB).
 2. **Optional `auth` keyword** — enables the credential pipeline for protected tools (see [Auth and hooks](./auth-and-hooks.md)).
 3. **`SQL { }` blocks** — one tool per block.
 
@@ -59,8 +59,11 @@ database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 | `mariadb`       | MariaDB              |
 | `sqlserver`     | Microsoft SQL Server |
 | `oracle`        | Oracle               |
+| `duckdb`        | DuckDB (in-memory)   |
 
-The env var must be set in the workspace `.env` (value on the same line as the key). The validator emits a **warning** when the variable is missing or empty at editor time.
+Server dialects require an env var in the workspace `.env` (value on the same line as the key). The validator emits a **warning** when the variable is missing or empty at editor time.
+
+**DuckDB:** declare `database duckdb` **without** `env`. Load CSV/Excel (or other files) in the write-once `initDatabase` stub; see [Supported SQL patterns](./supported-sql.md).
 
 ---
 
@@ -158,11 +161,13 @@ Same layout as api2ai under `generated/db2ai/tools/` and `generated/db2ai/cli/`.
 
 ## Learning examples
 
-| Demo                      | Focus                                            |
-| ------------------------- | ------------------------------------------------ |
-| `pagila-postgresql.db2ai` | PostgreSQL, public `prepareToolCall` (limit cap) |
-| `sakila-mysql.db2ai`      | MySQL + passthrough MCP auth                     |
-| `orders-postgresql.db2ai` | OAuth MCP, `checkToolAccess`, `clientMayOmit`    |
+| Demo                      | Focus                                                   |
+| ------------------------- | ------------------------------------------------------- |
+| `pagila-postgresql.db2ai` | PostgreSQL, public `prepareToolCall` (limit cap)        |
+| `sakila-mysql.db2ai`      | MySQL + passthrough MCP auth                            |
+| `orders-postgresql.db2ai` | OAuth MCP, `checkToolAccess`, `clientMayOmit`           |
+| `flight.db2ai`            | DuckDB in-memory + CSV via `initDatabase`               |
+| `sales-report.db2ai`      | DuckDB in-memory + multi-sheet Excel via `initDatabase` |
 
 ---
 

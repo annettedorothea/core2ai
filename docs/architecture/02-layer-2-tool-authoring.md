@@ -39,7 +39,7 @@ Authoring reference: [api2ai DSL](../authoring/api2ai-dsl.md) · [Supported Open
 Developers write SQL queries that are:
 
 - validated against a real database using `EXPLAIN` (dry-run where supported)
-- supported dialects: PostgreSQL, MySQL, MariaDB, SQL Server, Oracle
+- supported dialects: PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, DuckDB (in-memory; CSV/Excel via `initDatabase`)
 - enriched with AI-facing metadata (intent, examples, tool names, optional column documentation)
 - optional authentication configuration
 

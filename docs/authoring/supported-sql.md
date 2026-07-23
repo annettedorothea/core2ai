@@ -32,22 +32,25 @@ database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 | `mariadb`   | MariaDB              | `mariadb://` (rewritten to `mysql://` for `mysql2` at connect time) |
 | `sqlserver` | Microsoft SQL Server | `sqlserver://` or `mssql://`                                        |
 | `oracle`    | Oracle Database      | `oracle://user:pass@host:port/SERVICE`                              |
+| `duckdb`    | DuckDB (in-memory)   | none — declare `database duckdb` **without** `env`                  |
 
-The env var name must match a key in the workspace `.env` (value on the same line). The validator warns when the variable is missing or empty.
+For server dialects, the env var name must match a key in the workspace `.env` (value on the same line). The validator warns when the variable is missing or empty.
+
+**DuckDB file sources (CSV, Excel, …):** load data in the write-once `initDatabase` stub under `src/db/db2ai/<module>-tools/` (views for tool SQL). Re-generate does not overwrite that stub. Demos: `flight.db2ai` (CSV), `sales-report.db2ai` (Excel).
 
 ---
 
 ## Works well
 
-| Area              | Support                                                                                              |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| Tool selection    | Explicit `SQL { … }` blocks per query                                                                |
-| Placeholders      | Named `:identifier` binds in `query` (see bind rules below)                                          |
-| Parameter schema  | `params: { name: { description, example, type } }` — types: `string`, `integer`, `number`, `boolean` |
-| Agent metadata    | `intent`, `summary`, `description`, `example`                                                        |
-| Access control    | `access: public \| protected`, optional `auth`, hooks                                                |
-| Editor validation | `EXPLAIN`-style dry-run when DB is reachable and examples are set                                    |
-| Demos             | Pagila/Sakila (postgres/mysql), `animals-sqlserver`, `plants-oracle`, orders OAuth                   |
+| Area              | Support                                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Tool selection    | Explicit `SQL { … }` blocks per query                                                                             |
+| Placeholders      | Named `:identifier` binds in `query` (see bind rules below)                                                       |
+| Parameter schema  | `params: { name: { description, example, type } }` — types: `string`, `integer`, `number`, `boolean`              |
+| Agent metadata    | `intent`, `summary`, `description`, `example`                                                                     |
+| Access control    | `access: public \| protected`, optional `auth`, hooks                                                             |
+| Editor validation | `EXPLAIN`-style dry-run when DB is reachable and examples are set                                                 |
+| Demos             | Pagila/Sakila, `animals-sqlserver`, `plants-oracle`, orders OAuth, DuckDB `flight` (CSV) / `sales-report` (Excel) |
 
 ---
 
@@ -61,6 +64,7 @@ Authors always write **`:name`** in SQL. The generator rewrites binds per dialec
 | MySQL / MariaDB | `:limit` (repeat `:x` if needed) | `?` per **occurrence** in the query      |
 | SQL Server      | `:searchText`                    | `@searchText`                            |
 | Oracle          | `:limit`                         | `:limit` (native named binds)            |
+| DuckDB          | `:limit`, `:city`                | `$1`, `$2`, … (same rewrite as Postgres) |
 
 **PostgreSQL casts:** `::type` is not treated as a placeholder (regex excludes `::`).
 
@@ -80,6 +84,7 @@ When the database is reachable, the language service validates each tool query w
 | MySQL / MariaDB | `EXPLAIN …` with `?` binds                              |
 | SQL Server      | `SET NOEXEC ON; …; SET NOEXEC OFF;` with `@name` inputs |
 | Oracle          | `EXPLAIN PLAN FOR …` with `:name` binds                 |
+| DuckDB          | `EXPLAIN …` with `$n` binds (no `VERBOSE`)              |
 
 **Oracle note:** `RETURNING` clauses are stripped before `EXPLAIN PLAN FOR` because the planner cannot parse DML `RETURNING` in that form.
 
@@ -108,6 +113,12 @@ Unit tests mock connectivity; authors need a live database in the workspace for 
 
 - Declare `database mariadb` with a `mariadb://` URL.
 - Validation and invoke use the same code path as MySQL (`mysql2` driver).
+
+### DuckDB
+
+- Declare `database duckdb` with **no** `env` (in-memory only).
+- Register file-backed views in `initDatabase` (CSV via `read_csv_auto`, Excel via `INSTALL`/`LOAD excel` + `read_xlsx`, …).
+- Tool SQL should query those views; keep messy spreadsheet cleanup in `initDatabase`, not in every tool query.
 
 ---
 
@@ -147,7 +158,7 @@ Write idiomatic SQL for the target engine — the factory does not translate dia
 | String concat in `LIKE` | `\|\|`             | `CONCAT()` or `\|\|` (sql_mode) | `+`              | `\|\|`                    |
 | Pagination              | `LIMIT` / `OFFSET` | same                            | `OFFSET … FETCH` | `OFFSET … FETCH`          |
 
-See demo files: `pagila-postgresql.db2ai`, `sakila-mysql.db2ai`, `animals-sqlserver.db2ai`, `plants-oracle.db2ai`.
+See demo files: `pagila-postgresql.db2ai`, `sakila-mysql.db2ai`, `animals-sqlserver.db2ai`, `plants-oracle.db2ai`, `flight.db2ai`, `sales-report.db2ai`.
 
 ---
 
