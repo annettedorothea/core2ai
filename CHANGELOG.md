@@ -12,6 +12,18 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.0.3] - 2026-08-03
+
+### Changed
+
+- **Demo scripts:** `extensionIdPrefix` uses Marketplace publisher `toolfactorydev` (`toolfactorydev.vscode-api2ai-` / `toolfactorydev.vscode-db2ai-`)
+
+### Upgrade notes
+
+- Regenerate consumer demos after pin refresh (`generate:all`) so `generated/{product}/scripts/project-meta.mjs` matches the published extension id
+
+---
+
 ## [1.0.2] - 2026-07-22
 
 ### Changed

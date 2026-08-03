@@ -19,7 +19,7 @@ export function productScriptsMeta(product: ScriptsProduct): ProductScriptsMeta 
             dslExtension: '.db2ai',
             embedHomeEnvVar: 'DB2AI_EMBED_HOME',
             embedDirName: 'embed-db2ai',
-            extensionIdPrefix: 'toolfactory-dev.vscode-db2ai-',
+            extensionIdPrefix: 'toolfactorydev.vscode-db2ai-',
             defaultMcpPort: '4853'
         };
     }
@@ -28,7 +28,7 @@ export function productScriptsMeta(product: ScriptsProduct): ProductScriptsMeta 
         dslExtension: '.api2ai',
         embedHomeEnvVar: 'API2AI_EMBED_HOME',
         embedDirName: 'embed-api2ai',
-        extensionIdPrefix: 'toolfactory-dev.vscode-api2ai-',
+        extensionIdPrefix: 'toolfactorydev.vscode-api2ai-',
         defaultMcpPort: '3854'
     };
 }
