@@ -55,7 +55,7 @@ Tag **`vX.Y.Z`** muss **`package.json` `version`** (Workspace-Root / VSIX-Versio
 | CP     | Name                                           | Who   |
 | ------ | ---------------------------------------------- | ----- |
 | **0**  | Clean git (three repos)                        | Agent |
-| **C1** | core2ai CHANGELOG + bump + verify              | Agent |
+| **C1** | core2ai CHANGELOG + bump + audit + verify      | Agent |
 | **C2** | Commit + push core2ai                          | User  |
 | **C3** | Tag `vX.Y.Z` + push tag → npmjs                | User  |
 | **C4** | Confirm npm publish (Actions / npm view)       | User  |
@@ -99,7 +99,7 @@ Workflow: [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml)
 
 Tag **`vX.Y.Z`** must match **`package.json` `version`**.
 
-### C1 — CHANGELOG + bump + verify (agent)
+### C1 — CHANGELOG + bump + audit + verify (agent)
 
 From **core2ai** root:
 
@@ -107,8 +107,13 @@ From **core2ai** root:
 # Agent: add ## [X.Y.Z] - YYYY-MM-DD to CHANGELOG.md (move [Unreleased] content)
 npm run version -- X.Y.Z
 # bumps package.json and runs npm install (syncs package-lock.json version)
+npm audit
 npm run build && npm run check && npm test
 ```
+
+If **`npm audit`** fails: fix or bump dependencies (`npm audit` / `npm audit fix` at core root), commit the lockfile with the release, then re-run audit + build/check/test. Do not skip audit for a core release.
+
+Note: core **publish.yml** Quality Gate is still `check` + `test` only — **C1** is the release-time audit gate for core (same idea as consumer **CP2** / `vsix:prepare`).
 
 **End C1:** stop → **C2**
 
@@ -375,7 +380,8 @@ Repeat **CP1–CP8** for the other consumer if both ship.
 | VSIX wrong filename version            | **CP1** bump, **CP3** rebuild, retest, then **CP5–CP8**                |
 | `mcpServerVersion` still old on main   | **CP2** before **CP5**; include `generated/**` in release commit       |
 | Prepare fails after **CP1**            | Fix code; re-run **CP2** — version/CHANGELOG usually stay              |
-| `vsix:prepare` fails on `npm audit`    | Address vulns in root + demos (`npm audit` / `npm audit fix`); re-run **CP2** |
+| `vsix:prepare` fails on `npm audit`    | Address vulns in **root and** `packages/extension/demos` (`npm audit` / `npm audit fix` in both); root-only green is not enough — re-run **CP2** |
+| core **C1** fails on `npm audit`       | Fix core root lockfile / deps (`npm audit fix`); include lockfile in **C2** release commit; re-run **C1** verify |
 | MCP broken after core publish          | **CP2** again, restart MCP                                             |
 | Committed before test, VSIX bad        | Rebuild/test locally; fix + new commit (avoid — **CP4** before **CP5**) |
 | Pushed tag before CI-ready commit      | Delete tag remote/local, fix **CP5**, re-tag **CP6**                   |
