@@ -465,6 +465,7 @@ api2ai /test:all
 
 - [Documentation index](../README.md)
 - [Cursor MCP Documentation](https://cursor.com/docs/mcp)
+- [VS Code / GitHub Copilot Integration](vscode.md)
 - [MCP Hosts](../runtime/mcp-hosts.md)
 - [MCP Inspector](../testing/mcp-inspector.md)
 - [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)

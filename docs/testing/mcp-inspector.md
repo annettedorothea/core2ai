@@ -307,6 +307,7 @@ The `mcp:inspect` script is merely a convenience wrapper around the Inspector CL
 - [Testing strategy](../architecture/05-testing-strategy.md)
 - [MCP Hosts](../runtime/mcp-hosts.md)
 - [Cursor Integration](../integrations/cursor.md)
+- [VS Code / GitHub Copilot](../integrations/vscode.md)
 - [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)
 
 ---

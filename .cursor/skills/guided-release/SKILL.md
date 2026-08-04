@@ -2,16 +2,20 @@
 name: guided-release
 description: >-
     Guided VSIX release for api2ai and db2ai (optional core2ai tag). Canonical skill
-    lives in core2ai only (sibling repos api2ai/db2ai). One checkpoint per turn: clean git,
-    version bump, vsix:prepare, vsix:build, manual test, then commit (incl. registry pin +
-    generated mcpServerVersion), GitHub release, then VS Marketplace + Open VSX publish. Use for guided
-    release, release, release CPn, or release weiter. Never git commit/push/tag/gh unless the
-    user explicitly asks. For commits: repo + message only (user checks in via IDE).
+    lives in core2ai only (sibling repos api2ai/db2ai). User runs all terminal commands;
+    agent guides one checkpoint per turn (commands to paste, CHANGELOG edits, commit
+    messages). Flow: clean git, version bump, vsix:prepare, vsix:build, manual test,
+    then commit (incl. registry pin + generated mcpServerVersion), GitHub release, then
+    VS Marketplace + Open VSX publish. Use for guided release, release, release CPn, or
+    release weiter. Never git commit/push/tag/gh or npm/vsce unless the user explicitly
+    asks the agent to run them. For commits: repo + message only (user checks in via IDE).
 ---
 
 # Guided release
 
-**Ein Flow**, unterbrechbar. Der Agent führt **höchstens einen Checkpoint** pro Antwort aus und **stoppt** danach.
+**Ein Flow**, unterbrechbar. Der Agent führt **höchstens einen Checkpoint** pro Antwort und **stoppt** danach.
+
+**User führt alle Terminal-Commands aus** (`git`, `npm`, `vsce`, `ovsx`, …). Der Agent: Status-Tabelle, exakte Copy-Paste-Befehle, bei Bedarf CHANGELOG-/Datei-Edits, Commit-Messages — **keine** Shell für Release-Commands (Tokens + Sandbox/`vsce`-Probleme vermeiden).
 
 **Invoke:** `guided release`, `release`, `release CP0`, `release CP C3`, `release CP1`, `release weiter`.
 
@@ -40,11 +44,11 @@ Tag **`vX.Y.Z`** muss **`package.json` `version`** (Workspace-Root / VSIX-Versio
 1. **No automatic git** — never `git commit`, `git push`, `git tag`, or `gh release` unless the user explicitly asks.
 2. **User commits in the IDE** — at commit CPs, output only **repo** + **commit message** (+ optional one-line note). No `git add` lists.
 3. **One checkpoint per turn** — status table with `[x]` / `[ ]`; wait for `release weiter` or manual test OK.
-4. **Agent may run** `npm run …` — not git.
+4. **User runs all terminal commands** — agent prints the exact `npm` / `git status` / `vsce` / `ovsx` lines; does **not** run them (saves tokens; avoids sandbox/`vsce` secretlint failures). Exception only if the user **explicitly** asks the agent to run a command.
 5. **Version before VSIX build** — `vsix:version` in **CP1**; consumer **commit** in **CP5** (after manual test), **not** before **CP3** `vsix:build`.
 6. **`.vsix` is local** — not committed; GitHub upload only via `vsix:release` after manual preview.
 7. **Consumer release commit (CP5)** bundles **feature changes + registry pin + CHANGELOG + VSIX version + `generated/**`** (`mcpServerVersion` in `*-tools.ts`) — **one** commit, not split.
-8. **`vsix:prepare` before commit** — **CP2** runs `generate:all`; rewrites `mcpServerVersion`. **Do not commit before CP2** or generated tools stay on the old version.
+8. **`vsix:prepare` before commit** — **CP2** regenerates demos / `mcpServerVersion`. **Do not commit before CP2** or generated tools stay on the old version.
 9. **core2ai publish order** — during hacking: sibling link (`sync:core2ai-pin`). **After** npm publish (**C4**): registry pin in **CP1** (`sync:core2ai-pin:npm`) **before** consumer VSIX work. Never commit sibling-linked lockfiles when CI expects registry (tag push only).
 10. **No consumer push until CP5** — build and test the same tree you will commit.
 11. **Tag after manual test** — **CP6** (`git tag vX.Y.Z` + push tag) **after** **CP5** push; Quality Gate runs on tag only. **CP7** (`vsix:release`) only after Actions **ci** is green. **CP8** (Marketplace **and** Open VSX) only after **CP7**, same tested `.vsix`.
@@ -52,21 +56,21 @@ Tag **`vX.Y.Z`** muss **`package.json` `version`** (Workspace-Root / VSIX-Versio
 
 ## Checkpoint map
 
-| CP     | Name                                           | Who   |
-| ------ | ---------------------------------------------- | ----- |
-| **0**  | Clean git (three repos)                        | Agent |
-| **C1** | core2ai CHANGELOG + bump + audit + verify      | Agent |
-| **C2** | Commit + push core2ai                          | User  |
-| **C3** | Tag `vX.Y.Z` + push tag → npmjs                | User  |
-| **C4** | Confirm npm publish (Actions / npm view)       | User  |
-| **1**  | Consumer: pin + CHANGELOG + `vsix:version`     | Agent |
-| **2**  | `vsix:prepare` (verify + regenerate demos)     | Agent |
-| **3**  | `vsix:build`                                   | Agent |
-| **4**  | Manual preview (install `.vsix`, `/test-all`)       | User  |
-| **5**  | Commit + push consumer release (Registry-Pin)     | User  |
-| **6**  | Tag `vX.Y.Z` + push tag → Quality Gate (Actions)  | User  |
-| **7**  | GitHub release (`vsix:release`, after CI green)   | User  |
-| **8**  | Marketplace + Open VSX (same `.vsix`)              | User  |
+| CP     | Name                                           | Who                                                         |
+| ------ | ---------------------------------------------- | ----------------------------------------------------------- |
+| **0**  | Clean git (three repos)                        | User runs `git status`; agent interprets                    |
+| **C1** | core2ai CHANGELOG + bump + audit + verify      | Agent may edit CHANGELOG; user runs npm                     |
+| **C2** | Commit + push core2ai                          | User                                                        |
+| **C3** | Tag `vX.Y.Z` + push tag → npmjs                | User                                                        |
+| **C4** | Confirm npm publish (Actions / npm view)       | User                                                        |
+| **1**  | Consumer: pin + CHANGELOG + `vsix:version`     | Agent may edit CHANGELOG; user runs npm                     |
+| **2**  | `vsix:prepare` (verify + regenerate demos)     | User                                                        |
+| **3**  | `vsix:build`                                   | User                                                        |
+| **4**  | Manual preview (install `.vsix`, `/test-all`)  | User                                                        |
+| **5**  | Commit + push consumer release (Registry-Pin)  | User                                                        |
+| **6**  | Tag `vX.Y.Z` + push tag → Quality Gate         | User                                                        |
+| **7**  | GitHub release (`vsix:release`, after CI green)| User                                                        |
+| **8**  | Marketplace + Open VSX (same `.vsix`)           | User                                                        |
 
 **CP C1–C4** whenever **core2ai** `package.json` version changes. Skip only if that version is already on npmjs.
 
@@ -80,7 +84,13 @@ C1 → C2 → C3 → npmjs → C4 → CP1 → CP2 prepare → CP3 build → CP4 
 
 ## CP0 — Clean git
 
-Agent: `git status` in **core2ai**, **api2ai**, **db2ai**.
+User, in each of **core2ai**, **api2ai**, **db2ai**:
+
+```bash
+git status -sb
+```
+
+Paste output (or confirm clean/dirty). Agent interprets — does not run git.
 
 - **core2ai** should be clean before **C1** (feature work already committed).
 - **Consumer (api2ai/db2ai):** dirty workspace is **OK** for release — do **not** ask for a feature-only commit + push before **CP1**. All release changes stay local until **CP5**.
@@ -99,24 +109,22 @@ Workflow: [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml)
 
 Tag **`vX.Y.Z`** must match **`package.json` `version`**.
 
-### C1 — CHANGELOG + bump + audit + verify (agent)
+### C1 — CHANGELOG + bump + audit + verify
 
-From **core2ai** root:
+Agent may add `## [X.Y.Z] - YYYY-MM-DD` to `CHANGELOG.md` (move `[Unreleased]` content). User runs from **core2ai** root:
 
 ```bash
-# Agent: add ## [X.Y.Z] - YYYY-MM-DD to CHANGELOG.md (move [Unreleased] content)
 npm run version -- X.Y.Z
 # bumps package.json and runs npm install (syncs package-lock.json version)
 npm audit
 npm run build && npm run check && npm test
 ```
 
-If **`npm audit`** fails: fix or bump dependencies (`npm audit` / `npm audit fix` at core root), commit the lockfile with the release, then re-run audit + build/check/test. Do not skip audit for a core release.
+If **`npm audit`** fails: fix or bump dependencies (`npm audit` / `npm audit fix` at core root), include the lockfile in **C2**, then re-run audit + build/check/test. Do not skip audit for a core release.
 
 Note: core **publish.yml** Quality Gate is still `check` + `test` only — **C1** is the release-time audit gate for core (same idea as consumer **CP2** / `vsix:prepare`).
 
 **End C1:** stop → **C2**
-
 ### C2 — Commit + push core2ai (user)
 
 | Repo      | Message (example)                                              |
@@ -146,11 +154,11 @@ Triggers **publish.yml** (Quality Gate: `check` + `test` + npm publish).
 
 ---
 
-## CP1 — Consumer: pin + CHANGELOG + VSIX version (agent)
+## CP1 — Consumer: pin + CHANGELOG + VSIX version
 
-**One agent step** per releasing consumer. Ask target **VSIX version** (`X.Y.Z`) — do not guess. VSIX version may differ from **core** (e.g. core `1.0.0-rc.4`, VSIX `1.0.0-rc.2`).
+**One step** per releasing consumer. Ask target **VSIX version** (`X.Y.Z`) — do not guess. VSIX version may differ from **core** (e.g. core `1.0.0-rc.4`, VSIX `1.0.0-rc.2`).
 
-From the **releasing consumer** root:
+From the **releasing consumer** root — agent may edit CHANGELOG; user runs:
 
 1. **Registry pin** (skip if already on published core version):
 
@@ -183,7 +191,7 @@ If **C4** not done: stop — npm must have the core version first.
 
 ## CP2 — Verify (`vsix:prepare`)
 
-Agent runs in the **releasing consumer**:
+User runs in the **releasing consumer**:
 
 ```bash
 npm run vsix:prepare
@@ -201,7 +209,9 @@ If prepare fails otherwise: fix code or generator; re-run **CP2** — version/CH
 
 ---
 
-## CP3 — VSIX build (agent)
+## CP3 — VSIX build
+
+User runs:
 
 ```bash
 npm run vsix:build
@@ -354,17 +364,17 @@ Repeat **CP1–CP8** for the other consumer if both ship.
 
 ## Resume
 
-| User says        | Agent does                                        |
-| ---------------- | ------------------------------------------------- |
-| `guided release` | CP0 → CP C1 or CP1                                |
-| `release CP C3`  | Remind: tag + push tag → publish.yml Quality Gate |
-| `release CP6`    | Remind: consumer tag vX.Y.Z + push → wait for ci  |
-| `release CP7`    | `vsix:release` only after CP6 CI green            |
-| `release CP8`    | Remind: same `.vsix` → Marketplace **and** Open VSX |
-| `release CP1`    | pin + CHANGELOG + `vsix:version` for one consumer |
-| `release CP2`    | `vsix:prepare` only                               |
-| `release CP3`    | `vsix:build` only                                 |
-| `release weiter` | Next open CP                                      |
+| User says        | Agent does                                                          |
+| ---------------- | ------------------------------------------------------------------- |
+| `guided release` | CP0: ask for `git status`; then CP C1 or CP1 commands               |
+| `release CP C3`  | Remind: tag + push tag → publish.yml Quality Gate                   |
+| `release CP6`    | Remind: consumer tag vX.Y.Z + push → wait for ci                    |
+| `release CP7`    | Paste: `npm run vsix:release` only after CP6 CI green               |
+| `release CP8`    | Remind: same `.vsix` → Marketplace **and** Open VSX                 |
+| `release CP1`    | CHANGELOG if needed + paste pin / `vsix:version` commands           |
+| `release CP2`    | Paste: `npm run vsix:prepare`                                       |
+| `release CP3`    | Paste: `npm run vsix:build`                                         |
+| `release weiter` | Next open CP (commands / message only — no Shell)                   |
 
 ---
 

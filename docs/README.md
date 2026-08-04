@@ -32,9 +32,10 @@
 
 ### Integrations (`integrations/`)
 
-| Document                         | Summary                           |
-| -------------------------------- | --------------------------------- |
-| [Cursor](integrations/cursor.md) | VSIX, `mcp.json`, stdio and OAuth |
+| Document                                           | Summary                                             |
+| -------------------------------------------------- | --------------------------------------------------- |
+| [Cursor](integrations/cursor.md)                   | VSIX, `mcp.json`, stdio / HTTP / OAuth              |
+| [VS Code / GitHub Copilot](integrations/vscode.md) | Demo path: stdio only (HTTP/OAuth not reliable yet) |
 
 ### Testing (`testing/`)
 

@@ -45,6 +45,7 @@ It only sees capabilities it can execute.
 
 - [MCP hosts](../runtime/mcp-hosts.md)
 - [Cursor integration](../integrations/cursor.md)
+- [VS Code / GitHub Copilot](../integrations/vscode.md)
 - [Layer 2 – Tool Authoring](02-layer-2-tool-authoring.md)
 - [Documentation index](../README.md)
 

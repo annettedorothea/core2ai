@@ -648,6 +648,7 @@ After changing host templates or consumer fragments:
 
 - [Documentation index](../README.md)
 - [Cursor Integration](../integrations/cursor.md)
+- [VS Code / GitHub Copilot](../integrations/vscode.md)
 - [MCP Inspector](../testing/mcp-inspector.md)
 - [Layer 2 — Tool Authoring](../architecture/02-layer-2-tool-authoring.md)
 - [Layer 3 — AI Runtime](../architecture/03-layer-3-ai-runtime.md)
