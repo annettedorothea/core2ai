@@ -4,9 +4,9 @@ description: >-
     Guided VSIX release for api2ai and db2ai (optional core2ai tag). Canonical skill
     lives in core2ai only (sibling repos api2ai/db2ai). One checkpoint per turn: clean git,
     version bump, vsix:prepare, vsix:build, manual test, then commit (incl. registry pin +
-    generated mcpServerVersion), GitHub release. Use for guided release, release, release CPn,
-    or release weiter. Never git commit/push/tag/gh unless the user explicitly asks. For
-    commits: repo + message only (user checks in via IDE).
+    generated mcpServerVersion), GitHub release, then VS Marketplace + Open VSX publish. Use for guided
+    release, release, release CPn, or release weiter. Never git commit/push/tag/gh unless the
+    user explicitly asks. For commits: repo + message only (user checks in via IDE).
 ---
 
 # Guided release
@@ -21,7 +21,7 @@ description: >-
 
 Consumer-CI (Quality Gate) läuft **nur bei Git-Tags `v*`** — nicht bei Branch-Pushes. Lokal darfst du **`sync:core2ai-pin` (Link)** und gitignored `mcp-build-generated-at.ts` nutzen; das bricht kein CI mehr auf `main`.
 
-Der **Release-Commit (CP5)** enthält **Registry-Pin** + `generated/**`. **Danach** Tag `vX.Y.Z` (**CP6**) → Actions Quality Gate. **Erst wenn grün:** GitHub Release + VSIX (**CP7**).
+Der **Release-Commit (CP5)** enthält **Registry-Pin** + `generated/**`. **Danach** Tag `vX.Y.Z` (**CP6**) → Actions Quality Gate. **Erst wenn grün:** GitHub Release + VSIX (**CP7**), dann Marketplace **und** Open VSX (**CP8**).
 
 **Nicht** vor dem Release Feature-Commits mit Link-Lockfile pushen erwarten, dass CI grün wird — Branch-CI gibt es nicht mehr.
 
@@ -47,7 +47,8 @@ Tag **`vX.Y.Z`** muss **`package.json` `version`** (Workspace-Root / VSIX-Versio
 8. **`vsix:prepare` before commit** — **CP2** runs `generate:all`; rewrites `mcpServerVersion`. **Do not commit before CP2** or generated tools stay on the old version.
 9. **core2ai publish order** — during hacking: sibling link (`sync:core2ai-pin`). **After** npm publish (**C4**): registry pin in **CP1** (`sync:core2ai-pin:npm`) **before** consumer VSIX work. Never commit sibling-linked lockfiles when CI expects registry (tag push only).
 10. **No consumer push until CP5** — build and test the same tree you will commit.
-11. **Tag after manual test** — **CP6** (`git tag vX.Y.Z` + push tag) **after** **CP5** push; Quality Gate runs on tag only. **CP7** (`vsix:release`) only after Actions **ci** is green.
+11. **Tag after manual test** — **CP6** (`git tag vX.Y.Z` + push tag) **after** **CP5** push; Quality Gate runs on tag only. **CP7** (`vsix:release`) only after Actions **ci** is green. **CP8** (Marketplace **and** Open VSX) only after **CP7**, same tested `.vsix`.
+12. **GitHub + both registries** — keep GitHub for sideload/archive; publish the same `.vsix` to **VS Marketplace** (VS Code) **and** **Open VSX** (Cursor). Do not drop **CP7** when doing **CP8**.
 
 ## Checkpoint map
 
@@ -65,13 +66,14 @@ Tag **`vX.Y.Z`** muss **`package.json` `version`** (Workspace-Root / VSIX-Versio
 | **5**  | Commit + push consumer release (Registry-Pin)     | User  |
 | **6**  | Tag `vX.Y.Z` + push tag → Quality Gate (Actions)  | User  |
 | **7**  | GitHub release (`vsix:release`, after CI green)   | User  |
+| **8**  | Marketplace + Open VSX (same `.vsix`)              | User  |
 
 **CP C1–C4** whenever **core2ai** `package.json` version changes. Skip only if that version is already on npmjs.
 
-**CP1–CP7** repeat per releasing consumer (api2ai, then db2ai if both ship).
+**CP1–CP8** repeat per releasing consumer (api2ai, then db2ai if both ship).
 
 ```
-C1 → C2 → C3 → npmjs → C4 → CP1 → CP2 prepare → CP3 build → CP4 test → CP5 commit push → CP6 tag → CI → CP7 release
+C1 → C2 → C3 → npmjs → C4 → CP1 → CP2 prepare → CP3 build → CP4 test → CP5 commit push → CP6 tag → CI → CP7 GitHub → CP8 Marketplace + Open VSX
 ```
 
 ---
@@ -83,7 +85,7 @@ Agent: `git status` in **core2ai**, **api2ai**, **db2ai**.
 - **core2ai** should be clean before **C1** (feature work already committed).
 - **Consumer (api2ai/db2ai):** dirty workspace is **OK** for release — do **not** ask for a feature-only commit + push before **CP1**. All release changes stay local until **CP5**.
 - After **CP5** push, tree should be clean before **CP6** (tag on that commit).
-- After **CP7**, tree should be clean.
+- After **CP7** / **CP8**, tree should be clean.
 
 → **CP C1** (if core2ai bump needed) or **CP1** (consumer)
 
@@ -182,11 +184,13 @@ Agent runs in the **releasing consumer**:
 npm run vsix:prepare
 ```
 
-Runs `langium:generate`, `build`, `install:demos`, `generate:all`, `build:generated`, `check`, workspace tests. Does **not** package a VSIX.
+Runs `langium:generate`, `build`, `install:demos`, **`npm audit`** (workspace + demos), `generate:all`, `build:generated`, `check`, workspace tests. Does **not** package a VSIX.
 
 **Expected:** `packages/extension/demos/generated/**/tools/*-tools.ts` export `mcpServerVersion` equal to the VSIX version from **CP1**. Include those files in **CP5**.
 
-If prepare fails: fix code or generator; re-run **CP2** — version/CHANGELOG from **CP1** usually stay.
+If **audit** fails: fix or bump dependencies (`npm audit` / `npm audit fix` in root and `packages/extension/demos`), then re-run **CP2**. Do not skip audit for a release.
+
+If prepare fails otherwise: fix code or generator; re-run **CP2** — version/CHANGELOG from **CP1** usually stay.
 
 **End CP2:** stop if red; else → **CP3**
 
@@ -277,7 +281,69 @@ npm run vsix:release
 
 Creates GitHub Release on tag **`vX.Y.Z`** (same tag as **CP6**) and attaches the local `.vsix`.
 
-Repeat **CP1–CP7** for the other consumer if both ship.
+**End CP7:** stop → **CP8**
+
+---
+
+## CP8 — Marketplace + Open VSX (user)
+
+After **CP7** — publish the **same local `.vsix`** from **CP3/CP4** to **both** registries (does **not** replace GitHub):
+
+| Registry | Who finds it |
+| -------- | ------------ |
+| **Visual Studio Marketplace** | VS Code Extensions search / install |
+| **Open VSX** | Cursor Extensions search / install |
+
+Same `.vsix`, same version. Publisher / namespace: **`toolfactorydev`**.
+
+### Why both every release
+
+VS Code and Cursor use **different** registries. Publishing only to Marketplace does **not** update Cursor; only Open VSX does **not** update VS Code Marketplace. Until CI automates this: do **both** per consumer release.
+
+### One-time setup (user)
+
+**VS Marketplace**
+
+1. Publisher on [Marketplace Management](https://marketplace.visualstudio.com/manage) — id **`toolfactorydev`**.
+2. Optional for CLI later: Azure DevOps PAT (**All accessible organizations**, scope **Marketplace → Manage**) + `npx @vscode/vsce login toolfactorydev`.
+3. First upload may use the web UI (**New extension** / update version).
+
+**Open VSX**
+
+1. [open-vsx.org](https://open-vsx.org/) — GitHub login → Settings → **Log in with Eclipse** → **Publisher Agreement**.
+2. Access token: [open-vsx.org/user-settings/tokens](https://open-vsx.org/user-settings/tokens).
+3. Once: `npx ovsx create-namespace toolfactorydev -p <token>` (shared by api2ai + db2ai).
+4. Optional: [claim namespace ownership](https://github.com/EclipseFdn/open-vsx.org) (Option 1 if already on VS Marketplace with repo) for verified badge — not required to publish.
+5. Prefer CLI if the web **Publish** UI errors; web upload is OK when it works.
+
+### Each release
+
+From the **releasing consumer** `packages/extension` (same file tested in **CP4**):
+
+```bash
+# --- Visual Studio Marketplace ---
+# Web: Marketplace Management → upload / update version
+# or CLI:
+npx @vscode/vsce publish --packagePath vscode-api2ai-X.Y.Z.vsix
+# db2ai: vscode-db2ai-X.Y.Z.vsix
+
+# --- Open VSX (Cursor) ---
+npx ovsx publish vscode-api2ai-X.Y.Z.vsix -p "$OVSX_PAT"
+# db2ai: vscode-db2ai-X.Y.Z.vsix
+```
+
+Confirm:
+
+- Marketplace: [manage](https://marketplace.visualstudio.com/manage) / item page
+- Open VSX: `https://open-vsx.org/extension/toolfactorydev/vscode-api2ai` (or `vscode-db2ai`)
+
+Search indexing can lag; direct links / install by id `toolfactorydev.vscode-…` work sooner.
+
+**Optional later:** CI publish (Marketplace OIDC / `OVSX_PAT` secret) — not required for this checkpoint.
+
+Repeat **CP1–CP8** for the other consumer if both ship.
+
+**End CP8:** release done for this consumer.
 
 ---
 
@@ -289,6 +355,7 @@ Repeat **CP1–CP7** for the other consumer if both ship.
 | `release CP C3`  | Remind: tag + push tag → publish.yml Quality Gate |
 | `release CP6`    | Remind: consumer tag vX.Y.Z + push → wait for ci  |
 | `release CP7`    | `vsix:release` only after CP6 CI green            |
+| `release CP8`    | Remind: same `.vsix` → Marketplace **and** Open VSX |
 | `release CP1`    | pin + CHANGELOG + `vsix:version` for one consumer |
 | `release CP2`    | `vsix:prepare` only                               |
 | `release CP3`    | `vsix:build` only                                 |
@@ -305,12 +372,20 @@ Repeat **CP1–CP7** for the other consumer if both ship.
 | CI cannot find `…/core/codegen`        | Lockfile still `"link": true` — **CP5** must use `sync:core2ai-pin:npm` |
 | CI 404 `@toolfactory.dev/core`         | Finish **C3–C4** (core on npmjs) first                                 |
 | CI missing `mcp-build-generated-at.ts` | Tag CI runs `generate:all` — fix generator/core pin if step fails      |
-| VSIX wrong filename version            | **CP1** bump, **CP3** rebuild, retest, then **CP5–CP7**                |
+| VSIX wrong filename version            | **CP1** bump, **CP3** rebuild, retest, then **CP5–CP8**                |
 | `mcpServerVersion` still old on main   | **CP2** before **CP5**; include `generated/**` in release commit       |
 | Prepare fails after **CP1**            | Fix code; re-run **CP2** — version/CHANGELOG usually stay              |
+| `vsix:prepare` fails on `npm audit`    | Address vulns in root + demos (`npm audit` / `npm audit fix`); re-run **CP2** |
 | MCP broken after core publish          | **CP2** again, restart MCP                                             |
 | Committed before test, VSIX bad        | Rebuild/test locally; fix + new commit (avoid — **CP4** before **CP5**) |
 | Pushed tag before CI-ready commit      | Delete tag remote/local, fix **CP5**, re-tag **CP6**                   |
+| `vsce` publisher / PAT rejected        | PAT org = **All accessible organizations**; scope **Marketplace → Manage**; publisher id = `toolfactorydev` |
+| Marketplace version already exists     | Bump VSIX (**CP1**), rebuild/test, new tag — cannot overwrite same version |
+| Open VSX: Publisher Agreement required | Eclipse login on open-vsx Settings + sign **Publisher Agreement** (not ECA) |
+| Open VSX: namespace missing             | `npx ovsx create-namespace toolfactorydev -p <token>` once             |
+| Open VSX web Publish UI error          | Use `npx ovsx publish ….vsix -p <token>` instead                       |
+| Cursor search empty, Marketplace OK    | Expected until Open VSX publish; use Open VSX direct link / id         |
+| VS Code search empty, Open VSX OK      | Expected until Marketplace publish; use Marketplace item link          |
 
 ## Reference
 
@@ -319,4 +394,6 @@ Repeat **CP1–CP7** for the other consumer if both ship.
 - Link vs registry: [core2ai-link-vs-registry/SKILL.md](../core2ai-link-vs-registry/SKILL.md)
 - CHANGELOG policy: [docs/development/changelog-policy.md](../../docs/development/changelog-policy.md)
 - Consumers: `vsix:version`, `vsix:prepare`, `vsix:build`, `vsix:release`
+- VS Marketplace: `npx @vscode/vsce publish --packagePath …` — [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
+- Open VSX: `npx ovsx publish …` — [Publishing Extensions (wiki)](https://github.com/eclipse-openvsx/openvsx/wiki/Publishing-Extensions)
 - Generator: `mcpServerVersion` in `packages/cli/src/generator/render-tools-module.ts`
