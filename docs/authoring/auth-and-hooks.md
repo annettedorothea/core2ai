@@ -8,7 +8,7 @@ How credentials, upstream API auth, and programmatic authorization fit together 
 
 - [Three layers](#three-layers-do-not-confuse-them)
 - [Runtime sequence](#runtime-sequence-protected-tool)
-- [Generated pipeline tiers](#generated-pipeline-tiers)
+- [Generated invoke pipeline tiers](#generated-invoke-pipeline-tiers)
 - [Hook file layout](#hook-file-layout)
 - [DSL hooks block](#dsl-hooks-block)
 - [Validator rules](#validator-rules-editor)
@@ -44,23 +44,25 @@ checkToolAccess    ← optional per-tool hook; throw to deny (403)
 prepareToolCall    ← optional per-tool hook; reshape options (query, path, body, bind params)
         ↓
 HTTP request or SQL execute
+        ↓
+afterToolCall      ← optional per-tool hook; transform successful result before MCP
 ```
 
 On **OAuth HTTP** hosts, `tokenExchange` (when declared) runs once per MCP session inside `resolveOAuthSessionCredential` before `verifyCredential`. The exchanged credential is cached for later tool calls. Demos without `tokenExchange` keep the inbound Bearer token (bookings, cakes).
 
-Public tools (`access: public`) skip credential requirements. `prepareToolCall` may still run on public tools (for example SQL limit capping) without a credential parameter.
+Public tools (`access: public`) skip credential requirements. `prepareToolCall` and `afterToolCall` may still run on public tools without a credential parameter.
 
 ---
 
-## Generated pipeline tiers
+## Generated invoke pipeline tiers
 
-`@toolfactory.dev/core` emits one of three invoke shapes:
+`@toolfactory.dev/core` emits one of three invoke shapes (`InvokePipelineTier`):
 
-| Tier         | When                                                 | What runs                                  |
-| ------------ | ---------------------------------------------------- | ------------------------------------------ |
-| `none`       | No `auth`, all public                                | Direct HTTP/SQL                            |
-| `credential` | `auth` + protected tools, no per-tool hooks          | `verifyCredential` + upstream header/query |
-| `full`       | Any tool with `checkToolAccess` or `prepareToolCall` | Full chain above                           |
+| Tier         | When                                                                   | What runs                                  |
+| ------------ | ---------------------------------------------------------------------- | ------------------------------------------ |
+| `none`       | No `auth`, all public                                                  | Direct HTTP/SQL                            |
+| `credential` | `auth` + protected tools, no per-tool hooks                            | `verifyCredential` + upstream header/query |
+| `full`       | Any tool with `checkToolAccess`, `prepareToolCall`, or `afterToolCall` | Full chain above                           |
 
 ---
 
@@ -73,6 +75,7 @@ src/hooks/api2ai/<module>-tools/
     verifyGithubCredential.ts              ← when auth.hooks.verifyCredential (api2ai)
     checkToolAccessForListBookings.ts      ← one file per hook export (write-once)
     prepareToolCallForListBookings.ts
+    afterToolCallForExportTodosPdf.ts      ← after successful invoke (optional)
 
 src/hooks/db2ai/<module>-tools/
     verifyPagilaPostgresqlCredential.ts    ← when auth keyword present (db2ai)
@@ -86,6 +89,7 @@ src/hooks/db2ai/<module>-tools/
 | `auth` keyword (db2ai)                 | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)                  |
 | `hooks: { checkToolAccess: true }`     | `checkToolAccessHooks[toolName]` | `checkToolAccessForToolName(credential)`                                 |
 | `hooks: { prepareToolCall: true }`     | `prepareToolCallHooks[toolName]` | `prepareToolCallForToolName(options)` or `(options, credential)`         |
+| `hooks: { afterToolCall: true }`       | `afterToolCallHooks[toolName]`   | `afterToolCallForToolName(result)` or `(result, credential)`             |
 
 Stub files are created on first generate; implement logic, then regenerate (imports are wired automatically).
 
@@ -105,6 +109,7 @@ Per operation (api2ai) or SQL block (db2ai):
 hooks: {
     checkToolAccess: true
     prepareToolCall: true
+    afterToolCall: true
 }
 ```
 
@@ -113,6 +118,12 @@ Or enable only one hook:
 ```text
 hooks: {
     prepareToolCall: true
+}
+```
+
+```text
+hooks: {
+    afterToolCall: true
 }
 ```
 
@@ -133,6 +144,14 @@ Omitted keys are **optional in the generated MCP JSON Schema** but may still be 
 **db2ai:** `clientMayOmit` entries must match names in the block’s `params: { … }` map.
 
 **api2ai:** `clientMayOmit` entries refer to OpenAPI parameter names for that operation.
+
+### afterToolCall
+
+Runs only after a **successful** HTTP/SQL invoke. Return value replaces the MCP tool result.
+
+Production hooks should **fail loud** on unexpected result shapes (throw), not silently pass through — demo stubs follow that pattern.
+
+Saving files is a common use: decode/SQL rows in → write under a temp or output dir → return path metadata without the heavy payload, e.g. `{ kind, path, saved, byteLength, … }` (todo PDF uses `kind: "binary"`; sales CSV uses `kind: "csv"`). Document the **final** shape in `intent` / `response`, not the pre-hook form.
 
 ### api2ai upstream `auth { }`
 
@@ -227,16 +246,17 @@ Enables credential checks for `access: protected` SQL tools. Connection strings 
 
 ## Demo references
 
-| Demo                      | Pattern                                                              |
-| ------------------------- | -------------------------------------------------------------------- |
-| `todo.api2ai`             | passthrough header + `verifyCredential`                              |
-| `test.api2ai`             | query `api_key` + protected route                                    |
-| `bookings.api2ai`         | OAuth MCP + `checkToolAccess` + `prepareToolCall`                    |
-| `banking.api2ai`          | OAuth MCP + `tokenExchange` + `verifyCredential` + `checkToolAccess` |
-| `cakes.api2ai`            | OAuth MCP + JWT in hooks (no module verify stub)                     |
-| `spaceflight-news.api2ai` | public `prepareToolCall` + `clientMayOmit` on `limit`                |
-| `orders-postgresql.db2ai` | protected SQL + `checkToolAccess` + `clientMayOmit`                  |
-| `pagila-postgresql.db2ai` | public `prepareToolCall` (SQL limit cap)                             |
+| Demo                      | Pattern                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| `todo.api2ai`             | passthrough HTTP + `verifyCredential`; `exportTodosPdf` + `afterToolCall` (save PDF to temp) |
+| `test.api2ai`             | query `api_key` + protected route                                                            |
+| `bookings.api2ai`         | OAuth MCP + `checkToolAccess` + `prepareToolCall`                                            |
+| `banking.api2ai`          | OAuth MCP + `tokenExchange` + `verifyCredential` + `checkToolAccess`                         |
+| `cakes.api2ai`            | OAuth MCP + JWT in hooks (no module verify stub)                                             |
+| `spaceflight-news.api2ai` | public `prepareToolCall` + `clientMayOmit` on `limit`                                        |
+| `orders-postgresql.db2ai` | protected SQL + `checkToolAccess` + `clientMayOmit`                                          |
+| `pagila-postgresql.db2ai` | public `prepareToolCall` (SQL limit cap)                                                     |
+| `sales-report.db2ai`      | DuckDB + `topCustomersByRevenue` `afterToolCall` (CSV → temp)                                |
 
 ---
 

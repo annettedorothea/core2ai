@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import {
+    listAfterToolCallToolNamesFromSpecs,
     listCheckToolAccessToolNamesFromSpecs,
     listPrepareToolCallHookEntriesFromSpecs,
     listPrepareToolCallToolNamesFromSpecs,
+    renderAfterToolCallStubFileContent,
     renderCheckToolAccessStubFileContent,
     renderPrepareToolCallHooksMap,
     renderPrepareToolCallStubFileContent,
@@ -56,6 +58,22 @@ describe('renderCheckToolAccessStubFileContent', () => {
     });
 });
 
+describe('renderAfterToolCallStubFileContent', () => {
+    test('protected after stub requires credential param', () => {
+        const content = renderAfterToolCallStubFileContent('exportPdf', 'protected', toolsModuleTsPath);
+        expect(content).toContain(
+            'export function afterToolCallForExportPdf(result: unknown, credential: string): unknown'
+        );
+        expect(content).toContain('afterToolCallForExportPdf.ts');
+    });
+
+    test('public after stub has no credential param', () => {
+        const content = renderAfterToolCallStubFileContent('exportPdf', 'public', toolsModuleTsPath);
+        expect(content).toContain('export function afterToolCallForExportPdf(result: unknown): unknown');
+        expect(content).not.toContain('credential: string');
+    });
+});
+
 describe('renderPrepareToolCallHooksMap', () => {
     test('uses optional credential in type annotation', () => {
         const map = renderPrepareToolCallHooksMap([{ toolName: 'listItems', access: 'public' }]);
@@ -72,8 +90,9 @@ describe('renderPrepareToolCallHooksMap', () => {
 
 describe('tool hook spec helpers', () => {
     const specs: ToolHookStubSpec[] = [
-        { toolName: 'alpha', checkToolAccess: true, prepareToolCall: false, access: 'protected' },
-        { toolName: 'beta', checkToolAccess: false, prepareToolCall: true, access: 'public' }
+        { toolName: 'alpha', checkToolAccess: true, prepareToolCall: false, afterToolCall: false, access: 'protected' },
+        { toolName: 'beta', checkToolAccess: false, prepareToolCall: true, afterToolCall: false, access: 'public' },
+        { toolName: 'gamma', checkToolAccess: false, prepareToolCall: false, afterToolCall: true, access: 'protected' }
     ];
 
     test('listCheckToolAccessToolNamesFromSpecs', () => {
@@ -86,6 +105,10 @@ describe('tool hook spec helpers', () => {
 
     test('listPrepareToolCallHookEntriesFromSpecs', () => {
         expect(listPrepareToolCallHookEntriesFromSpecs(specs)).toEqual([{ toolName: 'beta', access: 'public' }]);
+    });
+
+    test('listAfterToolCallToolNamesFromSpecs', () => {
+        expect(listAfterToolCallToolNamesFromSpecs(specs)).toEqual(['gamma']);
     });
 });
 

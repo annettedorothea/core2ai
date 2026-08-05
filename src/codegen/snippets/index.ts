@@ -14,5 +14,6 @@ export {
     missingCredentialErrorSnippet,
     renderCheckToolAccessBlock,
     renderPrepareToolCallBlock,
+    renderAfterToolCallBlock,
     renderVerifyCredentialBlock
-} from './auth-pipeline-snippets.js';
+} from './invoke-pipeline-snippets.js';

@@ -142,10 +142,11 @@ hooks: {
 }
 ```
 
-| Hook flag         | Purpose                                                             |
-| ----------------- | ------------------------------------------------------------------- |
-| `checkToolAccess` | Allow or deny before SQL (`checkToolAccessForToolName(credential)`) |
-| `prepareToolCall` | Inject or reshape bind params (`prepareToolCallForToolName(…)`)     |
+| Hook flag         | Purpose                                                                |
+| ----------------- | ---------------------------------------------------------------------- |
+| `checkToolAccess` | Allow or deny before SQL (`checkToolAccessForToolName(credential)`)    |
+| `prepareToolCall` | Inject or reshape bind params (`prepareToolCallForToolName(…)`)        |
+| `afterToolCall`   | Transform successful result before MCP (`afterToolCallForToolName(…)`) |
 
 `clientMayOmit` marks bind params optional in the MCP schema; `prepareToolCall` fills defaults (for example `customerId` from JWT).
 
@@ -161,13 +162,13 @@ Same layout as api2ai under `generated/db2ai/tools/` and `generated/db2ai/cli/`.
 
 ## Learning examples
 
-| Demo                      | Focus                                                   |
-| ------------------------- | ------------------------------------------------------- |
-| `pagila-postgresql.db2ai` | PostgreSQL, public `prepareToolCall` (limit cap)        |
-| `sakila-mysql.db2ai`      | MySQL + passthrough MCP auth                            |
-| `orders-postgresql.db2ai` | OAuth MCP, `checkToolAccess`, `clientMayOmit`           |
-| `flight.db2ai`            | DuckDB in-memory + CSV via `initDatabase`               |
-| `sales-report.db2ai`      | DuckDB in-memory + multi-sheet Excel via `initDatabase` |
+| Demo                      | Focus                                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| `pagila-postgresql.db2ai` | PostgreSQL, public `prepareToolCall` (limit cap)                                             |
+| `sakila-mysql.db2ai`      | MySQL + passthrough MCP auth                                                                 |
+| `orders-postgresql.db2ai` | OAuth MCP, `checkToolAccess`, `clientMayOmit`                                                |
+| `flight.db2ai`            | DuckDB in-memory + CSV via `initDatabase`                                                    |
+| `sales-report.db2ai`      | DuckDB in-memory + multi-sheet Excel; `topCustomersByRevenue` + `afterToolCall` (CSV → temp) |
 
 ---
 

@@ -30,17 +30,34 @@ OpenAPI **3.x** only (`openapi: 3.0.x` / `3.1.x`).
 
 ## Works well
 
-| Area                | Support                                                        |
-| ------------------- | -------------------------------------------------------------- |
-| Operation selection | Explicit `METHOD "/path"` blocks in `.api2ai`                  |
-| Primitives          | `string`, `integer`, `number`, `boolean`                       |
-| Objects             | `properties`, `required`, nested objects                       |
-| Arrays              | `items` with primitive or object element schemas               |
-| `enum`, `nullable`  | Emitted into Zod                                               |
-| `oneOf` / `anyOf`   | Zod unions when constitutent schemas resolve after dereference |
-| Parameters          | `path`, `query`, `header` with form/simple serialization       |
-| Request bodies      | JSON `application/json` schemas                                |
-| Auth mapping        | `auth { in: header\|query, name, prefix }` on protected tools  |
+| Area                | Support                                                                                                               |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Operation selection | Explicit `METHOD "/path"` blocks in `.api2ai`                                                                         |
+| Primitives          | `string`, `integer`, `number`, `boolean`                                                                              |
+| Objects             | `properties`, `required`, nested objects                                                                              |
+| Arrays              | `items` with primitive or object element schemas                                                                      |
+| `enum`, `nullable`  | Emitted into Zod                                                                                                      |
+| `oneOf` / `anyOf`   | Zod unions when constitutent schemas resolve after dereference                                                        |
+| Parameters          | `path`, `query`, `header` with form/simple serialization                                                              |
+| Request bodies      | JSON `application/json` schemas                                                                                       |
+| Response bodies     | JSON (`application/json`, `*+json`); text (`text/*`, XML); binary (PDF/octet-stream/…) as Base64 envelope — see below |
+| Auth mapping        | `auth { in: header\|query, name, prefix }` on protected tools                                                         |
+
+### HTTP response decoding (invoke)
+
+| Response                        | Generated `invokeTool` behavior                                                             |
+| ------------------------------- | ------------------------------------------------------------------------------------------- |
+| `application/json` or `*+json`  | Parsed JSON                                                                                 |
+| `text/*`, `application/xml`, …  | UTF-8 string (empty body → empty envelope)                                                  |
+| Binary (non-JSON / non-textual) | Envelope `{ kind: "binary", encoding: "base64", contentType, filename?, byteLength, data }` |
+| `204` / `HEAD` / empty body     | `{ kind: "empty", status }`                                                                 |
+| Body larger than limit          | Error after size check (default **5 MiB**; early reject when `Content-Length` exceeds it)   |
+
+Default limit is **5 MiB** (binary and text). Override at MCP runtime with env **`TOOLFACTORY_HTTP_BODY_MAX_BYTES`** (positive integer bytes). Without a truthful `Content-Length`, the body is read fully and then rejected if oversized.
+
+`Content-Disposition` filename is copied into the envelope when present. Authors can use **`afterToolCall`** to save files or strip Base64 before the MCP result (demo: `todo` `exportTodosPdf`).
+
+Out of scope for now: streaming (`text/event-stream`), NDJSON, multipart responses, guessing JSON when `Content-Type` is `text/plain`.
 
 ---
 

@@ -123,10 +123,11 @@ GET "/bookings/{customerId}" {
 }
 ```
 
-| Hook flag         | Purpose                                                              |
-| ----------------- | -------------------------------------------------------------------- |
-| `checkToolAccess` | Allow or deny before HTTP (`checkToolAccessForToolName(credential)`) |
-| `prepareToolCall` | Reshape invoke options before HTTP (`prepareToolCallForToolName(…)`) |
+| Hook flag         | Purpose                                                                |
+| ----------------- | ---------------------------------------------------------------------- |
+| `checkToolAccess` | Allow or deny before HTTP (`checkToolAccessForToolName(credential)`)   |
+| `prepareToolCall` | Reshape invoke options before HTTP (`prepareToolCallForToolName(…)`)   |
+| `afterToolCall`   | Transform successful result before MCP (`afterToolCallForToolName(…)`) |
 
 Enable only what you need:
 

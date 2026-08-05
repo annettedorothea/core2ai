@@ -4,9 +4,9 @@
  */
 export { compose } from './compose.js';
 export * from './snippets/index.js';
-export { checkToolAccessExportName, prepareToolCallExportName } from './access-stubs.js';
+export { checkToolAccessExportName, prepareToolCallExportName, afterToolCallExportName } from './access-stubs.js';
 export * from './auth-module-names.js';
-export * from './auth-pipeline-shared.js';
+export * from './invoke-pipeline-shared.js';
 export * from './auth-stub-bootstrap.js';
 export * from './logging-adapter-bootstrap.js';
 export * from './document-validation.js';

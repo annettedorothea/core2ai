@@ -632,7 +632,7 @@ core2ai/src/codegen/
 api2ai/packages/cli/src/codegen/   (db2ai: mirror)
   fragments/*
   templates/*-runtime.compose.ts
-  auth-pipeline-render.ts
+  invoke-pipeline-render.ts
 ```
 
 After changing host templates or consumer fragments:

@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveModuleVerifyCredentialNames, resolveModuleTokenExchangeNames } from './auth-module-names.js';
-import { checkToolAccessExportName, prepareToolCallExportName } from './access-stubs.js';
+import { checkToolAccessExportName, prepareToolCallExportName, afterToolCallExportName } from './access-stubs.js';
 import { relativeJsImportPath, resolveHostProductFromGeneratedToolsPath } from './generated-layout.js';
 import { resolveBootstrapProjectRootFromSource } from './project-bootstrap.js';
 
@@ -9,6 +9,7 @@ export type ToolHookStubSpec = {
     toolName: string;
     checkToolAccess: boolean;
     prepareToolCall: boolean;
+    afterToolCall: boolean;
     access: 'public' | 'protected';
 };
 
@@ -79,6 +80,32 @@ ${voidLines}
 `;
 }
 
+export function renderAfterToolCallStubFileContent(
+    toolName: string,
+    access: 'public' | 'protected',
+    toolsModuleTsPath: string
+): string {
+    const fn = afterToolCallExportName(toolName);
+    const signature =
+        access === 'public'
+            ? `export function ${fn}(result: unknown): unknown`
+            : `export function ${fn}(result: unknown, credential: string): unknown`;
+    const voidLines =
+        access === 'public'
+            ? `    void result;`
+            : `    void result;
+    void credential;`;
+    return `/**
+ * afterToolCall hook for "${toolName}" (write-once — implement ${fn}).
+ * Runs after a successful tool invoke; return value is what MCP receives.
+ */
+${signature} {
+${voidLines}
+    throw new Error('Implement ${fn} in ${hookStubRelativePath(toolsModuleTsPath, fn)}');
+}
+`;
+}
+
 /** Map export name → absolute stub path (one file per hook function). */
 export async function ensureToolHookStubsAtProjectRoot(
     projectRoot: string,
@@ -111,6 +138,18 @@ export async function ensureToolHookStubsAtProjectRoot(
                 fs.writeFileSync(
                     tsPath,
                     renderPrepareToolCallStubFileContent(spec.toolName, spec.access, tsPath, toolsModuleTsPath),
+                    'utf-8'
+                );
+            }
+            importPaths.set(fn, tsPath);
+        }
+        if (spec.afterToolCall) {
+            const fn = afterToolCallExportName(spec.toolName);
+            const tsPath = path.join(hookDir, `${fn}.ts`);
+            if (!fs.existsSync(tsPath)) {
+                fs.writeFileSync(
+                    tsPath,
+                    renderAfterToolCallStubFileContent(spec.toolName, spec.access, toolsModuleTsPath),
                     'utf-8'
                 );
             }
@@ -279,6 +318,26 @@ export function renderPrepareToolCallHooksMap(entries: readonly PrepareToolCallH
     return `const prepareToolCallHooks${typeAnnotation} = {\n${mapEntries.join(',\n')}\n};`;
 }
 
+export type AfterToolCallHookMapEntry = {
+    toolName: string;
+    access: 'public' | 'protected';
+};
+
+export function renderAfterToolCallHooksMap(entries: readonly AfterToolCallHookMapEntry[]): string {
+    const typeAnnotation = ': Record<string, (result: unknown, credential?: string) => unknown | Promise<unknown>>';
+    if (entries.length === 0) {
+        return `const afterToolCallHooks${typeAnnotation} = {};`;
+    }
+    const mapEntries = entries.map(({ toolName, access }) => {
+        const fn = afterToolCallExportName(toolName);
+        if (access === 'protected') {
+            return `    ${JSON.stringify(toolName)}: (result, credential) => ${fn}(result, credential!)`;
+        }
+        return `    ${JSON.stringify(toolName)}: ${fn}`;
+    });
+    return `const afterToolCallHooks${typeAnnotation} = {\n${mapEntries.join(',\n')}\n};`;
+}
+
 export function renderCheckToolAccessHookImports(
     tsPath: string,
     stubPaths: Map<string, string>,
@@ -315,6 +374,24 @@ export function renderPrepareToolCallHookImports(
     return lines.join('\n');
 }
 
+export function renderAfterToolCallHookImports(
+    tsPath: string,
+    stubPaths: Map<string, string>,
+    afterToolCallToolNames: readonly string[]
+): string {
+    const lines: string[] = [];
+    for (const toolName of afterToolCallToolNames) {
+        const fn = afterToolCallExportName(toolName);
+        const absStub = stubPaths.get(fn);
+        if (!absStub) {
+            continue;
+        }
+        const rel = relativeJsImportPath(tsPath, absStub);
+        lines.push(`import { ${fn} } from '${rel}';`);
+    }
+    return lines.join('\n');
+}
+
 export function listCheckToolAccessToolNamesFromSpecs(specs: readonly ToolHookStubSpec[]): string[] {
     return specs.filter((spec) => spec.checkToolAccess).map((spec) => spec.toolName);
 }
@@ -323,10 +400,18 @@ export function listPrepareToolCallToolNamesFromSpecs(specs: readonly ToolHookSt
     return specs.filter((spec) => spec.prepareToolCall).map((spec) => spec.toolName);
 }
 
+export function listAfterToolCallToolNamesFromSpecs(specs: readonly ToolHookStubSpec[]): string[] {
+    return specs.filter((spec) => spec.afterToolCall).map((spec) => spec.toolName);
+}
+
 export function listPrepareToolCallHookEntriesFromSpecs(
     specs: readonly ToolHookStubSpec[]
 ): PrepareToolCallHookMapEntry[] {
     return specs.filter((spec) => spec.prepareToolCall).map(({ toolName, access }) => ({ toolName, access }));
+}
+
+export function listAfterToolCallHookEntriesFromSpecs(specs: readonly ToolHookStubSpec[]): AfterToolCallHookMapEntry[] {
+    return specs.filter((spec) => spec.afterToolCall).map(({ toolName, access }) => ({ toolName, access }));
 }
 
 /** Writes write-once hook stubs from precomputed specs; returns stub paths for imports. */

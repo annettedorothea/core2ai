@@ -23,14 +23,6 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
     return schema as z.ZodTypeAny;
 }
 
-function formatMcpToolDescription(generated: GeneratedHostModule, toolDescription: string): string {
-    const buildLine = formatMcpBuildLine(generated);
-    if (!buildLine) {
-        return toolDescription;
-    }
-    return 'MCP build: ' + buildLine + '\\n\\n---\\n\\n' + toolDescription;
-}
-
 /** Log when the MCP client requests tools/list (wraps SDK handler set by registerTool). */
 function attachListToolsDebugLogging(mcpServer: McpServer, generated: GeneratedHostModule): void {
     type ListToolsHandler = (request: unknown, extra: unknown) => Promise<ListToolsResult>;
@@ -59,7 +51,7 @@ async function registerMcpTools(
             tool.toolName,
             {
                 title: typeof tool.title === 'string' && tool.title.length > 0 ? tool.title : undefined,
-                description: formatMcpToolDescription(generated, tool.description),
+                description: tool.description,
                 inputSchema
             },
             async (args) => {

@@ -1,4 +1,4 @@
-import type { HookStubMaps } from '../auth-pipeline-shared.js';
+import type { HookStubMaps } from '../invoke-pipeline-shared.js';
 
 export function missingCredentialErrorSnippet(): string {
     return `
@@ -46,6 +46,28 @@ export function renderPrepareToolCallBlock(stubMaps: HookStubMaps, toolRef: stri
             optionsResolved = await Promise.resolve(prepareToolCall(optionsResolved, credential));
         } else {
             optionsResolved = await Promise.resolve(prepareToolCall(optionsResolved));
+        }
+    }`;
+}
+
+/** Runs on the successful invoke result (after HTTP/SQL), before return to MCP. */
+export function renderAfterToolCallBlock(stubMaps: HookStubMaps, toolRef: string, resultVar = 'result'): string {
+    if (!stubMaps.afterToolCall) {
+        return '';
+    }
+    return `
+    if (${toolRef}.hasAfterToolCall) {
+        const afterToolCall = afterToolCallHooks[toolName];
+        if (typeof afterToolCall !== 'function') {
+            throw new Error('No afterToolCall hook for tool: ' + toolName);
+        }
+        if (${toolRef}.access === 'protected') {
+            if (credential === undefined) {
+                throw new Error('afterToolCall requires credential for protected tools.');
+            }
+            ${resultVar} = await Promise.resolve(afterToolCall(${resultVar}, credential));
+        } else {
+            ${resultVar} = await Promise.resolve(afterToolCall(${resultVar}));
         }
     }`;
 }

@@ -12,6 +12,19 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.1.0] - 2026-08-05
+
+### Added
+
+- **`afterToolCall` hook** in shared codegen: stub scaffold, hook maps, pipeline tier `full`, success-path snippet (`renderAfterToolCallBlock`)
+- **`InvokePipelineTier` / `resolveInvokePipelineTier`:** rename from AuthPipeline\* (hooks are not only auth)
+
+### Changed
+
+- **MCP tool descriptions:** no longer prepend `MCP build: …` (stamp remains on `serverInfo.version` / `mcp-build-generated-at.ts`)
+
+---
+
 ## [1.0.3] - 2026-08-03
 
 ### Changed
