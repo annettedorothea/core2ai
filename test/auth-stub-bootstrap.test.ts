@@ -59,17 +59,27 @@ describe('renderCheckToolAccessStubFileContent', () => {
 });
 
 describe('renderAfterToolCallStubFileContent', () => {
-    test('protected after stub requires credential param', () => {
-        const content = renderAfterToolCallStubFileContent('exportPdf', 'protected', toolsModuleTsPath);
-        expect(content).toContain(
-            'export function afterToolCallForExportPdf(result: unknown, credential: string): unknown'
+    const afterStubTsPath = '/project/src/hooks/api2ai/demo-tools/afterToolCallForExportPdf.ts';
+
+    test('protected after stub requires options and credential params', () => {
+        const content = renderAfterToolCallStubFileContent(
+            'exportPdf',
+            'protected',
+            afterStubTsPath,
+            toolsModuleTsPath
         );
+        expect(content).toContain(
+            'export function afterToolCallForExportPdf(result: unknown, options: InvokeOptions, credential: string): unknown'
+        );
+        expect(content).toContain('import type { InvokeOptions }');
         expect(content).toContain('afterToolCallForExportPdf.ts');
     });
 
-    test('public after stub has no credential param', () => {
-        const content = renderAfterToolCallStubFileContent('exportPdf', 'public', toolsModuleTsPath);
-        expect(content).toContain('export function afterToolCallForExportPdf(result: unknown): unknown');
+    test('public after stub has options and no credential param', () => {
+        const content = renderAfterToolCallStubFileContent('exportPdf', 'public', afterStubTsPath, toolsModuleTsPath);
+        expect(content).toContain(
+            'export function afterToolCallForExportPdf(result: unknown, options: InvokeOptions): unknown'
+        );
         expect(content).not.toContain('credential: string');
     });
 });

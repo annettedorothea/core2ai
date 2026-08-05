@@ -12,6 +12,18 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [1.2.0] - 2026-08-05
+
+### Changed
+
+- **`afterToolCall` signature:** `(result, options[, credential])` — same `options` as `prepareToolCall` (enables api2ai `hookParams`)
+
+### Upgrade notes
+
+- Regenerate consumers and update write-once `afterToolCallFor*` stubs to accept `options` (use `void options` if unused). Public: `(result, options)`; protected: `(result, options, credential)`.
+
+---
+
 ## [1.1.0] - 2026-08-05
 
 ### Added

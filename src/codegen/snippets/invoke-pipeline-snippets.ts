@@ -65,9 +65,9 @@ export function renderAfterToolCallBlock(stubMaps: HookStubMaps, toolRef: string
             if (credential === undefined) {
                 throw new Error('afterToolCall requires credential for protected tools.');
             }
-            ${resultVar} = await Promise.resolve(afterToolCall(${resultVar}, credential));
+            ${resultVar} = await Promise.resolve(afterToolCall(${resultVar}, optionsResolved, credential));
         } else {
-            ${resultVar} = await Promise.resolve(afterToolCall(${resultVar}));
+            ${resultVar} = await Promise.resolve(afterToolCall(${resultVar}, optionsResolved));
         }
     }`;
 }

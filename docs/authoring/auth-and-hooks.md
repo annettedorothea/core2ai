@@ -82,14 +82,14 @@ src/hooks/db2ai/<module>-tools/
     prepareToolCallForListActors.ts        ← filename matches export function name
 ```
 
-| DSL declaration                        | Generated import / map           | Typical export                                                           |
-| -------------------------------------- | -------------------------------- | ------------------------------------------------------------------------ |
-| `auth { hooks: { verifyCredential } }` | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)                  |
-| `auth { hooks: { tokenExchange } }`    | `tokenExchange`                  | `tokenExchangeXCredential` (re-exported as `tokenExchange`; api2ai only) |
-| `auth` keyword (db2ai)                 | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)                  |
-| `hooks: { checkToolAccess: true }`     | `checkToolAccessHooks[toolName]` | `checkToolAccessForToolName(credential)`                                 |
-| `hooks: { prepareToolCall: true }`     | `prepareToolCallHooks[toolName]` | `prepareToolCallForToolName(options)` or `(options, credential)`         |
-| `hooks: { afterToolCall: true }`       | `afterToolCallHooks[toolName]`   | `afterToolCallForToolName(result)` or `(result, credential)`             |
+| DSL declaration                        | Generated import / map           | Typical export                                                                 |
+| -------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------ |
+| `auth { hooks: { verifyCredential } }` | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)                        |
+| `auth { hooks: { tokenExchange } }`    | `tokenExchange`                  | `tokenExchangeXCredential` (re-exported as `tokenExchange`; api2ai only)       |
+| `auth` keyword (db2ai)                 | `verifyCredential`               | `verifyXCredential` (re-exported as `verifyCredential`)                        |
+| `hooks: { checkToolAccess: true }`     | `checkToolAccessHooks[toolName]` | `checkToolAccessForToolName(credential)`                                       |
+| `hooks: { prepareToolCall: true }`     | `prepareToolCallHooks[toolName]` | `prepareToolCallForToolName(options)` or `(options, credential)`               |
+| `hooks: { afterToolCall: true }`       | `afterToolCallHooks[toolName]`   | `afterToolCallForToolName(result, options)` or `(result, options, credential)` |
 
 Stub files are created on first generate; implement logic, then regenerate (imports are wired automatically).
 
@@ -149,9 +149,34 @@ Omitted keys are **optional in the generated MCP JSON Schema** but may still be 
 
 Runs only after a **successful** HTTP/SQL invoke. Return value replaces the MCP tool result.
 
+Signature: `(result, options)` for public tools, `(result, options, credential)` for protected — same `options` object as `prepareToolCall` (after normalize). Use `options` for invoke args / api2ai `hookParams`; ignore with `void options` when unused.
+
 Production hooks should **fail loud** on unexpected result shapes (throw), not silently pass through — demo stubs follow that pattern.
 
 Saving files is a common use: decode/SQL rows in → write under a temp or output dir → return path metadata without the heavy payload, e.g. `{ kind, path, saved, byteLength, … }` (todo PDF uses `kind: "binary"`; sales CSV uses `kind: "csv"`). Document the **final** shape in `intent` / `response`, not the pre-hook form.
+
+### api2ai `hookParams`
+
+Optional DSL block on an operation (alongside OpenAPI-derived params). Declared fields appear **flat** in the MCP tool schema but are **never** sent on the HTTP request. After `normalizeInvokeOptions` they live only under `options.hookParams` for `prepareToolCall` / `afterToolCall`.
+
+```text
+GET "/todos" {
+    toolName: listTodos
+    access: protected
+    hooks: { afterToolCall: true }
+    hookParams: {
+        titleContains: {
+            type: string
+            description: "Client-side title filter (not an API query param)."
+            example: "milk"
+        }
+    }
+}
+```
+
+Rules: every entry needs `type` (`string` | `integer` | `number` | `boolean` | `array`; array items are string). All hookParams are **optional** in the schema. Names must not collide with OpenAPI MCP param names or reserved `body` / `headers`. If `prepareToolCall` rewrites options, spread `...options` so `hookParams` survive.
+
+Not available on db2ai yet (use SQL `params` / `WHERE` instead).
 
 ### api2ai upstream `auth { }`
 
@@ -246,17 +271,17 @@ Enables credential checks for `access: protected` SQL tools. Connection strings 
 
 ## Demo references
 
-| Demo                      | Pattern                                                                                      |
-| ------------------------- | -------------------------------------------------------------------------------------------- |
-| `todo.api2ai`             | passthrough HTTP + `verifyCredential`; `exportTodosPdf` + `afterToolCall` (save PDF to temp) |
-| `test.api2ai`             | query `api_key` + protected route                                                            |
-| `bookings.api2ai`         | OAuth MCP + `checkToolAccess` + `prepareToolCall`                                            |
-| `banking.api2ai`          | OAuth MCP + `tokenExchange` + `verifyCredential` + `checkToolAccess`                         |
-| `cakes.api2ai`            | OAuth MCP + JWT in hooks (no module verify stub)                                             |
-| `spaceflight-news.api2ai` | public `prepareToolCall` + `clientMayOmit` on `limit`                                        |
-| `orders-postgresql.db2ai` | protected SQL + `checkToolAccess` + `clientMayOmit`                                          |
-| `pagila-postgresql.db2ai` | public `prepareToolCall` (SQL limit cap)                                                     |
-| `sales-report.db2ai`      | DuckDB + `topCustomersByRevenue` `afterToolCall` (CSV → temp)                                |
+| Demo                      | Pattern                                                                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `todo.api2ai`             | passthrough HTTP + `verifyCredential`; `listTodos` `hookParams` + `afterToolCall`; `exportTodosPdf` + `afterToolCall` (save PDF to temp) |
+| `test.api2ai`             | query `api_key` + protected route                                                                                                        |
+| `bookings.api2ai`         | OAuth MCP + `checkToolAccess` + `prepareToolCall`                                                                                        |
+| `banking.api2ai`          | OAuth MCP + `tokenExchange` + `verifyCredential` + `checkToolAccess`                                                                     |
+| `cakes.api2ai`            | OAuth MCP + JWT in hooks (no module verify stub)                                                                                         |
+| `spaceflight-news.api2ai` | public `prepareToolCall` + `clientMayOmit` on `limit`                                                                                    |
+| `orders-postgresql.db2ai` | protected SQL + `checkToolAccess` + `clientMayOmit`                                                                                      |
+| `pagila-postgresql.db2ai` | public `prepareToolCall` (SQL limit cap)                                                                                                 |
+| `sales-report.db2ai`      | DuckDB + `topCustomersByRevenue` `afterToolCall` (CSV → temp)                                                                            |
 
 ---
 

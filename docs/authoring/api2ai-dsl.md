@@ -123,11 +123,11 @@ GET "/bookings/{customerId}" {
 }
 ```
 
-| Hook flag         | Purpose                                                                |
-| ----------------- | ---------------------------------------------------------------------- |
-| `checkToolAccess` | Allow or deny before HTTP (`checkToolAccessForToolName(credential)`)   |
-| `prepareToolCall` | Reshape invoke options before HTTP (`prepareToolCallForToolName(…)`)   |
-| `afterToolCall`   | Transform successful result before MCP (`afterToolCallForToolName(…)`) |
+| Hook flag         | Purpose                                                                                            |
+| ----------------- | -------------------------------------------------------------------------------------------------- |
+| `checkToolAccess` | Allow or deny before HTTP (`checkToolAccessForToolName(credential)`)                               |
+| `prepareToolCall` | Reshape invoke options before HTTP (`prepareToolCallForToolName(…)`)                               |
+| `afterToolCall`   | Transform successful result before MCP (`afterToolCallForToolName(result, options[, credential])`) |
 
 Enable only what you need:
 
@@ -146,6 +146,22 @@ hooks: {
     }
 }
 ```
+
+### hookParams (MCP-only)
+
+Declare optional fields that appear flat in the MCP schema but are **never** sent on HTTP. After normalize they live under `options.hookParams` for `prepareToolCall` / `afterToolCall`.
+
+```text
+hookParams: {
+    titleContains: {
+        type: string
+        description: "Client-side title filter (not an API query param)."
+        example: "milk"
+    }
+}
+```
+
+Each entry needs `type` (`string` | `integer` | `number` | `boolean` | `array`). All hookParams are optional. See [Auth and hooks](./auth-and-hooks.md).
 
 Implement stubs in `src/hooks/api2ai/<module>-tools/<toolName>.ts`. See [Auth and hooks](./auth-and-hooks.md).
 

@@ -21,7 +21,7 @@ verifyCredential → checkToolAccess → prepareToolCall → HTTP / SQL → afte
 | `verifyCredential` | `(credential: string) => void` | Modul — Token prüfen (optional) |
 | `checkToolAccess` | `(credential: string) => void` | Tool — allow/deny (403) |
 | `prepareToolCall` | `(options, credential?) => options` | Tool — Args umbiegen / Defaults |
-| `afterToolCall` | `(result, credential?) => result` | Tool — Ergebnis nach Erfolg (z. B. PDF speichern) |
+| `afterToolCall` | `(result, options, credential?) => result` | Tool — Ergebnis nach Erfolg (z. B. PDF speichern) |
 
 **Legacy entfernt:** `authorize`, `prepare`, `ModuleCredentials`, `toModuleCredentials`.
 
@@ -69,7 +69,7 @@ auth {
 | After-Stub-Datei | `afterToolCallForExportTodosPdf.ts` (filename = export name) |
 | Access-Funktion | `checkToolAccessForListBookings(credential)` |
 | Prepare-Funktion | `prepareToolCallForListBookings(options, credential?)` |
-| After-Funktion | `afterToolCallForExportTodosPdf(result, credential?)` |
+| After-Funktion | `afterToolCallForExportTodosPdf(result, options, credential?)` |
 
 Stub-Pfad: `src/hooks/{api2ai\|db2ai}/<module>-tools/`. One hook function per file; write-once on generate; imports in `*-tools.ts` always follow DSL.
 
@@ -104,7 +104,7 @@ While hacking `@toolfactory.dev/core/codegen`: [core2ai-link-vs-registry](../cor
 
 | Demo | Hooks |
 |------|-------|
-| `todo.api2ai` | `verifyCredential`; `exportTodosPdf` + `afterToolCall` (PDF → temp) |
+| `todo.api2ai` | `verifyCredential`; `listTodos` `hookParams.titleContains` + `afterToolCall`; `exportTodosPdf` + `afterToolCall` (PDF → temp) |
 | `bookings.api2ai` | `checkToolAccess` + `prepareToolCall` (JWT, kein verify-Stub) |
 | `spaceflight-news.api2ai` | public `prepareToolCall` + `clientMayOmit` |
 | `orders-postgresql.db2ai` | `checkToolAccess` + `clientMayOmit` |

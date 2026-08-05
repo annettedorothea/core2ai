@@ -83,22 +83,28 @@ ${voidLines}
 export function renderAfterToolCallStubFileContent(
     toolName: string,
     access: 'public' | 'protected',
+    hookStubTsPath: string,
     toolsModuleTsPath: string
 ): string {
     const fn = afterToolCallExportName(toolName);
+    const importSpec = relativeJsImportPath(hookStubTsPath, toolsModuleTsPath);
     const signature =
         access === 'public'
-            ? `export function ${fn}(result: unknown): unknown`
-            : `export function ${fn}(result: unknown, credential: string): unknown`;
+            ? `export function ${fn}(result: unknown, options: InvokeOptions): unknown`
+            : `export function ${fn}(result: unknown, options: InvokeOptions, credential: string): unknown`;
     const voidLines =
         access === 'public'
-            ? `    void result;`
+            ? `    void result;
+    void options;`
             : `    void result;
+    void options;
     void credential;`;
     return `/**
  * afterToolCall hook for "${toolName}" (write-once — implement ${fn}).
  * Runs after a successful tool invoke; return value is what MCP receives.
  */
+import type { InvokeOptions } from '${importSpec}';
+
 ${signature} {
 ${voidLines}
     throw new Error('Implement ${fn} in ${hookStubRelativePath(toolsModuleTsPath, fn)}');
@@ -149,7 +155,7 @@ export async function ensureToolHookStubsAtProjectRoot(
             if (!fs.existsSync(tsPath)) {
                 fs.writeFileSync(
                     tsPath,
-                    renderAfterToolCallStubFileContent(spec.toolName, spec.access, toolsModuleTsPath),
+                    renderAfterToolCallStubFileContent(spec.toolName, spec.access, tsPath, toolsModuleTsPath),
                     'utf-8'
                 );
             }
@@ -324,14 +330,15 @@ export type AfterToolCallHookMapEntry = {
 };
 
 export function renderAfterToolCallHooksMap(entries: readonly AfterToolCallHookMapEntry[]): string {
-    const typeAnnotation = ': Record<string, (result: unknown, credential?: string) => unknown | Promise<unknown>>';
+    const typeAnnotation =
+        ': Record<string, (result: unknown, options: InvokeOptions, credential?: string) => unknown | Promise<unknown>>';
     if (entries.length === 0) {
         return `const afterToolCallHooks${typeAnnotation} = {};`;
     }
     const mapEntries = entries.map(({ toolName, access }) => {
         const fn = afterToolCallExportName(toolName);
         if (access === 'protected') {
-            return `    ${JSON.stringify(toolName)}: (result, credential) => ${fn}(result, credential!)`;
+            return `    ${JSON.stringify(toolName)}: (result, options, credential) => ${fn}(result, options, credential!)`;
         }
         return `    ${JSON.stringify(toolName)}: ${fn}`;
     });
