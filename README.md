@@ -29,6 +29,8 @@ If you want to generate MCP tools, you will usually start with one of the siblin
 
 [Documentation index](docs/README.md) — architecture, authoring, runtime, and integrations.
 
+[Videos](docs/videos.md) — [Willkommen bei Tool Factory](https://www.youtube.com/watch?v=KYaKTWkooeU) (DE) and more.
+
 ---
 
 ## Related Projects
