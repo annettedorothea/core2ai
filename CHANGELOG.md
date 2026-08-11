@@ -8,7 +8,11 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
-## [Unreleased]
+## [1.2.1] - 2026-08-12
+
+### Fixed
+
+- **Zod codegen:** objects with named `properties` honor `additionalProperties` — `true` → `.passthrough()`, schema → `.catchall(…)`, empty `properties` + typed map still → `z.record`
 
 ---
 

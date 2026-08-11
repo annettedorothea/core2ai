@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import * as z from 'zod/v4';
 import {
     emitZodExpression,
     enrichJsonSchemaPropertyDescription,
@@ -100,5 +101,92 @@ describe('emitZodExpression', () => {
                 items: { type: 'string', enum: ['temperature_2m'] }
             })
         ).toBe('z.union([z.array(z.literal("temperature_2m")), z.string()])');
+    });
+
+    test('emits named props with additionalProperties false as strict', () => {
+        expect(
+            emitZodExpression({
+                type: 'object',
+                properties: { title: { type: 'string' } },
+                required: ['title'],
+                additionalProperties: false
+            })
+        ).toBe('z.object({ "title": z.string() }).strict()');
+    });
+
+    test('emits named props with additionalProperties true as passthrough', () => {
+        expect(
+            emitZodExpression({
+                type: 'object',
+                properties: { title: { type: 'string' } },
+                required: ['title'],
+                additionalProperties: true
+            })
+        ).toBe('z.object({ "title": z.string() }).passthrough()');
+    });
+
+    test('emits named props with typed additionalProperties as catchall', () => {
+        const labeledValue = {
+            type: 'object',
+            properties: { value: { type: 'string' } },
+            required: ['value'],
+            additionalProperties: false
+        };
+        expect(
+            emitZodExpression({
+                type: 'object',
+                properties: {
+                    title: labeledValue,
+                    region: labeledValue
+                },
+                required: ['title'],
+                additionalProperties: labeledValue
+            })
+        ).toBe(
+            'z.object({ "title": z.object({ "value": z.string() }).strict(), "region": z.object({ "value": z.string() }).strict().optional() }).catchall(z.object({ "value": z.string() }).strict())'
+        );
+    });
+
+    test('emits empty properties with typed additionalProperties as record', () => {
+        expect(
+            emitZodExpression({
+                type: 'object',
+                properties: {},
+                additionalProperties: { type: 'string' }
+            })
+        ).toBe('z.record(z.string(), z.string())');
+    });
+
+    test('safeParse keeps unknown keys when catchall is emitted', () => {
+        const labeledValue = {
+            type: 'object',
+            properties: { value: { type: 'string' } },
+            required: ['value'],
+            additionalProperties: false
+        };
+        const expr = emitZodExpression({
+            type: 'object',
+            properties: {
+                title: labeledValue,
+                region: labeledValue,
+                category: labeledValue
+            },
+            required: ['title', 'region', 'category'],
+            additionalProperties: labeledValue
+        });
+        const schema = new Function('z', `return (${expr})`)(z) as z.ZodTypeAny;
+        const parsed = schema.safeParse({
+            title: { value: 'Demo title' },
+            region: { value: 'north' },
+            category: { value: 'general' },
+            customTag: { value: 'extra-1' },
+            sourceCode: { value: 'SRC-9' }
+        });
+        expect(parsed.success).toBe(true);
+        if (!parsed.success) {
+            return;
+        }
+        expect(parsed.data.customTag).toEqual({ value: 'extra-1' });
+        expect(parsed.data.sourceCode).toEqual({ value: 'SRC-9' });
     });
 });

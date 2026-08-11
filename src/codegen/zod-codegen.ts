@@ -13,30 +13,53 @@ export function emitZodExpression(schema: JsonSchemaDict): string {
         return emitUnion(schema.oneOf as JsonSchemaDict[]);
     }
 
-    if (
-        schema.type === 'object' &&
-        schema.properties !== undefined &&
-        typeof schema.properties === 'object' &&
-        !Array.isArray(schema.properties)
-    ) {
-        const props = schema.properties as Record<string, JsonSchemaDict>;
-        const required = new Set(
-            Array.isArray(schema.required)
-                ? (schema.required as unknown[]).filter((x): x is string => typeof x === 'string')
-                : []
-        );
-        const entries = Object.entries(props).map(([key, propSchema]) => {
-            let inner = emitZodExpression(propSchema);
-            if (!required.has(key)) {
-                inner = `${inner}.optional()`;
-            }
-            return `${JSON.stringify(key)}: ${inner}`;
-        });
-        let obj = `z.object({ ${entries.join(', ')} })`;
-        if (schema.additionalProperties === false) {
-            obj += '.strict()';
+    if (schema.type === 'object') {
+        const props =
+            schema.properties !== undefined &&
+            typeof schema.properties === 'object' &&
+            !Array.isArray(schema.properties)
+                ? (schema.properties as Record<string, JsonSchemaDict>)
+                : undefined;
+        const namedEntries = props ? Object.entries(props) : [];
+
+        if (namedEntries.length > 0) {
+            const required = new Set(
+                Array.isArray(schema.required)
+                    ? (schema.required as unknown[]).filter((x): x is string => typeof x === 'string')
+                    : []
+            );
+            const entries = namedEntries.map(([key, propSchema]) => {
+                let inner = emitZodExpression(propSchema);
+                if (!required.has(key)) {
+                    inner = `${inner}.optional()`;
+                }
+                return `${JSON.stringify(key)}: ${inner}`;
+            });
+            const obj = applyAdditionalPropertiesModifier(
+                `z.object({ ${entries.join(', ')} })`,
+                schema.additionalProperties
+            );
+            return withDescribe(obj, schema);
         }
-        return withDescribe(obj, schema);
+
+        if (schema.additionalProperties === true) {
+            return withDescribe('z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))', schema);
+        }
+
+        if (
+            typeof schema.additionalProperties === 'object' &&
+            schema.additionalProperties !== null &&
+            !Array.isArray(schema.additionalProperties)
+        ) {
+            const valueType = emitZodExpression(schema.additionalProperties as JsonSchemaDict);
+            return withDescribe(`z.record(z.string(), ${valueType})`, schema);
+        }
+
+        // Explicit empty `properties` and/or `additionalProperties: false` → object; bare `{ type: 'object' }` stays unknown.
+        if (props !== undefined || schema.additionalProperties === false) {
+            const empty = applyAdditionalPropertiesModifier('z.object({})', schema.additionalProperties);
+            return withDescribe(empty, schema);
+        }
     }
 
     if (schema.type === 'array') {
@@ -59,21 +82,25 @@ export function emitZodExpression(schema: JsonSchemaDict): string {
         return withDescribe('z.boolean()', schema);
     }
 
-    if (schema.type === 'object' && schema.additionalProperties === true) {
-        return withDescribe('z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))', schema);
-    }
-
-    if (
-        schema.type === 'object' &&
-        typeof schema.additionalProperties === 'object' &&
-        schema.additionalProperties !== null &&
-        !Array.isArray(schema.additionalProperties)
-    ) {
-        const valueType = emitZodExpression(schema.additionalProperties as JsonSchemaDict);
-        return withDescribe(`z.record(z.string(), ${valueType})`, schema);
-    }
-
     return 'z.unknown()';
+}
+
+/** Append Zod unknown-key policy from JSON Schema `additionalProperties`. */
+function applyAdditionalPropertiesModifier(objectExpr: string, additionalProperties: unknown): string {
+    if (additionalProperties === false) {
+        return `${objectExpr}.strict()`;
+    }
+    if (additionalProperties === true) {
+        return `${objectExpr}.passthrough()`;
+    }
+    if (
+        typeof additionalProperties === 'object' &&
+        additionalProperties !== null &&
+        !Array.isArray(additionalProperties)
+    ) {
+        return `${objectExpr}.catchall(${emitZodExpression(additionalProperties as JsonSchemaDict)})`;
+    }
+    return objectExpr;
 }
 
 function formatExampleForDescription(value: unknown): string {
