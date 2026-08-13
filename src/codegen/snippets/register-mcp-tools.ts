@@ -52,7 +52,8 @@ async function registerMcpTools(
             {
                 title: typeof tool.title === 'string' && tool.title.length > 0 ? tool.title : undefined,
                 description: tool.description,
-                inputSchema
+                inputSchema,
+                annotations: tool.annotations
             },
             async (args) => {
                 loadLocalEnvFiles(options.envDirs, { refresh: true });

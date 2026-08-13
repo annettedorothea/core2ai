@@ -47,20 +47,46 @@ GET "/items/{itemId}" {
 
 ## Operation block keywords
 
-| Keyword       | Required | Purpose                                                    |
-| ------------- | -------- | ---------------------------------------------------------- |
-| `toolName`    | yes      | Stable MCP tool identifier (camelCase)                     |
-| `access`      | yes      | `public` or `protected`                                    |
-| `intent`      | yes      | Primary agent-facing description of what the tool does     |
-| `summary`     | no       | Short title; falls back to OpenAPI `summary`               |
-| `description` | no       | Longer prose; multiline `''' … '''` allowed                |
-| `example`     | no       | Example user utterance or call pattern                     |
-| `params`      | no       | Per-parameter overrides (`description`, `example`, `type`) |
-| `body`        | no       | Prose or hints when request body schema is weak            |
-| `response`    | no       | Prose describing success response for agents               |
-| `hooks`       | no       | Per-tool `checkToolAccess` and/or `prepareToolCall`        |
+| Keyword       | Required | Purpose                                                                                        |
+| ------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `toolName`    | yes      | Stable MCP tool identifier (camelCase)                                                         |
+| `access`      | yes      | `public` or `protected`                                                                        |
+| `intent`      | yes      | Primary agent-facing description of what the tool does                                         |
+| `summary`     | no       | Short title; falls back to OpenAPI `summary`                                                   |
+| `description` | no       | Longer prose; multiline `''' … '''` allowed                                                    |
+| `example`     | no       | Example user utterance or call pattern                                                         |
+| `annotations` | no       | Optional MCP tool hints (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) |
+| `params`      | no       | Per-parameter overrides (`description`, `example`, `type`)                                     |
+| `body`        | no       | Prose or hints when request body schema is weak                                                |
+| `response`    | no       | Prose describing success response for agents                                                   |
+| `hooks`       | no       | Per-tool `checkToolAccess` and/or `prepareToolCall`                                            |
 
 Protected tools require a credential from the MCP host (stdio `--auth-env`, HTTP header, or OAuth Bearer). Hooks are implemented in `src/hooks/api2ai/<module>-tools/`.
+
+`annotations` are **curated** MCP [ToolAnnotations](https://modelcontextprotocol.io/specification/2025-06-18/server/tools) — never inferred from the HTTP method. When omitted, clients keep the protocol’s pessimistic defaults. Emit only the hints you set:
+
+```text
+GET "/todos" {
+    toolName: listTodos
+    access: protected
+    intent: "List todos"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: true
+    }
+}
+
+DELETE "/todos/{todoId}" {
+    toolName: deleteTodo
+    access: protected
+    intent: "Delete a todo permanently"
+    annotations: {
+        destructiveHint: true
+        idempotentHint: true
+        openWorldHint: true
+    }
+}
+```
 
 ---
 

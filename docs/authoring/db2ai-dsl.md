@@ -69,21 +69,42 @@ Server dialects require an env var in the workspace `.env` (value on the same li
 
 ## SQL block keywords
 
-| Keyword       | Required                       | Purpose                                                         |
-| ------------- | ------------------------------ | --------------------------------------------------------------- |
-| `toolName`    | yes                            | Stable MCP tool identifier                                      |
-| `access`      | yes                            | `public` or `protected`                                         |
-| `intent`      | yes                            | Agent-facing description                                        |
-| `query`       | yes                            | SQL with `:name` bind placeholders                              |
-| `params`      | when query has `:placeholders` | Per-parameter schema for MCP (`description`, `example`, `type`) |
-| `summary`     | no                             | Short title                                                     |
-| `description` | no                             | Longer prose                                                    |
-| `example`     | no                             | Example user question                                           |
-| `hooks`       | no                             | Per-tool `checkToolAccess` and/or `prepareToolCall`             |
+| Keyword       | Required                       | Purpose                                                                                        |
+| ------------- | ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `toolName`    | yes                            | Stable MCP tool identifier                                                                     |
+| `access`      | yes                            | `public` or `protected`                                                                        |
+| `intent`      | yes                            | Agent-facing description                                                                       |
+| `query`       | yes                            | SQL with `:name` bind placeholders                                                             |
+| `params`      | when query has `:placeholders` | Per-parameter schema for MCP (`description`, `example`, `type`)                                |
+| `summary`     | no                             | Short title                                                                                    |
+| `description` | no                             | Longer prose                                                                                   |
+| `example`     | no                             | Example user question                                                                          |
+| `annotations` | no                             | Optional MCP tool hints (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) |
+| `hooks`       | no                             | Per-tool `checkToolAccess` and/or `prepareToolCall`                                            |
 
 **Validator error:** if `query` contains `:name` placeholders but no `params: { … }` block, validation fails.
 
 **Validator warning:** if `auth` is set but every SQL block uses `access: public`, auth has no effect.
+
+`annotations` are **curated** MCP ToolAnnotations — never inferred from the SQL text. Local DB tools typically use `openWorldHint: false`. When omitted, clients keep pessimistic defaults.
+
+```text
+SQL {
+    toolName: listFilms
+    access: protected
+    intent: "list films with pagination"
+    query: "SELECT * FROM film LIMIT LEAST(:limit, 100) OFFSET :offset"
+    summary: "Paginated film rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
+    params: {
+        limit: { description: "max rows" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
+    }
+}
+```
 
 ---
 

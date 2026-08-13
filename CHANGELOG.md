@@ -8,6 +8,14 @@ Policy: [docs/development/changelog-policy.md](docs/development/changelog-policy
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **MCP `registerTool`:** pass through optional `annotations` from generated tools (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
+
+---
+
 ## [1.2.1] - 2026-08-12
 
 ### Fixed
