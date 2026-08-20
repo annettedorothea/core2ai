@@ -49,12 +49,6 @@
 | --------------------------------------------------- | ---------------------------------- |
 | [CHANGELOG policy](development/changelog-policy.md) | Version history rules across repos |
 
-### Videos
-
-| Document            | Summary                                                                           |
-| ------------------- | --------------------------------------------------------------------------------- |
-| [Videos](videos.md) | YouTube walkthroughs ([@toolfactorydev](https://www.youtube.com/@toolfactorydev)) |
-
 ### Release
 
 - [CHANGELOG](../CHANGELOG.md) — version history and upgrade notes (core2ai)
